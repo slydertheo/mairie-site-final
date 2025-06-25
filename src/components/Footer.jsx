@@ -7,7 +7,7 @@ export default function Footer() {
       marginTop: 48,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      boxShadow: '0 -4px 24px #0a254030',
+      // boxShadow: '0 -4px 24px #0a254030', // <-- supprime ou commente cette ligne
     }}>
       <div style={{
         maxWidth: 1200,

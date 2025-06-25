@@ -24,7 +24,7 @@ export default function PageAcceuil() {
     <div className="has-background-light" style={{ minHeight: '100vh' }}>
       {/* Bandeau image + titre */}
       <section className="hero is-primary is-medium" style={{
-        backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("/village.jpg")',
+        backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         borderRadius: '0 0 32px 32px',

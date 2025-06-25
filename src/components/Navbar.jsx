@@ -9,7 +9,6 @@ const LoginIcon = ({ color = "#fff" }) => (
 );
 
 const navLinks = [
-  { href: '/', label: 'Accueil' },
   { href: '/demarches', label: 'Démarches' },
   { href: '/ecole', label: 'École Evelyn Nirouet' },
   { href: '/commerces', label: 'Commerces' },
@@ -38,7 +37,32 @@ export default function Navbar() {
         padding: 0,
       }}>
         <div className="navbar-brand">
-          <Link href="/" className="navbar-item" style={{gap: 12, display: 'flex', alignItems: 'center'}}>
+          <Link
+            href="/"
+            className="navbar-item button is-link is-light is-rounded"
+            style={{
+              gap: 12,
+              display: 'flex',
+              alignItems: 'center',
+              fontWeight: 600,
+              color: '#1277c6',
+              fontSize: 16,
+              letterSpacing: 0.5,
+              margin: '0 6px',
+              border: 'none',
+              boxShadow: '0 1px 6px #1277c610',
+              transition: 'background 0.2s, color 0.2s',
+              background: 'transparent',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#d1e6fa';
+              e.currentTarget.style.color = '#0a3970';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#1277c6';
+            }}
+          >
             <img
               src="/LogoFriesen.png"
               alt="Blason de la mairie de Friesen"
@@ -54,7 +78,7 @@ export default function Navbar() {
             <span style={{
               fontWeight: 800,
               fontSize: 24,
-              color: '#1277c6',
+              color: 'inherit',
               letterSpacing: 1.2,
               fontFamily: 'Segoe UI, Arial, sans-serif',
               userSelect: 'none',
