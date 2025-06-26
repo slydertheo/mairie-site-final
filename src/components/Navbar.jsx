@@ -10,7 +10,7 @@ const LoginIcon = ({ color = "#fff" }) => (
 
 const navLinks = [
   { href: '/demarches', label: 'Démarches' },
-  { href: '/ecole', label: 'École Evelyn Nirouet' },
+  { href: '/ecoles', label: 'École Evelyn Nirouet' },
   { href: '/commerces', label: 'Commerces' },
   { href: '/intercommunalite', label: 'Intercommunalité' },
   { href: '/associations', label: 'Associations' },

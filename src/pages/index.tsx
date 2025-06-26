@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import 'bulma/css/bulma.min.css';
+import QuickBoxEcole from '../components/QuickBoxEcole';
 
 export default function PageAcceuil() {
   const [contact, setContact] = useState({ nom: '', email: '', message: '' });
@@ -98,6 +99,10 @@ export default function PageAcceuil() {
               </div>
               <div className="column is-half">
                 <QuickBox icon="📅" label="Prendre rendez-vous" />
+              </div>
+              {/* AJOUT QuickBox École */}
+              <div className="column is-half">
+                <QuickBoxEcole />
               </div>
             </div>
             <h2 className="title is-5 has-text-primary mb-2 mt-5">Mot du Maire</h2>
