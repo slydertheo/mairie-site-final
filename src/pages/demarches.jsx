@@ -89,7 +89,7 @@ export default function Demarches() {
             {/* Colonne 2 : Urbanisme et autres liens */}
             <div className="column is-half">
               <h2 className="title is-5 has-text-primary mb-3">Urbanisme</h2>
-              <QuickBox icon="🗺️" label="Point carte communale" href="https://www.geoportail-urbanisme.gouv.fr/" />
+              <QuickBox icon="🗺️" label="Plan carte communale" href="https://www.geoportail-urbanisme.gouv.fr/" />
               <QuickBox icon="📄" label="Règlement téléchargeable" href="/docs/reglement-urbanisme.pdf" />
               <QuickBox icon="📝" label="Formulaires permis de construire (Guichet unique PETR)" href="https://guichet-unique.alsace-sud.fr/" />
               <QuickBox icon="📐" label="Cadastre (éditer/consulter un plan)" href="https://www.cadastre.gouv.fr/" />

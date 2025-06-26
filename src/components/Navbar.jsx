@@ -10,12 +10,12 @@ const LoginIcon = ({ color = "#fff" }) => (
 
 const navLinks = [
   { href: '/demarches', label: 'Démarches' },
-  { href: '/ecoles', label: 'École Evelyn Nirouet' },
+  { href: '/ecoles', label: 'École Evelyne Nirouet' },
   { href: '/commerces', label: 'Commerces' },
   { href: '/intercommunalite', label: 'Intercommunalité' },
   { href: '/associations', label: 'Associations' },
-  { href: '/visites', label: 'Découvrir Friesen' },
-  { href: '/infos-pratiques', label: 'Infos Pratiques' },
+  { href: '/decouvrir_friesen', label: 'Découvrir Friesen' },
+  { href: '/infos_pratiques', label: 'Infos Pratiques' },
 ];
 
 export default function Navbar() {
