@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import 'bulma/css/bulma.min.css';
 import QuickBoxEcole from '../components/QuickBoxEcole';
+import ActualiteCarousel from '../components/ActualiteCarousel';
 
 export default function PageAcceuil() {
   const [contact, setContact] = useState({ nom: '', email: '', message: '' });
@@ -10,6 +11,40 @@ export default function PageAcceuil() {
     { date: '2024-06-28', title: 'Atelier créatif enfants' },
     { date: '2024-07-02', title: 'Réunion publique' },
     { date: '2024-07-10', title: 'Fête du village' },
+  ];
+
+  // Données pour le carrousel avec des images qui fonctionnent
+  const actualites = [
+    {
+      imgSrc: "https://images.unsplash.com/photo-1481162854517-d9e353af153d?auto=format&fit=crop&w=1000&q=80", 
+      date: "12 avril 2024",
+      title: "Fête locale : dates et programme"
+    },
+    {
+      imgSrc: "https://images.unsplash.com/photo-1503594384566-461fe158e797?auto=format&fit=crop&w=1000&q=80", 
+      date: "5 avril 2024",
+      title: "Travaux de voirie : point d'avancement"
+    },
+    {
+      imgSrc: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=1000&q=80", 
+      date: "28 mars 2024",
+      title: "Prochain conseil municipal le 15 avril"
+    },
+    {
+      imgSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80", 
+      date: "20 mars 2024",
+      title: "Nouveaux horaires de la bibliothèque"
+    },
+    {
+      imgSrc: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1000&q=80", 
+      date: "15 mars 2024",
+      title: "Inscriptions pour la brocante annuelle"
+    },
+    {
+      imgSrc: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1000&q=80", 
+      date: "10 mars 2024",
+      title: "Résultats du concours de fleurissement"
+    }
   ];
 
   function handleContactChange(e) {
@@ -42,37 +77,16 @@ export default function PageAcceuil() {
         </div>
       </section>
 
-      {/* Contenu principal - sans le gros conteneur */}
-      <div className="container" style={{ maxWidth: 1200, margin: '0 auto 40px auto', position: 'relative', top: -40 }}>
-        {/* Dernières actualités */}
+      <div className="container" style={{ 
+        maxWidth: 1200, 
+        margin: '0 auto 40px auto',
+      }}>
+        {/* Dernières actualités - remplacé par le carrousel */}
         <h2 className="title is-4 has-text-primary mb-5">Dernières actualités</h2>
-        <div className="columns is-multiline is-variable is-4 mb-6">
-          <div className="column is-one-third">
-            <ActualiteCard
-              img="/ballons.jpg"
-              date="12 avril 2024"
-              title="Fête locale : dates et programme"
-              color="#1277c6"
-            />
-          </div>
-          <div className="column is-one-third">
-            <ActualiteCard
-              img="/cones.jpg"
-              date="5 avril 2024"
-              title="Travaux de voirie : point d’avancement"
-              color="#1277c6"
-            />
-          </div>
-          <div className="column is-one-third">
-            <ActualiteCard
-              img="/conseil.jpg"
-              date="28 mars 2024"
-              title="Prochain conseil municipal le 15 avril"
-              color="#1277c6"
-            />
-          </div>
-        </div>
-
+        
+        {/* Nouveau carrousel à la place de la grille */}
+        <ActualiteCarousel actualites={actualites} />
+        
         {/* Grille infos */}
         <div className="columns is-variable is-5">
           {/* Colonne 1 : Démarches rapides + Mot du Maire */}
