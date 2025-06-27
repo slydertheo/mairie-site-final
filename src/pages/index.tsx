@@ -42,17 +42,8 @@ export default function PageAcceuil() {
         </div>
       </section>
 
-      {/* Contenu principal */}
-      <div className="container" style={{
-        maxWidth: 1200,
-        margin: '0 auto 40px auto',
-        background: '#fff',
-        borderRadius: 22,
-        boxShadow: '0 8px 32px #1277c610',
-        padding: 40,
-        position: 'relative',
-        top: -40,
-      }}>
+      {/* Contenu principal - sans le gros conteneur */}
+      <div className="container" style={{ maxWidth: 1200, margin: '0 auto 40px auto', position: 'relative', top: -40 }}>
         {/* Dernières actualités */}
         <h2 className="title is-4 has-text-primary mb-5">Dernières actualités</h2>
         <div className="columns is-multiline is-variable is-4 mb-6">
@@ -60,7 +51,7 @@ export default function PageAcceuil() {
             <ActualiteCard
               img="/ballons.jpg"
               date="12 avril 2024"
-              title="Fête locale : dates et programme"
+              title="Fête locale : dates et programme"
               color="#1277c6"
             />
           </div>
