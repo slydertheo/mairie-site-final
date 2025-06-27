@@ -18,14 +18,94 @@ const navLinks = [
   { href: '/infos_pratiques', label: 'Infos Pratiques' },
 ];
 
+function getPasswordStrength(password) {
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  if (password.length >= 12) score++;
+  return score;
+}
+
+function getStrengthLabel(score) {
+  if (score <= 2) return { label: "Faible", color: "danger" };
+  if (score <= 4) return { label: "Moyen", color: "warning" };
+  return { label: "Fort", color: "success" };
+}
+
 export default function Navbar() {
   const [active, setActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [registerMode, setRegisterMode] = useState(false);
+  const [nom, setNom] = useState('');
+  const [prenom, setPrenom] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Pour empêcher la navigation lors du clic sur Connexion
   const handleLoginClick = (e) => {
     e.preventDefault();
     setShowModal(true);
+    setError('');
+    setEmail('');
+    setPassword('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erreur lors de la connexion");
+      } else {
+        // Stocke le JWT et l'utilisateur
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setShowModal(false);
+        window.location.reload();
+      }
+    } catch (err) {
+      setError("Erreur réseau");
+    }
+    setLoading(false);
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nom, prenom }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erreur lors de l'inscription");
+      } else {
+        setRegisterMode(false);
+        setError("Compte créé ! Connectez-vous.");
+        setNom('');
+        setPrenom('');
+        setPassword('');
+      }
+    } catch (err) {
+      setError("Erreur réseau");
+    }
+    setLoading(false);
   };
 
   return (
@@ -232,7 +312,31 @@ export default function Navbar() {
             >
               Connexion à votre espace
             </h2>
-            <form>
+            <form onSubmit={registerMode ? handleRegister : handleSubmit}>
+              {registerMode && (
+                <>
+                  <div className="field">
+                    <input
+                      className="input is-medium"
+                      type="text"
+                      placeholder="Nom"
+                      required
+                      value={nom}
+                      onChange={e => setNom(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <input
+                      className="input is-medium"
+                      type="text"
+                      placeholder="Prénom"
+                      required
+                      value={prenom}
+                      onChange={e => setPrenom(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
               <div className="field">
                 <div className="control has-icons-left">
                   <input
@@ -241,6 +345,8 @@ export default function Navbar() {
                     placeholder="Votre email"
                     required
                     style={{ fontSize: 18, padding: '1.25rem 1rem' }}
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
                   />
                   <span className="icon is-small is-left">
                     <i className="fas fa-envelope"></i>
@@ -248,26 +354,64 @@ export default function Navbar() {
                 </div>
               </div>
               <div className="field">
-                <div className="control has-icons-left">
+                <div className="control has-icons-left has-icons-right">
                   <input
                     className="input is-medium"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Votre mot de passe"
                     required
                     style={{ fontSize: 18, padding: '1.25rem 1rem' }}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                   />
                   <span className="icon is-small is-left">
                     <i className="fas fa-lock"></i>
                   </span>
+                  <span
+                    className="icon is-small is-right"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setShowPassword(v => !v)}
+                    tabIndex={0}
+                    title={showPassword ? "Masquer" : "Afficher"}
+                  >
+                    <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
+                  </span>
                 </div>
+                {/* Indicateur de sécurité */}
+                {registerMode && password && (
+                  <div style={{ marginTop: 6 }}>
+                    {(() => {
+                      const score = getPasswordStrength(password);
+                      const { label, color } = getStrengthLabel(score);
+                      return (
+                        <>
+                          <progress
+                            className={`progress is-${color}`}
+                            value={score}
+                            max="6"
+                            style={{ height: 6 }}
+                          ></progress>
+                          <span className={`has-text-${color} is-size-7`} style={{ fontWeight: 600 }}>
+                            Sécurité : {label}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
+              {error && (
+                <div className="notification is-danger is-light" style={{ marginBottom: 12 }}>
+                  {error}
+                </div>
+              )}
               <div className="field has-text-right mb-3">
                 <a href="#" className="is-size-7" style={{ color: '#1277c6' }}>
                   Mot de passe oublié ?
                 </a>
               </div>
               <button
-                className="button is-link is-fullwidth is-medium"
+                className={`button is-link is-fullwidth is-medium${loading ? ' is-loading' : ''}`}
                 type="submit"
                 style={{
                   borderRadius: 10,
@@ -277,9 +421,23 @@ export default function Navbar() {
                   marginTop: 8,
                   boxShadow: '0 2px 12px #1277c640',
                 }}
+                disabled={loading}
               >
-                Se connecter
+                {registerMode ? "Créer mon compte" : "Se connecter"}
               </button>
+              <div className="has-text-centered mt-3">
+                <button
+                  type="button"
+                  className="button is-text"
+                  style={{ color: '#1277c6', fontWeight: 700 }}
+                  onClick={() => {
+                    setRegisterMode(!registerMode);
+                    setError('');
+                  }}
+                >
+                  {registerMode ? "J'ai déjà un compte" : "Créer un compte"}
+                </button>
+              </div>
             </form>
           </section>
         </div>
