@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const db = new Database(process.env.DB_PATH || './database/mairie.db');
+const db = new Database(process.env.DB_PATH || './database/mairie.sqlite');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -42,6 +42,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     });
   } catch (err) {
+    console.error('Erreur API login:', err);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+// Exemple : /src/pages/api/protected.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import jwt from 'jsonwebtoken';
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Vérification du token JWT
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'Non autorisé' });
+
+  const token = auth.replace('Bearer ', '');
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre_secret_jwt');
+    // Tu peux utiliser decoded pour vérifier le rôle, l'id, etc.
+    res.status(200).json({ message: 'Accès autorisé', user: decoded });
+  } catch {
+    res.status(401).json({ error: 'Token invalide' });
   }
 }

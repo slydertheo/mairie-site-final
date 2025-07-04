@@ -42,10 +42,15 @@ export default function Navbar() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorType, setErrorType] = useState('danger'); // 'danger' ou 'success'
   const [registerMode, setRegisterMode] = useState(false);
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMsg, setForgotMsg] = useState('');
 
   // Pour empêcher la navigation lors du clic sur Connexion
   const handleLoginClick = (e) => {
@@ -56,10 +61,12 @@ export default function Navbar() {
     setPassword('');
   };
 
+  // Connexion
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setErrorType('danger');
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
@@ -68,24 +75,35 @@ export default function Navbar() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Erreur lors de la connexion");
+        if (res.status === 401) setError("Utilisateur ou mot de passe incorrect.");
+        else if (res.status === 400) setError("Veuillez remplir tous les champs.");
+        else setError("Une erreur technique est survenue. Veuillez réessayer plus tard.");
+        setErrorType('danger');
       } else {
         // Stocke le JWT et l'utilisateur
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        setShowModal(false);
-        window.location.reload();
+        setSuccess("Connexion réussie !");
+        setError('');
+        setErrorType('success');
+        setTimeout(() => {
+          setShowModal(false);
+          window.location.reload();
+        }, 1200); // Laisse le temps d'afficher le message
       }
     } catch (err) {
-      setError("Erreur réseau");
+      setError("Impossible de se connecter au serveur.");
+      setErrorType('danger');
     }
     setLoading(false);
   };
 
+  // Inscription
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setErrorType('danger');
     try {
       const res = await fetch('/api/register', {
         method: 'POST',
@@ -94,18 +112,45 @@ export default function Navbar() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Erreur lors de l'inscription");
+        if (res.status === 409) setError("Cet email est déjà utilisé.");
+        else if (res.status === 400) setError("Veuillez remplir tous les champs.");
+        else setError("Une erreur est survenue. Veuillez réessayer.");
+        setErrorType('danger');
       } else {
         setRegisterMode(false);
         setError("Compte créé ! Connectez-vous.");
+        setErrorType('success');
         setNom('');
         setPrenom('');
         setPassword('');
       }
     } catch (err) {
-      setError("Erreur réseau");
+      setError("Impossible de créer le compte.");
+      setErrorType('danger');
     }
     setLoading(false);
+  };
+
+  // Handler pour l'oubli de mot de passe
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setForgotMsg('');
+    setError('');
+    try {
+      // Ici tu pourrais appeler une API réelle, ici on simule juste la réponse
+      // const res = await fetch('/api/forgot', { ... });
+      // const data = await res.json();
+      // if (!res.ok) setForgotMsg("Aucun compte trouvé avec cet email.");
+      // else setForgotMsg("Un email de réinitialisation a été envoyé.");
+      setTimeout(() => {
+        setForgotMsg("Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.");
+        setLoading(false);
+      }, 1000);
+    } catch (err) {
+      setForgotMsg("Erreur lors de la demande. Veuillez réessayer.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -310,135 +355,200 @@ export default function Navbar() {
                 letterSpacing: 1,
               }}
             >
-              Connexion à votre espace
+              {forgotMode ? "Réinitialiser le mot de passe" : "Connexion à votre espace"}
             </h2>
-            <form onSubmit={registerMode ? handleRegister : handleSubmit}>
-              {registerMode && (
-                <>
-                  <div className="field">
+            {/* Mot de passe oublié */}
+            {forgotMode ? (
+              <form onSubmit={handleForgot}>
+                <div className="field">
+                  <div className="control has-icons-left">
                     <input
                       className="input is-medium"
-                      type="text"
-                      placeholder="Nom"
+                      type="email"
+                      placeholder="Votre email"
                       required
-                      value={nom}
-                      onChange={e => setNom(e.target.value)}
+                      style={{ fontSize: 18, padding: '1.25rem 1rem' }}
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
                     />
+                    <span className="icon is-small is-left">
+                      <i className="fas fa-envelope"></i>
+                    </span>
                   </div>
-                  <div className="field">
-                    <input
-                      className="input is-medium"
-                      type="text"
-                      placeholder="Prénom"
-                      required
-                      value={prenom}
-                      onChange={e => setPrenom(e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-              <div className="field">
-                <div className="control has-icons-left">
-                  <input
-                    className="input is-medium"
-                    type="email"
-                    placeholder="Votre email"
-                    required
-                    style={{ fontSize: 18, padding: '1.25rem 1rem' }}
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                  />
-                  <span className="icon is-small is-left">
-                    <i className="fas fa-envelope"></i>
-                  </span>
                 </div>
-              </div>
-              <div className="field">
-                <div className="control has-icons-left has-icons-right">
-                  <input
-                    className="input is-medium"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Votre mot de passe"
-                    required
-                    style={{ fontSize: 18, padding: '1.25rem 1rem' }}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                  />
-                  <span className="icon is-small is-left">
-                    <i className="fas fa-lock"></i>
-                  </span>
-                  <span
-                    className="icon is-small is-right"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setShowPassword(v => !v)}
-                    tabIndex={0}
-                    title={showPassword ? "Masquer" : "Afficher"}
-                  >
-                    <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
-                  </span>
-                </div>
-                {/* Indicateur de sécurité */}
-                {registerMode && password && (
-                  <div style={{ marginTop: 6 }}>
-                    {(() => {
-                      const score = getPasswordStrength(password);
-                      const { label, color } = getStrengthLabel(score);
-                      return (
-                        <>
-                          <progress
-                            className={`progress is-${color}`}
-                            value={score}
-                            max="6"
-                            style={{ height: 6 }}
-                          ></progress>
-                          <span className={`has-text-${color} is-size-7`} style={{ fontWeight: 600 }}>
-                            Sécurité : {label}
-                          </span>
-                        </>
-                      );
-                    })()}
+                {forgotMsg && (
+                  <div className="notification is-info is-light" style={{ marginBottom: 12 }}>
+                    {forgotMsg}
+                    <button className="delete" onClick={() => setForgotMsg('')}></button>
                   </div>
                 )}
-              </div>
-              {error && (
-                <div className="notification is-danger is-light" style={{ marginBottom: 12 }}>
-                  {error}
-                </div>
-              )}
-              <div className="field has-text-right mb-3">
-                <a href="#" className="is-size-7" style={{ color: '#1277c6' }}>
-                  Mot de passe oublié ?
-                </a>
-              </div>
-              <button
-                className={`button is-link is-fullwidth is-medium${loading ? ' is-loading' : ''}`}
-                type="submit"
-                style={{
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  fontSize: 18,
-                  padding: '1.1rem 0',
-                  marginTop: 8,
-                  boxShadow: '0 2px 12px #1277c640',
-                }}
-                disabled={loading}
-              >
-                {registerMode ? "Créer mon compte" : "Se connecter"}
-              </button>
-              <div className="has-text-centered mt-3">
                 <button
-                  type="button"
-                  className="button is-text"
-                  style={{ color: '#1277c6', fontWeight: 700 }}
-                  onClick={() => {
-                    setRegisterMode(!registerMode);
-                    setError('');
+                  className={`button is-link is-fullwidth is-medium${loading ? ' is-loading' : ''}`}
+                  type="submit"
+                  style={{
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 18,
+                    padding: '1.1rem 0',
+                    marginTop: 8,
+                    boxShadow: '0 2px 12px #1277c640',
                   }}
+                  disabled={loading}
                 >
-                  {registerMode ? "J'ai déjà un compte" : "Créer un compte"}
+                  Envoyer le lien de réinitialisation
                 </button>
-              </div>
-            </form>
+                <div className="has-text-centered mt-3">
+                  <button
+                    type="button"
+                    className="button is-text"
+                    style={{ color: '#1277c6', fontWeight: 700 }}
+                    onClick={() => { setForgotMode(false); setForgotMsg(''); }}
+                  >
+                    Retour à la connexion
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={registerMode ? handleRegister : handleSubmit}>
+                {registerMode && (
+                  <>
+                    <div className="field">
+                      <input
+                        className="input is-medium"
+                        type="text"
+                        placeholder="Nom"
+                        required
+                        value={nom}
+                        onChange={e => setNom(e.target.value)}
+                      />
+                    </div>
+                    <div className="field">
+                      <input
+                        className="input is-medium"
+                        type="text"
+                        placeholder="Prénom"
+                        required
+                        value={prenom}
+                        onChange={e => setPrenom(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="field">
+                  <div className="control has-icons-left">
+                    <input
+                      className="input is-medium"
+                      type="email"
+                      placeholder="Votre email"
+                      required
+                      style={{ fontSize: 18, padding: '1.25rem 1rem' }}
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                    />
+                    <span className="icon is-small is-left">
+                      <i className="fas fa-envelope"></i>
+                    </span>
+                  </div>
+                </div>
+                <div className="field">
+                  <div className="control has-icons-left has-icons-right">
+                    <input
+                      className="input is-medium"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Votre mot de passe"
+                      required
+                      style={{ fontSize: 18, padding: '1.25rem 1rem' }}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                    />
+                    <span className="icon is-small is-left">
+                      <i className="fas fa-lock"></i>
+                    </span>
+                    <span
+                      className="icon is-small is-right"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setShowPassword(v => !v)}
+                      tabIndex={0}
+                      title={showPassword ? "Masquer" : "Afficher"}
+                    >
+                      <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
+                    </span>
+                  </div>
+                  {/* Indicateur de sécurité */}
+                  {registerMode && password && (
+                    <div style={{ marginTop: 6 }}>
+                      {(() => {
+                        const score = getPasswordStrength(password);
+                        const { label, color } = getStrengthLabel(score);
+                        return (
+                          <>
+                            <progress
+                              className={`progress is-${color}`}
+                              value={score}
+                              max="6"
+                              style={{ height: 6 }}
+                            ></progress>
+                            <span className={`has-text-${color} is-size-7`} style={{ fontWeight: 600 }}>
+                              Sécurité : {label}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+                {error && (
+                  <div className={`notification is-light ${errorType === 'success' ? 'is-success' : 'is-danger'}`} style={{ marginBottom: 12 }}>
+                    {error}
+                    <button className="delete" onClick={() => setError('')}></button>
+                  </div>
+                )}
+                {success && (
+                  <div className="notification is-success is-light" style={{ marginBottom: 12 }}>
+                    {success}
+                    <button className="delete" onClick={() => setSuccess('')}></button>
+                  </div>
+                )}
+                <div className="field has-text-right mb-3">
+                  <a
+                    href="#"
+                    className="is-size-7"
+                    style={{ color: '#1277c6' }}
+                    onClick={e => { e.preventDefault(); setForgotMode(true); setForgotMsg(''); }}
+                  >
+                    Mot de passe oublié ?
+                  </a>
+                </div>
+                <button
+                  className={`button is-link is-fullwidth is-medium${loading ? ' is-loading' : ''}`}
+                  type="submit"
+                  style={{
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 18,
+                    padding: '1.1rem 0',
+                    marginTop: 8,
+                    boxShadow: '0 2px 12px #1277c640',
+                  }}
+                  disabled={loading}
+                >
+                  {registerMode ? "Créer mon compte" : "Se connecter"}
+                </button>
+                <div className="has-text-centered mt-3">
+                  <button
+                    type="button"
+                    className="button is-text"
+                    style={{ color: '#1277c6', fontWeight: 700 }}
+                    onClick={() => {
+                      setRegisterMode(!registerMode);
+                      setError('');
+                    }}
+                  >
+                    {registerMode ? "J'ai déjà un compte" : "Créer un compte"}
+                  </button>
+                </div>
+              </form>
+            )}
           </section>
         </div>
       </div>

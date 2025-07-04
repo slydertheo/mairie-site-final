@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-const db = new Database(process.env.DB_PATH || './database/mairie.db');
+const db = new Database(process.env.DB_PATH || './database/mairie.sqlite');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -19,7 +20,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     db.prepare(
       `INSERT INTO users (username, password, email, nom, prenom, role_id) VALUES (?, ?, ?, ?, ?, 4)`
     ).run(username, hash, email, nom, prenom);
-    res.status(201).json({ success: true });
+    const token = jwt.sign({ email, role: 'user' }, process.env.JWT_SECRET || 'votre_secret_jwt', {
+      expiresIn: '1d',
+    });
+    res.status(201).json({ success: true, token });
   } catch (err: any) {
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({ error: 'Email déjà utilisé' });
