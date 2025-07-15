@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
@@ -56,10 +54,11 @@ export default function PageContentEditor() {
         <div className="field">
           <label className="label">Contenu de la page</label>
           <div className="control">
-            <ReactQuill
-              theme="snow"
+            <textarea
+              className="textarea"
               value={content}
-              onChange={setContent}
+              onChange={e => setContent(e.target.value)}
+              rows={10}
               readOnly={loading}
               style={{ background: loading ? "#f5f5f5" : "white" }}
             />

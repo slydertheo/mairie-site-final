@@ -89,27 +89,9 @@ export default function PageAcceuil() {
         
         {/* Grille infos */}
         <div className="columns is-variable is-5">
-          {/* Colonne 1 : Démarches rapides + Mot du Maire */}
+          {/* Colonne 1 : Mot du Maire + Galerie */}
           <div className="column is-two-thirds">
-            <h2 className="title is-5 has-text-primary mb-3">Démarches rapides</h2>
-            <div className="columns is-multiline">
-              <div className="column is-half">
-                <QuickBox icon="📄" label="Demande d’acte de naissance" />
-              </div>
-              <div className="column is-half">
-                <QuickBox icon="🗳️" label="Inscription sur les listes électorales" />
-              </div>
-              <div className="column is-half">
-                <QuickBox icon="🏠" label="Urbanisme / Permis de construire" />
-              </div>
-              <div className="column is-half">
-                <QuickBox icon="📅" label="Prendre rendez-vous" />
-              </div>
-              {/* AJOUT QuickBox École */}
-              <div className="column is-half">
-                <QuickBoxEcole />
-              </div>
-            </div>
+            {/* SUPPRIMÉ : Démarches rapides */}
             <h2 className="title is-5 has-text-primary mb-2 mt-5">Mot du Maire</h2>
             <div className="box" style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f8fafc' }}>
               <figure className="image is-96x96 mr-4">
@@ -129,7 +111,7 @@ export default function PageAcceuil() {
               </div>
             </div>
 
-            {/* AJOUT : Galerie photo en bas à gauche */}
+            {/* Galerie photo en bas à gauche */}
             <div className="box mt-5" style={{ background: '#f8fafc' }}>
               <h2 className="subtitle is-6 has-text-link mb-2">Galerie du village</h2>
               <div className="columns is-mobile is-multiline is-gapless">
@@ -223,17 +205,6 @@ export default function PageAcceuil() {
                   </div>
                 </form>
               )}
-            </div>
-
-            {/* Autres idées utiles */}
-            <div className="box" style={{ background: '#f8fafc', marginTop: 24 }}>
-              <h2 className="subtitle is-6 has-text-link mb-2">Liens utiles</h2>
-              <ul style={{ paddingLeft: 18, fontSize: 15 }}>
-                <li><a href="#" className="has-text-link is-underlined">Portail citoyen</a></li>
-                <li><a href="#" className="has-text-link is-underlined">Menus cantine</a></li>
-                <li><a href="#" className="has-text-link is-underlined">Associations locales</a></li>
-                <li><a href="#" className="has-text-link is-underlined">Transports scolaires</a></li>
-              </ul>
             </div>
           </div>
         </div>
