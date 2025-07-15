@@ -260,6 +260,27 @@ export default function Navbar() {
             ))}
           </div>
           <div className="navbar-end">
+            {/* Lien Admin visible pour tous */}
+            <div className="navbar-item">
+              <Link
+                href="/Interface_admin"
+                className="button is-warning is-rounded"
+                style={{
+                  fontWeight: 700,
+                  fontSize: 17,
+                  marginRight: 10,
+                  boxShadow: '0 2px 12px #f7b50040',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 18px',
+                  transition: 'background 0.2s, box-shadow 0.2s',
+                }}
+              >
+                <span>Admin</span>
+              </Link>
+            </div>
             <div className="navbar-item">
               <a
                 href="/login"
