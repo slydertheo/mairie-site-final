@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
 
@@ -19,6 +19,24 @@ export default function Ecoles() {
   });
   
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [content, setContent] = useState({});
+  const [vacances, setVacances] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/pageContent?page=ecoles')
+      .then(res => res.json())
+      .then(data => {
+        const obj = {};
+        data.forEach(d => { obj[d.section] = d.contenu || d.titre; });
+        setContent(obj);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/vacances')
+      .then(res => res.json())
+      .then(setVacances);
+  }, []);
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -67,8 +85,7 @@ export default function Ecoles() {
         <div className="hero-body">
           <div className="container has-text-centered">
             <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              Bienvenue sur le site officiel de<br />
-              la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
+              {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
             </h1>
           </div>
         </div>
@@ -85,7 +102,7 @@ export default function Ecoles() {
       >
         <div className="container" style={{ maxWidth: 1100 }}>
           <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
-            Écoles et Services Périscolaires
+            {content.titre || "Écoles et Services Périscolaires"}
           </h1>
 
           <div className="columns is-variable is-5">
@@ -105,15 +122,15 @@ export default function Ecoles() {
                     </p>
                   </figure>
                   <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-2">École maternelle "Les Petits Explorateurs"</h3>
+                    <h3 className="subtitle is-5 has-text-link mb-2">{content.ecole_maternelle_nom || 'École maternelle "Les Petits Explorateurs"'}</h3>
                     <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> 3 Rue des Écoles, 68580 Friesen
+                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {content.ecole_maternelle_adresse || "3 Rue des Écoles, 68580 Friesen"}
                     </p>
                     <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> 03.89.XX.XX.XX
+                      <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> {content.ecole_maternelle_tel || "03.89.XX.XX.XX"}
                     </p>
                     <p className="has-text-grey">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> maternelle@ecole-friesen.fr
+                      <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> {content.ecole_maternelle_email || "maternelle@ecole-friesen.fr"}
                     </p>
                   </div>
                 </div>
@@ -129,73 +146,66 @@ export default function Ecoles() {
                     </p>
                   </figure>
                   <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-2">École élémentaire "Jean Moulin"</h3>
+                    <h3 className="subtitle is-5 has-text-link mb-2">{content.ecole_elementaire_nom || 'École élémentaire "Jean Moulin"'}</h3>
                     <p style={{ fontStyle: 'italic', fontSize: 15 }} className="mb-2">
-                      En partenariat avec la commune d'Altkirch
+                      {content.ecole_elementaire_partenaire || "En partenariat avec la commune d'Altkirch"}
                     </p>
                     <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> 5 Rue des Écoles, 68130 Altkirch
+                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {content.ecole_elementaire_adresse || "5 Rue des Écoles, 68130 Altkirch"}
                     </p>
                     <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> 03.89.XX.XX.XX
+                      <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> {content.ecole_elementaire_tel || "03.89.XX.XX.XX"}
                     </p>
                     <p className="has-text-grey">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> elementaire@ecole-altkirch.fr
+                      <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> {content.ecole_elementaire_email || "elementaire@ecole-altkirch.fr"}
                     </p>
                   </div>
                 </div>
 
                 <div className="notification is-info is-light mt-5">
                   <p className="has-text-weight-bold mb-2">📢 Information transport scolaire</p>
-                  <p>Un service de ramassage scolaire est disponible pour les élèves de Friesen se rendant à l'école élémentaire d'Altkirch.</p>
-                  <p className="mt-2">Consultez les <a href="#" className="has-text-link is-underlined">horaires et points de ramassage</a>.</p>
+                  <p>{content.info_transport || "Un service de ramassage scolaire est disponible pour les élèves de Friesen se rendant à l'école élémentaire d'Altkirch."}</p>
+                  <p className="mt-2">Consultez les <a href={content.transport_url || "#"} className="has-text-link is-underlined">horaires et points de ramassage</a>.</p>
                 </div>
               </div>
 
               {/* Calendrier scolaire */}
               <div className="box mt-5" style={{ background: '#f8fafc', borderRadius: 16 }}>
                 <h2 className="title is-5 has-text-primary mb-3">Calendrier scolaire 2024-2025</h2>
-                <table className="table is-fullwidth">
-                  <thead>
-                    <tr className="has-background-link-light">
-                      <th>Vacances</th>
-                      <th>Date de fin des cours</th>
-                      <th>Date de reprise</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Rentrée scolaire</td>
-                      <td>-</td>
-                      <td>1 septembre 2024</td>
-                    </tr>
-                    <tr>
-                      <td>Toussaint</td>
-                      <td>18 octobre 2024</td>
-                      <td>4 novembre 2024</td>
-                    </tr>
-                    <tr>
-                      <td>Noël</td>
-                      <td>20 décembre 2024</td>
-                      <td>6 janvier 2025</td>
-                    </tr>
-                    <tr>
-                      <td>Hiver</td>
-                      <td>21 février 2025</td>
-                      <td>10 mars 2025</td>
-                    </tr>
-                    <tr>
-                      <td>Printemps</td>
-                      <td>25 avril 2025</td>
-                      <td>12 mai 2025</td>
-                    </tr>
-                    <tr>
-                      <td>Été</td>
-                      <td>4 juillet 2025</td>
-                      <td>-</td>
-                    </tr>
-                  </tbody>
-                </table>
+                {content.calendrier_pdf_url && (
+                  <a href={content.calendrier_pdf_url} target="_blank" rel="noopener noreferrer" className="button is-link is-light mb-2">
+                    📄 Télécharger le calendrier scolaire (PDF/Image)
+                  </a>
+                )}
+                {content.calendrier_url && (
+                  <a href={content.calendrier_url} target="_blank" rel="noopener noreferrer" className="button is-link is-light mb-2">
+                    🌐 Voir le calendrier officiel
+                  </a>
+                )}
+                {vacances.length > 0 ? (
+                  <table className="table is-fullwidth is-striped">
+                    <thead>
+                      <tr>
+                        <th>Vacances</th>
+                        <th>Début</th>
+                        <th>Fin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vacances.map(v => (
+                        <tr key={v.id}>
+                          <td>{v.titre}</td>
+                          <td>{v.debut}</td>
+                          <td>{v.fin}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : content.calendrier ? (
+                  <div dangerouslySetInnerHTML={{ __html: content.calendrier }} />
+                ) : (
+                  <p className="has-text-grey">Aucun calendrier renseigné pour le moment.</p>
+                )}
               </div>
             </div>
 
@@ -217,11 +227,11 @@ export default function Ecoles() {
                   <div className="media-content">
                     <h3 className="subtitle is-5 has-text-link mb-1">Cantine scolaire</h3>
                     <p className="has-text-grey">
-                      Lundi, mardi, jeudi, vendredi : 12h - 14h<br/>
-                      Repas préparés par notre traiteur local avec produits frais
+                      {content.cantine_horaires || "Lundi, mardi, jeudi, vendredi : 12h - 14h"}<br/>
+                      {content.cantine_info || "Repas préparés par notre traiteur local avec produits frais"}
                     </p>
-                    <a href="#" className="button is-small is-link is-light mt-2">
-                      Voir les menus de la semaine
+                    <a href={content.cantine_menu_url || "#"} className="button is-small is-link is-light mt-2">
+                      {content.cantine_menu_label || "Voir les menus de la semaine"}
                     </a>
                   </div>
                 </div>
@@ -239,9 +249,8 @@ export default function Ecoles() {
                   <div className="media-content">
                     <h3 className="subtitle is-5 has-text-link mb-1">Garderie périscolaire</h3>
                     <p className="has-text-grey">
-                      Matin : 7h30 - 8h30<br/>
-                      Soir : 16h30 - 18h30<br/>
-                      Activités encadrées et aide aux devoirs
+                      {content.garderie_horaires || "Matin : 7h30 - 8h30"}<br/>
+                      {content.garderie_info || "Soir : 16h30 - 18h30\nActivités encadrées et aide aux devoirs"}
                     </p>
                   </div>
                 </div>
@@ -259,11 +268,10 @@ export default function Ecoles() {
                   <div className="media-content">
                     <h3 className="subtitle is-5 has-text-link mb-1">Activités extrascolaires</h3>
                     <p className="has-text-grey">
-                      Mercredi après-midi : 14h - 17h<br/>
-                      Activités sportives, artistiques et culturelles
+                      {content.activites_info || "Mercredi après-midi : 14h - 17h\nActivités sportives, artistiques et culturelles"}
                     </p>
-                    <a href="#" className="button is-small is-link is-light mt-2">
-                      Programme des activités
+                    <a href={content.activites_programme_url || "#"} className="button is-small is-link is-light mt-2">
+                      {content.activites_programme_label || "Programme des activités"}
                     </a>
                   </div>
                 </div>
@@ -503,30 +511,16 @@ export default function Ecoles() {
               <div className="box mt-5" style={{ background: '#f8fafc', borderRadius: 16 }}>
                 <h2 className="title is-5 has-text-primary mb-2">Documents utiles</h2>
                 <ul style={{ paddingLeft: 18 }}>
-                  <li style={{ marginBottom: 10 }}>
-                    <a href="#" className="has-text-link is-underlined">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📄</span>
-                      Règlement intérieur des écoles
-                    </a>
-                  </li>
-                  <li style={{ marginBottom: 10 }}>
-                    <a href="#" className="has-text-link is-underlined">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📋</span>
-                      Fiche sanitaire à compléter
-                    </a>
-                  </li>
-                  <li style={{ marginBottom: 10 }}>
-                    <a href="#" className="has-text-link is-underlined">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>🍴</span>
-                      Menus de la cantine (Juin 2025)
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="has-text-link is-underlined">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>🚌</span>
-                      Horaires des transports scolaires
-                    </a>
-                  </li>
+                  {[1,2,3,4].map(i => (
+                    content[`doc_${i}_label`] && content[`doc_${i}_url`] ? (
+                      <li key={i} style={{ marginBottom: 10 }}>
+                        <a href={content[`doc_${i}_url`]} className="has-text-link is-underlined" target="_blank" rel="noopener noreferrer">
+                          <span style={{ fontSize: 16, marginRight: 8 }}>📄</span>
+                          {content[`doc_${i}_label`]}
+                        </a>
+                      </li>
+                    ) : null
+                  ))}
                 </ul>
               </div>
             </div>

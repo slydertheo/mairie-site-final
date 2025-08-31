@@ -133,18 +133,15 @@ CREATE TABLE reservations (
 
 -- Table des commerces et artisans
 CREATE TABLE commerces (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom TEXT NOT NULL,
-    description TEXT,
-    adresse TEXT,
-    telephone TEXT,
-    horaires TEXT,
-    site TEXT,
-    image TEXT,
-    categorie TEXT NOT NULL,  -- 'alimentaire', 'restauration', 'services', 'artisanat'
-    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    modified_by INTEGER,
-    FOREIGN KEY (modified_by) REFERENCES users(id)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nom TEXT NOT NULL,
+  description TEXT,
+  adresse TEXT,
+  telephone TEXT,
+  horaires TEXT,
+  image TEXT,
+  site TEXT,
+  categorie TEXT NOT NULL
 );
 
 -- Table des périodes de chasse
@@ -157,6 +154,42 @@ CREATE TABLE periodes_chasse (
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by INTEGER,
     FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- Table des actualités
+CREATE TABLE IF NOT EXISTS actualites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    imgSrc TEXT,
+    date TEXT,
+    title TEXT NOT NULL
+);
+
+-- Table des calendriers de vacances
+CREATE TABLE calendrier_vacances (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  titre TEXT,
+  debut TEXT,
+  fin TEXT
+);
+
+-- Table des vacances
+CREATE TABLE vacances (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  titre TEXT NOT NULL,
+  debut TEXT NOT NULL,
+  fin TEXT NOT NULL
+);
+
+-- Table des marchés
+CREATE TABLE marches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  titre TEXT,
+  texte TEXT,
+  adresse TEXT,
+  jour TEXT,
+  horaires TEXT,
+  produits TEXT,
+  image TEXT
 );
 
 -- Création des rôles de base

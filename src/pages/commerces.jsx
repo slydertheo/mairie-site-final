@@ -1,113 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
 
 export default function Commerces() {
-  // Liste des commerces par catégorie
-  const commercesList = {
-    alimentaire: [
-      {
-        id: 1,
-        nom: "Boulangerie Pâtisserie Schmitt",
-        description: "Pains artisanaux, viennoiseries et pâtisseries traditionnelles",
-        adresse: "12 rue Principale, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Lun-Sam: 6h30-19h, Dim: 7h-12h",
-        image: "https://images.unsplash.com/photo-1517433367423-c7e5b0f35086?auto=format&fit=crop&w=600&q=80",
-        site: "https://boulangerie-schmitt.fr"
-      },
-      {
-        id: 2,
-        nom: "Épicerie du Village",
-        description: "Produits locaux, fruits et légumes frais, épicerie fine",
-        adresse: "8 rue des Écoles, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Lun-Ven: 8h-19h30, Sam: 8h-18h, Dim: 9h-12h",
-        image: "https://images.unsplash.com/photo-1506617564039-2f3b650b7010?auto=format&fit=crop&w=600&q=80"
-      },
-      {
-        id: 3,
-        nom: "Boucherie Charcuterie Traiteur Meyer",
-        description: "Viandes de qualité, charcuteries alsaciennes et plats traiteur",
-        adresse: "15 rue Principale, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Mar-Sam: 8h-12h30 et 14h30-19h",
-        image: "https://images.unsplash.com/photo-1558030137-a56c1b004fa3?auto=format&fit=crop&w=600&q=80"
-      }
-    ],
-    restauration: [
-      {
-        id: 4,
-        nom: "Restaurant Aux Deux Clefs",
-        description: "Cuisine alsacienne traditionnelle et spécialités régionales",
-        adresse: "2 place de l'Église, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Mar-Dim: 12h-14h et 19h-22h. Fermé le lundi",
-        image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80",
-        site: "https://restaurant-aux-deux-clefs.fr"
-      },
-      {
-        id: 5,
-        nom: "Café de la Place",
-        description: "Café, salon de thé et petite restauration",
-        adresse: "4 place de la Mairie, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Lun-Ven: 7h-20h, Sam-Dim: 8h-13h",
-        image: "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=600&q=80"
-      }
-    ],
-    services: [
-      {
-        id: 6,
-        nom: "Salon de Coiffure L'Atelier",
-        description: "Coiffure hommes, femmes et enfants",
-        adresse: "9 rue des Artisans, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Mar-Ven: 9h-18h, Sam: 8h-16h",
-        image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80"
-      },
-      {
-        id: 7,
-        nom: "Pharmacie de Friesen",
-        description: "Médicaments, conseils santé et parapharmacie",
-        adresse: "11 rue Principale, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Lun-Ven: 8h30-12h30 et 14h-19h, Sam: 8h30-12h30",
-        image: "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&w=600&q=80",
-        site: "https://pharmacie-friesen.fr"
-      },
-      {
-        id: 8,
-        nom: "Auto-École du Village",
-        description: "Formation au permis de conduire et conduite accompagnée",
-        adresse: "7 rue des Écoles, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Lun-Ven: 10h-12h et 14h-19h, Sam: 10h-13h",
-        image: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=600&q=80"
-      }
-    ],
-    artisanat: [
-      {
-        id: 9,
-        nom: "Poterie Artisanale Keller",
-        description: "Poteries traditionnelles alsaciennes et céramiques contemporaines",
-        adresse: "22 rue des Artisans, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Mar-Sam: 10h-12h et 14h-18h",
-        image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=600&q=80",
-        site: "https://poterie-keller.fr"
-      },
-      {
-        id: 10,
-        nom: "Menuiserie Walter",
-        description: "Menuiserie, ébénisterie et agencements sur mesure",
-        adresse: "18 rue des Artisans, 68580 Friesen",
-        telephone: "03.89.XX.XX.XX",
-        horaires: "Lun-Ven: 8h-12h et 13h30-17h30",
-        image: "https://images.unsplash.com/photo-1588854337236-6889d631faa8?auto=format&fit=crop&w=600&q=80"
-      }
-    ]
-  };
+  const [commerces, setCommerces] = useState([]);
+  const [content, setContent] = useState({});
+
+  useEffect(() => {
+    fetch('/api/commerces').then(res => res.json()).then(setCommerces);
+    fetch('/api/pageContent?page=commerces')
+      .then(res => res.json())
+      .then(data => {
+        const obj = {};
+        data.forEach(d => { obj[d.section] = d.contenu || d.titre; });
+        setContent(obj);
+      });
+  }, []);
 
   // Fonction pour formater une catégorie
   const formatCategory = (category) => {
@@ -137,8 +45,7 @@ export default function Commerces() {
         <div className="hero-body">
           <div className="container has-text-centered">
             <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              Bienvenue sur le site officiel de<br />
-              la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
+              {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
             </h1>
           </div>
         </div>
@@ -155,30 +62,29 @@ export default function Commerces() {
       >
         <div className="container" style={{ maxWidth: 1100 }}>
           <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
-            Commerces et artisans à Friesen
+            {content.titre || "Commerces et artisans à Friesen"}
           </h1>
           
           <div className="content mb-5">
             <div className="notification is-info is-light">
               <p className="is-size-5 mb-3">
-                <strong>Soutenez nos commerces locaux !</strong>
+                <strong>{content.intro_titre || "Soutenez nos commerces locaux !"}</strong>
               </p>
               <p>
-                La commune de Friesen est fière de ses commerçants et artisans qui participent activement à la vie économique et sociale de notre village.
-                Nous vous invitons à découvrir leurs produits et services de qualité, et à privilégier ces acteurs locaux pour vos achats du quotidien.
+                {content.intro || "La commune de Friesen est fière de ses commerçants et artisans qui participent activement à la vie économique et sociale de notre village. Nous vous invitons à découvrir leurs produits et services de qualité, et à privilégier ces acteurs locaux pour vos achats du quotidien."}
               </p>
             </div>
           </div>
 
           {/* Liste des commerces par catégorie */}
-          {Object.keys(commercesList).map((category) => (
+          {['alimentaire', 'restauration', 'services', 'artisanat'].map(category => (
             <div key={category} className="mb-6">
               <h2 className="title is-4 has-text-primary mb-4">
                 {formatCategory(category)}
               </h2>
               
               <div className="columns is-multiline">
-                {commercesList[category].map((commerce) => (
+                {commerces.filter(c => c.categorie === category).map(commerce => (
                   <div key={commerce.id} className="column is-half">
                     <div className="card" style={{ 
                       borderRadius: 16, 
@@ -231,39 +137,32 @@ export default function Commerces() {
           ))}
           
           {/* Section pour les marchés */}
-          <div className="box" style={{ 
-            borderRadius: 16, 
-            boxShadow: '0 2px 12px #1277c620',
-            background: '#f8fafc',
-            marginTop: 40 
-          }}>
+          <div className="box" style={{ borderRadius: 16, boxShadow: '0 2px 12px #1277c620', background: '#f8fafc', marginTop: 40 }}>
             <div className="columns">
               <div className="column is-9">
-                <h3 className="title is-4 has-text-primary mb-4">Marché hebdomadaire</h3>
+                <h3 className="title is-4 has-text-primary mb-4">{content.marche_titre || "Marché hebdomadaire"}</h3>
                 <p className="subtitle is-6 mb-3">
-                  Retrouvez nos producteurs et artisans locaux lors du marché hebdomadaire de Friesen
+                  {content.marche_texte || "Retrouvez nos producteurs et artisans locaux lors du marché hebdomadaire de Friesen"}
                 </p>
-                
                 <div className="content">
                   <p className="has-text-grey mb-2">
-                    <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> Place de la Mairie, 68580 Friesen
+                    <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {content.marche_adresse || "Place de la Mairie, 68580 Friesen"}
                   </p>
                   <p className="has-text-grey mb-2">
-                    <span style={{ fontSize: 16, marginRight: 8 }}>🗓️</span> Tous les samedis matin
+                    <span style={{ fontSize: 16, marginRight: 8 }}>🗓️</span> {content.marche_jour || "Tous les samedis matin"}
                   </p>
                   <p className="has-text-grey mb-4">
-                    <span style={{ fontSize: 16, marginRight: 8 }}>🕒</span> De 8h à 13h
+                    <span style={{ fontSize: 16, marginRight: 8 }}>🕒</span> {content.marche_horaires || "De 8h à 13h"}
                   </p>
-                  
                   <div className="notification is-primary is-light">
-                    <p><strong>Produits proposés :</strong> Fruits et légumes, fromages, charcuterie, miel, vins, pains et pâtisseries, produits artisanaux...</p>
+                    <p><strong>Produits proposés :</strong> {content.marche_produits || "Fruits et légumes, fromages, charcuterie, miel, vins, pains et pâtisseries, produits artisanaux..."}</p>
                   </div>
                 </div>
               </div>
               <div className="column is-3">
                 <figure className="image is-square">
                   <img 
-                    src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=500&q=80" 
+                    src={content.marche_image || "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=500&q=80"} 
                     alt="Marché de Friesen" 
                     style={{ objectFit: 'cover', borderRadius: 12 }}
                   />

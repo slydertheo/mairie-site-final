@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import 'bulma/css/bulma.min.css';
 import QuickBoxEcole from '../components/QuickBoxEcole';
 import ActualiteCarousel from '../components/ActualiteCarousel';
@@ -6,46 +6,33 @@ import ActualiteCarousel from '../components/ActualiteCarousel';
 export default function PageAcceuil() {
   const [contact, setContact] = useState({ nom: '', email: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
+  const [content, setContent] = useState({});
+  const [events, setEvents] = useState([]);
+  const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [actualites, setActualites] = useState([]);
 
-  const events = [
-    { date: '2024-06-28', title: 'Atelier créatif enfants' },
-    { date: '2024-07-02', title: 'Réunion publique' },
-    { date: '2024-07-10', title: 'Fête du village' },
-  ];
+  useEffect(() => {
+    fetch('/api/pageContent?page=accueil')
+      .then(res => res.json())
+      .then(data => {
+        const obj = {};
+        data.forEach(d => { obj[d.section] = d.contenu || d.titre; });
+        setContent(obj);
+      });
+  }, []);
 
-  // Données pour le carrousel avec des images qui fonctionnent
-  const actualites = [
-    {
-      imgSrc: "https://images.unsplash.com/photo-1481162854517-d9e353af153d?auto=format&fit=crop&w=1000&q=80", 
-      date: "12 avril 2024",
-      title: "Fête locale : dates et programme"
-    },
-    {
-      imgSrc: "https://images.unsplash.com/photo-1503594384566-461fe158e797?auto=format&fit=crop&w=1000&q=80", 
-      date: "5 avril 2024",
-      title: "Travaux de voirie : point d'avancement"
-    },
-    {
-      imgSrc: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=1000&q=80", 
-      date: "28 mars 2024",
-      title: "Prochain conseil municipal le 15 avril"
-    },
-    {
-      imgSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80", 
-      date: "20 mars 2024",
-      title: "Nouveaux horaires de la bibliothèque"
-    },
-    {
-      imgSrc: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1000&q=80", 
-      date: "15 mars 2024",
-      title: "Inscriptions pour la brocante annuelle"
-    },
-    {
-      imgSrc: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1000&q=80", 
-      date: "10 mars 2024",
-      title: "Résultats du concours de fleurissement"
-    }
-  ];
+  useEffect(() => {
+    fetch('/api/evenements')
+      .then(res => res.json())
+      .then(setEvents);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/actualites')
+      .then(res => res.json())
+      .then(setActualites);
+  }, []);
 
   function handleContactChange(e) {
     setContact({ ...contact, [e.target.name]: e.target.value });
@@ -70,111 +57,72 @@ export default function PageAcceuil() {
         <div className="hero-body">
           <div className="container has-text-centered">
             <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              Bienvenue sur le site officiel de<br />
-              la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
+              {content.titre}<br />
+              {content.sousTitre}
             </h1>
           </div>
         </div>
       </section>
 
-      <div className="container" style={{ 
-        maxWidth: 1200, 
-        margin: '0 auto 40px auto',
-      }}>
-        {/* Dernières actualités - remplacé par le carrousel */}
-        <h2 className="title is-4 has-text-primary mb-5">Dernières actualités</h2>
-        
-        {/* Nouveau carrousel à la place de la grille */}
+      <div className="container" style={{ maxWidth: 1200, margin: '0 auto 40px auto' }}>
+        <h2 className="title is-4 has-text-primary mb-5">{content.actualites_titre || "Dernières actualités"}</h2>
         <ActualiteCarousel actualites={actualites} />
-        
-        {/* Grille infos */}
+
         <div className="columns is-variable is-5">
           {/* Colonne 1 : Mot du Maire + Galerie */}
           <div className="column is-two-thirds">
-            {/* SUPPRIMÉ : Démarches rapides */}
-            <h2 className="title is-5 has-text-primary mb-2 mt-5">Mot du Maire</h2>
+            <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
             <div className="box" style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f8fafc' }}>
               <figure className="image is-96x96 mr-4">
                 <img
                   className="is-rounded"
-                  src="https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"
+                  src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"}
                   alt="Maire"
                   style={{ objectFit: 'cover', border: '3px solid #1277c6' }}
                   onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"; }}
                 />
               </figure>
               <div>
-                <div className="has-text-link has-text-weight-bold mb-1">Chères habitantes, chers habitants</div>
+                <div className="has-text-link has-text-weight-bold mb-1">{content.motMaire_accroche || "Chères habitantes, chers habitants"}</div>
                 <div style={{ fontSize: 15, color: '#444' }}>
-                  Je vous souhaite la bienvenue sur le site de notre commune...!
+                  {content.motMaire}
                 </div>
               </div>
             </div>
-
-            {/* Galerie photo en bas à gauche */}
-            <div className="box mt-5" style={{ background: '#f8fafc' }}>
-              <h2 className="subtitle is-6 has-text-link mb-2">Galerie du village</h2>
-              <div className="columns is-mobile is-multiline is-gapless">
-                <div className="column is-one-quarter">
-                  <figure className="image is-64x64">
-                    <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=facearea&w=128&q=80" alt="Vue 1" style={{ objectFit: 'cover', borderRadius: 8 }} />
-                  </figure>
-                </div>
-                <div className="column is-one-quarter">
-                  <figure className="image is-64x64">
-                    <img src="https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=facearea&w=128&q=80" alt="Vue 2" style={{ objectFit: 'cover', borderRadius: 8 }} />
-                  </figure>
-                </div>
-                <div className="column is-one-quarter">
-                  <figure className="image is-64x64">
-                    <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=facearea&w=128&q=80" alt="Vue 3" style={{ objectFit: 'cover', borderRadius: 8 }} />
-                  </figure>
-                </div>
-                <div className="column is-one-quarter">
-                  <figure className="image is-64x64">
-                    <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=facearea&w=128&q=80" alt="Vue 4" style={{ objectFit: 'cover', borderRadius: 8 }} />
-                  </figure>
-                </div>
-              </div>
-              <div className="has-text-right mt-2">
-                <a href="#" className="is-link is-underlined" style={{ fontSize: 14 }}>Voir toutes les photos</a>
-              </div>
-            </div>
-            {/* FIN AJOUT */}
           </div>
+
           {/* Colonne 2 : Agenda + Infos pratiques + Calendrier + Contact */}
           <div className="column is-one-third">
-            <h2 className="title is-5 has-text-primary mb-3">Agenda des événements</h2>
+            <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
             <div className="mb-4">
-              <AgendaItem title="Exposition à la médiathèque" date="20 avril 2024" />
-              <AgendaItem title="Marché de producteurs" date="28 avril 2024" />
-              <a href="#" className="is-link is-underlined ml-4" style={{ fontWeight: 700, fontSize: 15 }}>Voir tous les événements</a>
+              <AgendaItem title={content.agenda1_title} date={content.agenda1_date} />
+              <AgendaItem title={content.agenda2_title} date={content.agenda2_date} />
+              <a href={content.agenda_link} className="is-link is-underlined ml-4" style={{ fontWeight: 700, fontSize: 15 }}>
+                {content.agenda_lien_label || "Voir tous les événements"}
+              </a>
             </div>
-            <h2 className="title is-5 has-text-primary mb-2">Infos pratiques</h2>
+            <h2 className="title is-5 has-text-primary mb-2">{content.infos_titre || "Infos pratiques"}</h2>
             <div className="mb-2"><span style={infoIcon}>🕒</span>
-              <b>Horaires d’ouverture</b><br />
-              Lun, mar, jeu, ven : 2h00 - 12h / 14h00 - 17h00<br />
-              Mer : 8h40 - 12h00
+              <b>{content.horaires_titre || "Horaires d’ouverture"}</b><br />
+              {(content.horaires || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
             </div>
             <div className="mb-2"><span style={infoIcon}>📍</span>
-              10 Rue de la Mairie<br />
-              12345 Nom de la commune
+              {(content.adresse || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
             </div>
             <div className="mb-2"><span style={infoIcon}>📞</span>
-              01 23 45 67 99
+              {content.telephone}
             </div>
             <div className="mb-4"><span style={infoIcon}>✉️</span>
-              contact@commune.fr
+              {content.email}
             </div>
-
-            {/* Calendrier simple */}
-            <h2 className="title is-5 has-text-primary mb-2 mt-5">Calendrier</h2>
+            <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
             <div className="box" style={{ background: '#f8fafc', marginBottom: 18 }}>
-              <Calendar events={events} />
+              <Calendar
+                events={events}
+                onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
+              />
             </div>
-
-            {/* Interface de contact */}
-            <h2 className="title is-5 has-text-primary mb-2 mt-5">Contactez la mairie</h2>
+            <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.contact_titre || "Contactez la mairie"}</h2>
             <div className="box" style={{ background: '#f8fafc' }}>
               {contactSent ? (
                 <div className="notification is-success">Votre message a bien été envoyé !</div>
@@ -215,19 +163,8 @@ export default function PageAcceuil() {
             {/* Widget météo */}
             <div className="box has-text-centered" style={{ background: '#eaf6ff' }}>
               <span style={{ fontSize: 38 }}>🌤️</span>
-              <div className="has-text-link has-text-weight-bold mt-2">Météo à Friesen</div>
-              <div style={{ fontSize: 15 }}>22°C, Ensoleillé</div>
-              <div className="is-size-7 has-text-grey">Prévisions fictives</div>
-            </div>
-            {/* Carte Google Maps */}
-            <div className="box mt-4" style={{ padding: 0 }}>
-              <iframe
-                title="Carte Friesen"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=7.2,47.6,7.3,47.7&amp;layer=mapnik"
-                style={{ width: '100%', height: 120, border: 0, borderRadius: 8 }}
-                allowFullScreen=""
-                loading="lazy"
-              ></iframe>
+              <div className="has-text-link has-text-weight-bold mt-2">{content.meteo}</div>
+              <div style={{ fontSize: 15 }}>{content.meteo_legende}</div>
             </div>
           </div>
           <div className="column is-8">
@@ -236,23 +173,48 @@ export default function PageAcceuil() {
           <div className="column is-2">
             {/* Widget réseaux sociaux */}
             <div className="box has-text-centered" style={{ background: '#f8fafc' }}>
-              <div className="has-text-link has-text-weight-bold mb-2">Suivez-nous</div>
-              <a href="#" style={{ fontSize: 28, margin: 8 }}>📘</a>
-              <a href="#" style={{ fontSize: 28, margin: 8 }}>📸</a>
-              <a href="#" style={{ fontSize: 28, margin: 8 }}>🐦</a>
+              <div className="has-text-link has-text-weight-bold mb-2">{content.reseaux_titre || "Suivez-nous"}</div>
+              <a href={content.facebook} style={{ fontSize: 28, margin: 8 }}>📘</a>
+              <a href={content.instagram} style={{ fontSize: 28, margin: 8 }}>📸</a>
+              <a href={content.twitter} style={{ fontSize: 28, margin: 8 }}>🐦</a>
             </div>
             {/* Numéros d'urgence */}
             <div className="box mt-4" style={{ background: '#fffbe6' }}>
-              <div className="has-text-danger has-text-weight-bold mb-1">Urgences</div>
+              <div className="has-text-danger has-text-weight-bold mb-1">{content.urgences_titre || "Urgences"}</div>
               <div style={{ fontSize: 15 }}>
-                🚒 Pompiers : <b>18</b><br />
-                🚓 Police : <b>17</b><br />
-                🚑 SAMU : <b>15</b>
+                🚒 Pompiers : <b>{content.urgence_pompiers}</b><br />
+                🚓 Police : <b>{content.urgence_police}</b><br />
+                🚑 SAMU : <b>{content.urgence_samu}</b>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <div className="modal is-active">
+          <div className="modal-background" onClick={() => setShowModal(false)}></div>
+          <div className="modal-card">
+            <header className="modal-card-head">
+              <p className="modal-card-title">Événements du jour</p>
+              <button className="delete" aria-label="close" onClick={() => setShowModal(false)}></button>
+            </header>
+            <section className="modal-card-body">
+              {selectedDayEvents.map(ev => (
+                <div key={ev.id} className="box mb-3">
+                  <div className="has-text-weight-bold">{ev.titre}</div>
+                  <div className="is-size-7 has-text-link">{ev.date}</div>
+                  {ev.lieu && <div className="is-size-7">📍 {ev.lieu}</div>}
+                  {ev.description && <div className="mt-2">{ev.description}</div>}
+                </div>
+              ))}
+            </section>
+            <footer className="modal-card-foot">
+              <button className="button" onClick={() => setShowModal(false)}>Fermer</button>
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -331,15 +293,15 @@ function AgendaItem({ title, date }) {
 }
 
 // Petit composant calendrier simple
-function Calendar({ events }) {
+function Calendar({ events, onDayClick }) {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  function getEventForDay(day) {
+  function getEventsForDay(day) {
     const d = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return events.find(ev => ev.date === d);
+    return events.filter(ev => ev.date === d);
   }
 
   return (
@@ -363,11 +325,21 @@ function Calendar({ events }) {
           for (let i = 1; i < firstDay; i++) cells.push(<td key={`empty-${i}`}></td>);
           for (let i = firstDay; i <= 7; i++) {
             if (dayNum <= daysInMonth) {
-              const ev = getEventForDay(dayNum);
+              const dayEvents = getEventsForDay(dayNum);
               cells.push(
-                <td key={dayNum} style={{ background: ev ? '#eaf6ff' : undefined, fontWeight: ev ? 700 : 400 }}>
+                <td
+                  key={dayNum}
+                  style={{
+                    background: dayEvents.length ? '#eaf6ff' : undefined,
+                    fontWeight: dayEvents.length ? 700 : 400,
+                    cursor: dayEvents.length ? 'pointer' : undefined
+                  }}
+                  onClick={() => dayEvents.length && onDayClick(dayEvents)}
+                >
                   {dayNum}
-                  {ev && <div style={{ fontSize: 10, color: '#1277c6' }}>{ev.title}</div>}
+                  {dayEvents.map(ev => (
+                    <div key={ev.id} style={{ fontSize: 10, color: '#1277c6' }}>{ev.titre}</div>
+                  ))}
                 </td>
               );
               dayNum++;
@@ -378,11 +350,21 @@ function Calendar({ events }) {
             cells = [];
             for (let i = 0; i < 7; i++) {
               if (dayNum <= daysInMonth) {
-                const ev = getEventForDay(dayNum);
+                const dayEvents = getEventsForDay(dayNum);
                 cells.push(
-                  <td key={dayNum} style={{ background: ev ? '#eaf6ff' : undefined, fontWeight: ev ? 700 : 400 }}>
+                  <td
+                    key={dayNum}
+                    style={{
+                      background: dayEvents.length ? '#eaf6ff' : undefined,
+                      fontWeight: dayEvents.length ? 700 : 400,
+                      cursor: dayEvents.length ? 'pointer' : undefined
+                    }}
+                    onClick={() => dayEvents.length && onDayClick(dayEvents)}
+                  >
                     {dayNum}
-                    {ev && <div style={{ fontSize: 10, color: '#1277c6' }}>{ev.title}</div>}
+                    {dayEvents.map(ev => (
+                      <div key={ev.id} style={{ fontSize: 10, color: '#1277c6' }}>{ev.titre}</div>
+                    ))}
                   </td>
                 );
                 dayNum++;

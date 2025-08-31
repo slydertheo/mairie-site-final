@@ -1,69 +1,163 @@
 import React, { useState, useEffect } from 'react';
 
+// Choisis la page à éditer ici (exemple : accueil)
+const SELECTED_PAGE = 'accueil';
+
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
   { slug: 'infos_pratiques', title: 'Infos pratiques' },
   { slug: 'decouvrir_friesen', title: 'Découvrir Friesen' },
-  // Ajoute ici les autres pages à éditer
+  // ...
+];
+
+// Regroupe les champs par rubrique pour l'affichage
+const FIELD_GROUPS = [
+  {
+    key: 'bandeau',
+    icon: '🎉',
+    title: 'Bandeau principal',
+    fields: ['titre', 'sousTitre'],
+  },
+  {
+    key: 'maire',
+    icon: '👨‍💼',
+    title: 'Mot du Maire',
+    fields: ['motMaire'],
+  },
+  {
+    key: 'agenda',
+    icon: '🗓️',
+    title: 'Agenda',
+    fields: ['agenda1_title', 'agenda1_date', 'agenda2_title', 'agenda2_date', 'agenda_link'],
+  },
+  {
+    key: 'infos',
+    icon: '🏛️',
+    title: 'Infos pratiques',
+    fields: ['horaires', 'adresse', 'telephone', 'email'],
+  },
+  {
+    key: 'meteo',
+    icon: '🌤️',
+    title: 'Météo',
+    fields: ['meteo', 'meteo_legende'],
+  },
+  {
+    key: 'reseaux',
+    icon: '🌐',
+    title: 'Réseaux sociaux',
+    fields: ['facebook', 'instagram', 'twitter'],
+  },
+  {
+    key: 'urgence',
+    icon: '🚨',
+    title: 'Numéros d\'urgence',
+    fields: ['urgence_pompiers', 'urgence_police', 'urgence_samu'],
+  },
+];
+
+const FIELDS = [
+  { key: 'titre', label: 'Titre principal (bandeau)', type: 'text' },
+  { key: 'sousTitre', label: 'Sous-titre (bandeau)', type: 'text' },
+  { key: 'motMaire', label: 'Mot du Maire', type: 'textarea' },
+  { key: 'agenda1_title', label: 'Agenda 1 - Titre', type: 'text' },
+  { key: 'agenda1_date', label: 'Agenda 1 - Date', type: 'text' },
+  { key: 'agenda2_title', label: 'Agenda 2 - Titre', type: 'text' },
+  { key: 'agenda2_date', label: 'Agenda 2 - Date', type: 'text' },
+  { key: 'agenda_link', label: 'Lien agenda complet', type: 'text' },
+  { key: 'horaires', label: 'Horaires mairie', type: 'textarea' },
+  { key: 'adresse', label: 'Adresse mairie', type: 'text' },
+  { key: 'telephone', label: 'Téléphone mairie', type: 'text' },
+  { key: 'email', label: 'Email mairie', type: 'text' },
+  { key: 'meteo', label: 'Widget météo', type: 'text' },
+  { key: 'meteo_legende', label: 'Légende météo', type: 'text' },
+  { key: 'facebook', label: 'Lien Facebook', type: 'text' },
+  { key: 'instagram', label: 'Lien Instagram', type: 'text' },
+  { key: 'twitter', label: 'Lien Twitter', type: 'text' },
+  { key: 'urgence_pompiers', label: 'Numéro Pompiers', type: 'text' },
+  { key: 'urgence_police', label: 'Numéro Police', type: 'text' },
+  { key: 'urgence_samu', label: 'Numéro SAMU', type: 'text' },
 ];
 
 export default function PageContentEditor() {
-  const [selectedPage, setSelectedPage] = useState(PAGES[0].slug);
-  const [content, setContent] = useState('');
+  const [form, setForm] = useState({});
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // Charger le contenu de la page sélectionnée
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/pages?slug=${selectedPage}`)
+    fetch(`/api/pageContent?page=${SELECTED_PAGE}`)
       .then(res => res.json())
-      .then(data => setContent(data.content || ''))
-      .catch(() => setContent(''))
+      .then(data => {
+        const initial = {};
+        FIELDS.forEach(f => {
+          const found = data.find(d => d.section === f.key);
+          initial[f.key] = found ? (found.contenu || found.titre) : '';
+        });
+        setForm(initial);
+      })
+      .catch(() => setForm({}))
       .finally(() => setLoading(false));
-  }, [selectedPage]);
+  }, []);
+
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSave = async e => {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch('/api/pages', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: selectedPage, content }),
-    });
-    setMsg(res.ok ? 'Contenu enregistré !' : 'Erreur lors de la sauvegarde');
+    await Promise.all(FIELDS.map(f =>
+      fetch(`/api/pageContent?page=${SELECTED_PAGE}&section=${f.key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titre: form[f.key], contenu: form[f.key] })
+      })
+    ));
+    setMsg('Modifications enregistrées !');
     setLoading(false);
     setTimeout(() => setMsg(''), 2000);
   };
 
   return (
-    <div className="box" style={{ borderRadius: 12 }}>
-      <div className="field mb-4">
-        <label className="label">Page à éditer</label>
-        <div className="control">
-          <div className="select is-link">
-            <select value={selectedPage} onChange={e => setSelectedPage(e.target.value)}>
-              {PAGES.map(p => (
-                <option key={p.slug} value={p.slug}>{p.title}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+    <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
       <form onSubmit={handleSave}>
-        <div className="field">
-          <label className="label">Contenu de la page</label>
-          <div className="control">
-            <textarea
-              className="textarea"
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              rows={10}
-              readOnly={loading}
-              style={{ background: loading ? "#f5f5f5" : "white" }}
-            />
+        {FIELD_GROUPS.map(group => (
+          <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+            <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 22 }}>{group.icon}</span> {group.title}
+            </h3>
+            {group.fields.map(fieldKey => {
+              const f = FIELDS.find(ff => ff.key === fieldKey);
+              if (!f) return null;
+              return (
+                <div className="field" key={f.key} style={{ marginBottom: 16 }}>
+                  <label className="label">{f.label}</label>
+                  <div className="control">
+                    {f.type === 'textarea' ? (
+                      <textarea
+                        className="textarea"
+                        name={f.key}
+                        value={form[f.key] || ''}
+                        onChange={handleChange}
+                        readOnly={loading}
+                        style={{ background: loading ? "#f5f5f5" : "white" }}
+                      />
+                    ) : (
+                      <input
+                        className="input"
+                        type={f.type}
+                        name={f.key}
+                        value={form[f.key] || ''}
+                        onChange={handleChange}
+                        readOnly={loading}
+                        style={{ background: loading ? "#f5f5f5" : "white" }}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        ))}
         <div className="field is-grouped mt-3">
           <div className="control">
             <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>

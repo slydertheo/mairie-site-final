@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from 'react';
+
 function QuickBox({ icon, label, href }) {
   return (
     <a
@@ -37,6 +39,18 @@ function QuickBox({ icon, label, href }) {
 }
 
 export default function Demarches() {
+  const [content, setContent] = useState({});
+
+  useEffect(() => {
+    fetch('/api/pageContent?page=demarches')
+      .then(res => res.json())
+      .then(data => {
+        const obj = {};
+        data.forEach(d => { obj[d.section] = d.contenu || d.titre; });
+        setContent(obj);
+      });
+  }, []);
+
   return (
     <>
       {/* En-tête hero */}
@@ -54,51 +68,57 @@ export default function Demarches() {
         <div className="hero-body">
           <div className="container has-text-centered">
             <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              Bienvenue sur le site officiel de<br />
-              la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
+              {content.titre || "Bienvenue sur le site officiel de la Mairie de "}
+              <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
             </h1>
+            {content.intro && <p className="subtitle is-5" style={{ color: '#fff' }}>{content.intro}</p>}
           </div>
         </div>
       </section>
 
       {/* Contenu démarches */}
-      <section
-        className="section"
-        style={{
-          background: '#fafdff',
-          minHeight: '100vh',
-          marginTop: 0,
-        }}
-      >
+      <section className="section" style={{ background: '#fafdff', minHeight: '100vh', marginTop: 0 }}>
         <div className="container" style={{ maxWidth: 1100 }}>
           <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
-            Démarches administratives
+            {content.titre || "Démarches administratives"}
           </h1>
           <div className="columns is-variable is-5">
             {/* Colonne 1 : Démarches rapides */}
             <div className="column is-half">
               <h2 className="title is-5 has-text-primary mb-3">Démarches rapides</h2>
-              <QuickBox icon="📄" label="Demande d’acte de naissance" href="https://www.service-public.fr/particuliers/vosdroits/R1406" />
-              <QuickBox icon="👨‍👩‍👧‍👦" label="Livret de famille" href="https://www.service-public.fr/particuliers/vosdroits/F119" />
-              <QuickBox icon="📝" label="S'inscrire à Friesen" href="https://www.service-public.fr/particuliers/vosdroits/F1372" />
-              <QuickBox icon="🗳️" label="Inscription sur les listes électorales" href="https://www.service-public.fr/particuliers/vosdroits/F1367" />
-              <QuickBox icon="🪪" label="CNI / Passeport (Altkirch)" href="https://www.mairie-altkirch.fr/demarches/carte-nationale-didentite-et-passeport/" />
-              <QuickBox icon="🎖️" label="Recensement militaire" href="https://www.service-public.fr/particuliers/vosdroits/F870" />
-              <QuickBox icon="🤝" label="Espace France Services" href="https://www.france-services.gouv.fr/" />
+              <QuickBox icon="📄" label={content.demarche_rapide_1_label || "Demande d’acte de naissance"} href={content.demarche_rapide_1_url || "#"} />
+              <QuickBox icon="👨‍👩‍👧‍👦" label={content.demarche_rapide_2_label || "Livret de famille"} href={content.demarche_rapide_2_url || "#"} />
+              <QuickBox icon="📝" label={content.demarche_rapide_3_label || "S'inscrire à Friesen"} href={content.demarche_rapide_3_url || "#"} />
+              <QuickBox icon="🗳️" label={content.demarche_rapide_4_label || "Inscription sur les listes électorales"} href={content.demarche_rapide_4_url || "#"} />
+              <QuickBox icon="🪪" label={content.demarche_rapide_5_label || "CNI / Passeport (Altkirch)"} href={content.demarche_rapide_5_url || "#"} />
+              <QuickBox icon="🎖️" label={content.demarche_rapide_6_label || "Recensement militaire"} href={content.demarche_rapide_6_url || "#"} />
+              <QuickBox icon="🤝" label={content.demarche_rapide_7_label || "Espace France Services"} href={content.demarche_rapide_7_url || "#"} />
             </div>
             {/* Colonne 2 : Urbanisme et autres liens */}
             <div className="column is-half">
               <h2 className="title is-5 has-text-primary mb-3">Urbanisme</h2>
-              <QuickBox icon="🗺️" label="Plan carte communale" href="https://www.geoportail-urbanisme.gouv.fr/" />
-              <QuickBox icon="📄" label="Règlement téléchargeable" href="/docs/reglement-urbanisme.pdf" />
-              <QuickBox icon="📝" label="Formulaires permis de construire (Guichet unique PETR)" href="https://guichet-unique.alsace-sud.fr/" />
-              <QuickBox icon="📐" label="Cadastre (éditer/consulter un plan)" href="https://www.cadastre.gouv.fr/" />
+              <QuickBox icon="🗺️" label={content.urbanisme_1_label || "Plan carte communale"} href={content.urbanisme_1_url || "#"} />
+              <QuickBox icon="📄" label={content.urbanisme_2_label || "Règlement téléchargeable"} href={content.urbanisme_2_url || "#"} />
+              <QuickBox icon="📝" label={content.urbanisme_3_label || "Formulaires permis de construire (Guichet unique PETR)"} href={content.urbanisme_3_url || "#"} />
+              <QuickBox icon="📐" label={content.urbanisme_4_label || "Cadastre (éditer/consulter un plan)"} href={content.urbanisme_4_url || "#"} />
               <div className="box mt-5" style={{ background: '#f4f8fb', border: '1.5px solid #e0e7ef', borderRadius: 14 }}>
                 <h3 className="subtitle is-6 has-text-link mb-2">Autres démarches utiles</h3>
                 <ul style={{ paddingLeft: 18, fontSize: 15 }}>
-                  <li><a href="https://www.service-public.fr/" target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">Portail Service Public</a></li>
-                  <li><a href="https://www.service-public.fr/particuliers/vosdroits/N19806" target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">Demander un acte d'état civil</a></li>
-                  <li><a href="https://www.service-public.fr/particuliers/vosdroits/N19810" target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">Mariage / PACS</a></li>
+                  <li>
+                    <a href={content.autre_1_url || "#"} target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">
+                      {content.autre_1_label || "Portail Service Public"}
+                    </a>
+                  </li>
+                  <li>
+                    <a href={content.autre_2_url || "#"} target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">
+                      {content.autre_2_label || "Demander un acte d'état civil"}
+                    </a>
+                  </li>
+                  <li>
+                    <a href={content.autre_3_url || "#"} target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">
+                      {content.autre_3_label || "Mariage / PACS"}
+                    </a>
+                  </li>
                 </ul>
               </div>
             </div>

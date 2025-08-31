@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
-import UserCrud from './UserCrud'; // Assure-toi que le chemin d'importation est correct
+import UserCrud from './UserCrud';
 import PageContentEditor from '../components/PageContentEditor';
+import EvenementAdmin from '../components/EvenementAdmin';
+import ActualiteAdmin from '../components/ActualiteAdmin';
+import DemarchesEditor from '../components/DemarchesEditor';
+import EcolesEditor from '../components/EcolesEditor';
+import CommercesCrud from '../components/CommercesCrud';
+import MarchesCrud from '../components/MarcheCrud';
+import MarcheCrud from '../components/MarcheCrud';
+
+const PAGES = [
+  { slug: 'accueil', title: 'Accueil' },
+  { slug: 'demarches', title: 'Démarches' },
+  { slug: 'ecoles', title: 'Écoles' },
+  { slug: 'commerces', title: 'Commerces' },
+];
 
 export default function InterfaceAdmin() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedPage, setSelectedPage] = useState('accueil');
 
   return (
     <div className="section" style={{ minHeight: '100vh', background: '#fafdff' }}>
       <div className="container" style={{ maxWidth: 1100 }}>
         <h1
           className="title is-2 has-text-link mb-5"
-          style={{ textAlign: 'center', marginTop: 70 }} // Décale le texte vers le bas
+          style={{ textAlign: 'center', marginTop: 70 }}
         >
           Interface d’administration
         </h1>
@@ -28,7 +43,6 @@ export default function InterfaceAdmin() {
           </ul>
         </div>
 
-        {/* Contenu selon l’onglet actif */}
         {activeTab === 'dashboard' && (
           <div>
             <h2 className="title is-4">Bienvenue sur l’admin</h2>
@@ -46,17 +60,50 @@ export default function InterfaceAdmin() {
         {activeTab === 'content' && (
           <div>
             <h2 className="title is-4">Gestion du contenu</h2>
-            <PageContentEditor />
+            <div className="field mb-4" style={{ maxWidth: 350 }}>
+              <label className="label">Page à éditer</label>
+              <div className="control">
+                <div className="select is-link">
+                  <select value={selectedPage} onChange={e => setSelectedPage(e.target.value)}>
+                    {PAGES.map(p => (
+                      <option key={p.slug} value={p.slug}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            {selectedPage === 'accueil' && (
+              <>
+                <PageContentEditor />
+                <EvenementAdmin />
+                <ActualiteAdmin />
+              </>
+            )}
+            {selectedPage === 'demarches' && <DemarchesEditor />}
+            {selectedPage === 'ecoles' && <EcolesEditor />}
+            {selectedPage === 'commerces' && (
+              <>
+                <MarchesCrud />
+                <CommercesCrud />
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'demarches' && (
+          <div>
+            <h2 className="title is-4">Gestion des démarches</h2>
+            <DemarchesEditor />
           </div>
         )}
 
         {activeTab === 'settings' && (
           <div>
             <h2 className="title is-4">Paramètres du site</h2>
-            {/* Ici tu pourras gérer les paramètres globaux du site */}
             <p>Fonctionnalités à développer : paramètres généraux, sécurité, etc.</p>
           </div>
         )}
+
       </div>
     </div>
   );
