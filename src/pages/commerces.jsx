@@ -5,6 +5,7 @@ import Link from 'next/link';
 export default function Commerces() {
   const [commerces, setCommerces] = useState([]);
   const [content, setContent] = useState({});
+  const [marches, setMarches] = useState([]);
 
   useEffect(() => {
     fetch('/api/commerces').then(res => res.json()).then(setCommerces);
@@ -15,6 +16,7 @@ export default function Commerces() {
         data.forEach(d => { obj[d.section] = d.contenu || d.titre; });
         setContent(obj);
       });
+    fetch('/api/marches').then(res => res.json()).then(setMarches);
   }, []);
 
   // Fonction pour formater une catégorie
@@ -135,59 +137,56 @@ export default function Commerces() {
               </div>
             </div>
           ))}
-          
-          {/* Section pour les marchés */}
-          <div className="box" style={{ borderRadius: 16, boxShadow: '0 2px 12px #1277c620', background: '#f8fafc', marginTop: 40 }}>
-            <div className="columns">
-              <div className="column is-9">
-                <h3 className="title is-4 has-text-primary mb-4">{content.marche_titre || "Marché hebdomadaire"}</h3>
-                <p className="subtitle is-6 mb-3">
-                  {content.marche_texte || "Retrouvez nos producteurs et artisans locaux lors du marché hebdomadaire de Friesen"}
-                </p>
-                <div className="content">
-                  <p className="has-text-grey mb-2">
-                    <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {content.marche_adresse || "Place de la Mairie, 68580 Friesen"}
-                  </p>
-                  <p className="has-text-grey mb-2">
-                    <span style={{ fontSize: 16, marginRight: 8 }}>🗓️</span> {content.marche_jour || "Tous les samedis matin"}
-                  </p>
-                  <p className="has-text-grey mb-4">
-                    <span style={{ fontSize: 16, marginRight: 8 }}>🕒</span> {content.marche_horaires || "De 8h à 13h"}
-                  </p>
-                  <div className="notification is-primary is-light">
-                    <p><strong>Produits proposés :</strong> {content.marche_produits || "Fruits et légumes, fromages, charcuterie, miel, vins, pains et pâtisseries, produits artisanaux..."}</p>
+
+          {/* Section pour les marchés - version dynamique seulement */}
+          {marches.map(m => (
+            <div
+              key={m.id}
+              className="box"
+              style={{
+                borderRadius: 16,
+                boxShadow: '0 2px 12px #1277c620',
+                background: '#f8fafc',
+                marginTop: 40,
+                maxWidth: 1100,
+                marginLeft: 'auto',
+                marginRight: 'auto'
+              }}
+            >
+              <div className="columns">
+                <div className="column is-9">
+                  <h3 className="title is-4 has-text-primary mb-4">{m.titre}</h3>
+                  <p className="subtitle is-6 mb-3">{m.texte}</p>
+                  <div className="content">
+                    <p className="has-text-grey mb-2">
+                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {m.adresse}
+                    </p>
+                    <p className="has-text-grey mb-2">
+                      <span style={{ fontSize: 16, marginRight: 8 }}>🗓️</span> {m.jour}
+                    </p>
+                    <p className="has-text-grey mb-4">
+                      <span style={{ fontSize: 16, marginRight: 8 }}>🕒</span> {m.horaires}
+                    </p>
+                    <div className="notification is-primary is-light">
+                      <p>
+                        <strong>Produits proposés :</strong> {m.produits}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="column is-3">
-                <figure className="image is-square">
-                  <img 
-                    src={content.marche_image || "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=500&q=80"} 
-                    alt="Marché de Friesen" 
-                    style={{ objectFit: 'cover', borderRadius: 12 }}
-                  />
-                </figure>
+                <div className="column is-3">
+                  <figure className="image is-square">
+                    <img
+                      src={m.image || "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=500&q=80"}
+                      alt={m.titre}
+                      style={{ objectFit: 'cover', borderRadius: 12 }}
+                    />
+                  </figure>
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Section pour ajouter son commerce */}
-          <div className="box has-text-centered mt-6" style={{ 
-            borderRadius: 16, 
-            boxShadow: '0 2px 12px #1277c620',
-            background: '#f8fafc',
-            padding: '2rem'
-          }}>
-            <h3 className="title is-5 has-text-primary mb-3">Vous êtes commerçant ou artisan à Friesen ?</h3>
-            <p className="mb-4">
-              Vous souhaitez apparaître dans cette liste ou mettre à jour vos informations ?
-            </p>
-            <Link href="/contact" legacyBehavior>
-              <a className="button is-link">
-                Contactez-nous
-              </a>
-            </Link>
-          </div>
+          ))}
+    
         </div>
       </section>
     </>

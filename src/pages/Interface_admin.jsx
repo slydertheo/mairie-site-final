@@ -6,8 +6,7 @@ import ActualiteAdmin from '../components/ActualiteAdmin';
 import DemarchesEditor from '../components/DemarchesEditor';
 import EcolesEditor from '../components/EcolesEditor';
 import CommercesCrud from '../components/CommercesCrud';
-import MarchesCrud from '../components/MarcheCrud';
-import MarcheCrud from '../components/MarcheCrud';
+import MarchesCrud from '../components/MarchesCrud';
 
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
