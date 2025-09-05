@@ -16,9 +16,7 @@ export default function PageAcceuil() {
     fetch('/api/pageContent?page=accueil')
       .then(res => res.json())
       .then(data => {
-        const obj = {};
-        data.forEach(d => { obj[d.section] = d.contenu || d.titre; });
-        setContent(obj);
+        setContent(data[0] || {});
       });
   }, []);
 

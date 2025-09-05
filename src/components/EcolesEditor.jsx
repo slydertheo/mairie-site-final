@@ -142,10 +142,10 @@ export default function EcolesEditor() {
     fetch('/api/pageContent?page=ecoles')
       .then(res => res.json())
       .then(data => {
+        const obj = data[0] || {};
         const initial = {};
         FIELDS.forEach(f => {
-          const found = data.find(d => d.section === f.key);
-          initial[f.key] = found ? (found.contenu || found.titre) : '';
+          initial[f.key] = obj[f.key] || '';
         });
         setForm(initial);
       })
@@ -158,13 +158,14 @@ export default function EcolesEditor() {
   const handleSave = async e => {
     e.preventDefault();
     setLoading(true);
-    await Promise.all(FIELDS.map(f =>
-      fetch(`/api/pageContent?page=ecoles&section=${f.key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titre: form[f.key], contenu: form[f.key] })
+    await fetch('/api/pageContent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: 'ecoles',
+        ...form
       })
-    ));
+    });
     setMsg('Modifications enregistrées !');
     setLoading(false);
     setTimeout(() => setMsg(''), 2000);

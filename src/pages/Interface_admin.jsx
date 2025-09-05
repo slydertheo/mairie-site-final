@@ -7,12 +7,14 @@ import DemarchesEditor from '../components/DemarchesEditor';
 import EcolesEditor from '../components/EcolesEditor';
 import CommercesCrud from '../components/CommercesCrud';
 import MarchesCrud from '../components/MarchesCrud';
+import IntercommunaliteEditor from '../components/EditeurIntercomunalité.jsx';
 
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
   { slug: 'demarches', title: 'Démarches' },
   { slug: 'ecoles', title: 'Écoles' },
   { slug: 'commerces', title: 'Commerces' },
+  { slug: 'intercommunalite', title: 'Intercommunalité' },
 ];
 
 export default function InterfaceAdmin() {
@@ -86,6 +88,7 @@ export default function InterfaceAdmin() {
                 <CommercesCrud />
               </>
             )}
+            {selectedPage === 'intercommunalite' && <IntercommunaliteEditor />}
           </div>
         )}
 

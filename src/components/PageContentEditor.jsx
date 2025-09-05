@@ -89,10 +89,10 @@ export default function PageContentEditor() {
     fetch(`/api/pageContent?page=${SELECTED_PAGE}`)
       .then(res => res.json())
       .then(data => {
+        const obj = data[0] || {};
         const initial = {};
         FIELDS.forEach(f => {
-          const found = data.find(d => d.section === f.key);
-          initial[f.key] = found ? (found.contenu || found.titre) : '';
+          initial[f.key] = obj[f.key] || '';
         });
         setForm(initial);
       })
@@ -106,10 +106,14 @@ export default function PageContentEditor() {
     e.preventDefault();
     setLoading(true);
     await Promise.all(FIELDS.map(f =>
-      fetch(`/api/pageContent?page=${SELECTED_PAGE}&section=${f.key}`, {
+      fetch(`/api/pageContent?section=${f.key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titre: form[f.key], contenu: form[f.key] })
+        body: JSON.stringify({
+          page: SELECTED_PAGE,
+          titre: form[f.key],
+          contenu: form[f.key]
+        })
       })
     ));
     setMsg('Modifications enregistrées !');
