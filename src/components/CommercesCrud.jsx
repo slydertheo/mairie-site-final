@@ -141,122 +141,127 @@ export default function CommercesCrud() {
   }, [toast]);
 
   return (
-    <div className="box mt-5" style={{ background: '#f8fafc', borderRadius: 16 }}>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => { setToast(null); setPendingDelete(null); }}
-          actions={toast.actions}
-        />
-      )}
-      <h2 className="title is-5 has-text-primary mb-4">
-        <span role="img" aria-label="shop" style={{ marginRight: 8 }}>🏪</span>
-        Gestion des commerces
-      </h2>
-      <form onSubmit={handleSubmit} className="mb-4">
-        <div className="columns is-multiline is-mobile">
-          <div className="column is-3">
-            <input className="input" name="nom" placeholder="Nom *" value={form.nom} onChange={handleChange} required />
-          </div>
-          <div className="column is-3">
-            <input className="input" name="description" placeholder="Description" value={form.description} onChange={handleChange} />
-          </div>
-          <div className="column is-3">
-            <input className="input" name="adresse" placeholder="Adresse" value={form.adresse} onChange={handleChange} />
-          </div>
-          <div className="column is-3">
-            <input className="input" name="telephone" placeholder="Téléphone" value={form.telephone} onChange={handleChange} />
-          </div>
-          <div className="column is-3">
-            <input className="input" name="horaires" placeholder="Horaires" value={form.horaires} onChange={handleChange} />
-          </div>
-          <div className="column is-3">
-            <input className="input" name="image" placeholder="URL image" value={form.image} onChange={handleChange} />
-          </div>
-          <div className="column is-3">
-            <input className="input" name="site" placeholder="Site web" value={form.site} onChange={handleChange} />
-          </div>
-          <div className="column is-3">
-            <div className="select is-fullwidth">
-              <select name="categorie" value={form.categorie} onChange={handleChange}>
-                {CATEGORIES.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
+    <div className="container" style={{ maxWidth: 1100, margin: '0 auto', paddingTop: 32 }}>
+      <div className="box" style={{
+        borderRadius: 16,
+        background: '#fafdff',
+        boxShadow: '0 2px 16px #e0e7ef'
+      }}>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => { setToast(null); setPendingDelete(null); }}
+            actions={toast.actions}
+          />
+        )}
+        <h2 className="title is-4 has-text-link mb-4" style={{ textAlign: 'center', letterSpacing: 1 }}>
+          🏪 Gestion des commerces
+        </h2>
+        <form onSubmit={handleSubmit} className="mb-4">
+          <div className="columns is-multiline is-mobile">
+            <div className="column is-3">
+              <input className="input" name="nom" placeholder="Nom *" value={form.nom} onChange={handleChange} required />
+            </div>
+            <div className="column is-3">
+              <input className="input" name="description" placeholder="Description" value={form.description} onChange={handleChange} />
+            </div>
+            <div className="column is-3">
+              <input className="input" name="adresse" placeholder="Adresse" value={form.adresse} onChange={handleChange} />
+            </div>
+            <div className="column is-3">
+              <input className="input" name="telephone" placeholder="Téléphone" value={form.telephone} onChange={handleChange} />
+            </div>
+            <div className="column is-3">
+              <input className="input" name="horaires" placeholder="Horaires" value={form.horaires} onChange={handleChange} />
+            </div>
+            <div className="column is-3">
+              <input className="input" name="image" placeholder="URL image" value={form.image} onChange={handleChange} />
+            </div>
+            <div className="column is-3">
+              <input className="input" name="site" placeholder="Site web" value={form.site} onChange={handleChange} />
+            </div>
+            <div className="column is-3">
+              <div className="select is-fullwidth">
+                <select name="categorie" value={form.categorie} onChange={handleChange}>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="column is-12 has-text-right">
+              <button className={`button is-link mr-2${loading ? ' is-loading' : ''}`} type="submit">
+                {form.id ? 'Modifier' : 'Ajouter'}
+              </button>
+              {form.id && (
+                <button
+                  className="button is-light"
+                  type="button"
+                  onClick={() => setForm({ nom: '', description: '', adresse: '', telephone: '', horaires: '', image: '', site: '', categorie: 'alimentaire', id: null })}
+                >
+                  Annuler
+                </button>
+              )}
             </div>
           </div>
-          <div className="column is-12 has-text-right">
-            <button className={`button is-link mr-2${loading ? ' is-loading' : ''}`} type="submit">
-              {form.id ? 'Modifier' : 'Ajouter'}
-            </button>
-            {form.id && (
-              <button
-                className="button is-light"
-                type="button"
-                onClick={() => setForm({ nom: '', description: '', adresse: '', telephone: '', horaires: '', image: '', site: '', categorie: 'alimentaire', id: null })}
-              >
-                Annuler
-              </button>
-            )}
-          </div>
-        </div>
-      </form>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="table is-fullwidth is-striped is-hoverable" style={{ borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
-          <thead>
-            <tr>
-              <th>Nom</th>
-              <th>Catégorie</th>
-              <th>Adresse</th>
-              <th>Téléphone</th>
-              <th>Horaires</th>
-              <th>Site</th>
-              <th>Image</th>
-              <th style={{ width: 110 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {commerces.map(c => (
-              <tr key={c.id}>
-                <td><strong>{c.nom}</strong></td>
-                <td>{CATEGORIES.find(cat => cat.value === c.categorie)?.label || c.categorie}</td>
-                <td>{c.adresse}</td>
-                <td>{c.telephone}</td>
-                <td>{c.horaires}</td>
-                <td>
-                  {c.site && (
-                    <a href={c.site} target="_blank" rel="noopener noreferrer" title="Voir le site">
-                      🌐
-                    </a>
-                  )}
-                </td>
-                <td>
-                  {c.image && (
-                    <figure className="image is-48x48" style={{ margin: 0 }}>
-                      <img src={c.image} alt={c.nom} style={{ objectFit: 'cover', borderRadius: 8 }} />
-                    </figure>
-                  )}
-                </td>
-                <td>
-                  <button className="button is-small is-info mr-2" title="Modifier" onClick={() => handleEdit(c)}>
-                    <span className="icon is-small"><i className="fas fa-edit"></i></span>
-                  </button>
-                  <button className="button is-small is-danger" title="Supprimer" onClick={() => handleDelete(c.id)}>
-                    <span className="icon is-small"><i className="fas fa-trash"></i></span>
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {commerces.length === 0 && (
+        </form>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="table is-fullwidth is-striped is-hoverable" style={{ borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
+            <thead>
               <tr>
-                <td colSpan={8} className="has-text-centered has-text-grey">
-                  Aucun commerce enregistré.
-                </td>
+                <th>Nom</th>
+                <th>Catégorie</th>
+                <th>Adresse</th>
+                <th>Téléphone</th>
+                <th>Horaires</th>
+                <th>Site</th>
+                <th>Image</th>
+                <th style={{ width: 110 }}></th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {commerces.map(c => (
+                <tr key={c.id}>
+                  <td><strong>{c.nom}</strong></td>
+                  <td>{CATEGORIES.find(cat => cat.value === c.categorie)?.label || c.categorie}</td>
+                  <td>{c.adresse}</td>
+                  <td>{c.telephone}</td>
+                  <td>{c.horaires}</td>
+                  <td>
+                    {c.site && (
+                      <a href={c.site} target="_blank" rel="noopener noreferrer" title="Voir le site">
+                        🌐
+                      </a>
+                    )}
+                  </td>
+                  <td>
+                    {c.image && (
+                      <figure className="image is-48x48" style={{ margin: 0 }}>
+                        <img src={c.image} alt={c.nom} style={{ objectFit: 'cover', borderRadius: 8 }} />
+                      </figure>
+                    )}
+                  </td>
+                  <td>
+                    <button className="button is-small is-info mr-2" title="Modifier" onClick={() => handleEdit(c)}>
+                      <span className="icon is-small"><i className="fas fa-edit"></i></span>
+                    </button>
+                    <button className="button is-small is-danger" title="Supprimer" onClick={() => handleDelete(c.id)}>
+                      <span className="icon is-small"><i className="fas fa-trash"></i></span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {commerces.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="has-text-centered has-text-grey">
+                    Aucun commerce enregistré.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

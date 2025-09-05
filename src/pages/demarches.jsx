@@ -66,8 +66,7 @@ export default function Demarches() {
         <div className="hero-body">
           <div className="container has-text-centered">
             <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              {content.titre || "Bienvenue sur le site officiel de la Mairie de "}
-              <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
+              {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
             </h1>
             {content.intro && <p className="subtitle is-5" style={{ color: '#fff' }}>{content.intro}</p>}
           </div>

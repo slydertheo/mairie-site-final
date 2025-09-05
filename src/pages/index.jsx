@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import 'bulma/css/bulma.min.css';
+import Layout from '../components/Layout'; // Import du layout
 import QuickBoxEcole from '../components/QuickBoxEcole';
 import ActualiteCarousel from '../components/ActualiteCarousel';
 
@@ -42,178 +43,181 @@ export default function PageAcceuil() {
   }
 
   return (
-    <div className="has-background-light" style={{ minHeight: '100vh' }}>
-      {/* Bandeau image + titre */}
-      <section className="hero is-primary is-medium" style={{
-        backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        borderRadius: '0 0 32px 32px',
-        boxShadow: '0 8px 32px #0a254030',
-        marginBottom: 32,
-      }}>
-        <div className="hero-body">
-          <div className="container has-text-centered">
-            <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              {content.titre}<br />
-              {content.sousTitre}
-            </h1>
+    <Layout>
+      <div className="has-background-light" style={{ minHeight: '100vh' }}>
+        {/* Bandeau image + titre */}
+        <section className="hero is-primary is-medium" style={{
+          backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderRadius: '0 0 32px 32px',
+          boxShadow: '0 8px 32px #0a254030',
+          marginBottom: 32,
+        }}>
+          <div className="hero-body">
+            <div className="container has-text-centered">
+              <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
+                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
+                <br />
+                <span style={{ fontSize: 24 }}>Site officiel de la commune</span>
+              </h1>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <div className="container" style={{ maxWidth: 1200, margin: '0 auto 40px auto' }}>
-        <h2 className="title is-4 has-text-primary mb-5">{content.actualites_titre || "Dernières actualités"}</h2>
-        <ActualiteCarousel actualites={actualites} />
+        <div className="container" style={{ maxWidth: 1200, margin: '0 auto 40px auto' }}>
+          <h2 className="title is-4 has-text-primary mb-5">{content.actualites_titre || "Dernières actualités"}</h2>
+          <ActualiteCarousel actualites={actualites} />
 
-        <div className="columns is-variable is-5">
-          {/* Colonne 1 : Mot du Maire + Galerie */}
-          <div className="column is-two-thirds">
-            <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
-            <div className="box" style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f8fafc' }}>
-              <figure className="image is-96x96 mr-4">
-                <img
-                  className="is-rounded"
-                  src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"}
-                  alt="Maire"
-                  style={{ objectFit: 'cover', border: '3px solid #1277c6' }}
-                  onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"; }}
+          <div className="columns is-variable is-5">
+            {/* Colonne 1 : Mot du Maire + Galerie */}
+            <div className="column is-two-thirds">
+              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
+              <div className="box" style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f8fafc' }}>
+                <figure className="image is-96x96 mr-4">
+                  <img
+                    className="is-rounded"
+                    src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"}
+                    alt="Maire"
+                    style={{ objectFit: 'cover', border: '3px solid #1277c6' }}
+                    onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"; }}
+                  />
+                </figure>
+                <div>
+                  <div className="has-text-link has-text-weight-bold mb-1">{content.motMaire_accroche || "Chères habitantes, chers habitants"}</div>
+                  <div style={{ fontSize: 15, color: '#444' }}>
+                    {content.motMaire}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Colonne 2 : Agenda + Infos pratiques + Calendrier + Contact */}
+            <div className="column is-one-third">
+              <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
+              <div className="mb-4">
+                <AgendaItem title={content.agenda1_title} date={content.agenda1_date} />
+                <AgendaItem title={content.agenda2_title} date={content.agenda2_date} />
+                <a href={content.agenda_link} className="is-link is-underlined ml-4" style={{ fontWeight: 700, fontSize: 15 }}>
+                  {content.agenda_lien_label || "Voir tous les événements"}
+                </a>
+              </div>
+              <h2 className="title is-5 has-text-primary mb-2">{content.infos_titre || "Infos pratiques"}</h2>
+              <div className="mb-2"><span style={infoIcon}>🕒</span>
+                <b>{content.horaires_titre || "Horaires d’ouverture"}</b><br />
+                {(content.horaires || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+              </div>
+              <div className="mb-2"><span style={infoIcon}>📍</span>
+                {(content.adresse || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+              </div>
+              <div className="mb-2"><span style={infoIcon}>📞</span>
+                {content.telephone}
+              </div>
+              <div className="mb-4"><span style={infoIcon}>✉️</span>
+                {content.email}
+              </div>
+              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
+              <div className="box" style={{ background: '#f8fafc', marginBottom: 18 }}>
+                <Calendar
+                  events={events}
+                  onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
                 />
-              </figure>
-              <div>
-                <div className="has-text-link has-text-weight-bold mb-1">{content.motMaire_accroche || "Chères habitantes, chers habitants"}</div>
-                <div style={{ fontSize: 15, color: '#444' }}>
-                  {content.motMaire}
+              </div>
+              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.contact_titre || "Contactez la mairie"}</h2>
+              <div className="box" style={{ background: '#f8fafc' }}>
+                {contactSent ? (
+                  <div className="notification is-success">Votre message a bien été envoyé !</div>
+                ) : (
+                  <form onSubmit={handleContactSubmit}>
+                    <div className="field">
+                      <label className="label">Nom</label>
+                      <div className="control">
+                        <input className="input" type="text" name="nom" value={contact.nom} onChange={handleContactChange} required />
+                      </div>
+                    </div>
+                    <div className="field">
+                      <label className="label">Email</label>
+                      <div className="control">
+                        <input className="input" type="email" name="email" value={contact.email} onChange={handleContactChange} required />
+                      </div>
+                    </div>
+                    <div className="field">
+                      <label className="label">Message</label>
+                      <div className="control">
+                        <textarea className="textarea" name="message" value={contact.message} onChange={handleContactChange} required />
+                      </div>
+                    </div>
+                    <div className="field is-grouped is-grouped-right">
+                      <div className="control">
+                        <button className="button is-link" type="submit">Envoyer</button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Widgets supplémentaires */}
+          <div className="columns">
+            <div className="column is-2">
+              {/* Widget météo */}
+              <div className="box has-text-centered" style={{ background: '#eaf6ff' }}>
+                <span style={{ fontSize: 38 }}>🌤️</span>
+                <div className="has-text-link has-text-weight-bold mt-2">{content.meteo}</div>
+                <div style={{ fontSize: 15 }}>{content.meteo_legende}</div>
+              </div>
+            </div>
+            <div className="column is-8">
+              {/* ...Ton contenu principal ici... */}
+            </div>
+            <div className="column is-2">
+              {/* Widget réseaux sociaux */}
+              <div className="box has-text-centered" style={{ background: '#f8fafc' }}>
+                <div className="has-text-link has-text-weight-bold mb-2">{content.reseaux_titre || "Suivez-nous"}</div>
+                <a href={content.facebook} style={{ fontSize: 28, margin: 8 }}>📘</a>
+                <a href={content.instagram} style={{ fontSize: 28, margin: 8 }}>📸</a>
+                <a href={content.twitter} style={{ fontSize: 28, margin: 8 }}>🐦</a>
+              </div>
+              {/* Numéros d'urgence */}
+              <div className="box mt-4" style={{ background: '#fffbe6' }}>
+                <div className="has-text-danger has-text-weight-bold mb-1">{content.urgences_titre || "Urgences"}</div>
+                <div style={{ fontSize: 15 }}>
+                  🚒 Pompiers : <b>{content.urgence_pompiers}</b><br />
+                  🚓 Police : <b>{content.urgence_police}</b><br />
+                  🚑 SAMU : <b>{content.urgence_samu}</b>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Colonne 2 : Agenda + Infos pratiques + Calendrier + Contact */}
-          <div className="column is-one-third">
-            <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
-            <div className="mb-4">
-              <AgendaItem title={content.agenda1_title} date={content.agenda1_date} />
-              <AgendaItem title={content.agenda2_title} date={content.agenda2_date} />
-              <a href={content.agenda_link} className="is-link is-underlined ml-4" style={{ fontWeight: 700, fontSize: 15 }}>
-                {content.agenda_lien_label || "Voir tous les événements"}
-              </a>
-            </div>
-            <h2 className="title is-5 has-text-primary mb-2">{content.infos_titre || "Infos pratiques"}</h2>
-            <div className="mb-2"><span style={infoIcon}>🕒</span>
-              <b>{content.horaires_titre || "Horaires d’ouverture"}</b><br />
-              {(content.horaires || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
-            </div>
-            <div className="mb-2"><span style={infoIcon}>📍</span>
-              {(content.adresse || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
-            </div>
-            <div className="mb-2"><span style={infoIcon}>📞</span>
-              {content.telephone}
-            </div>
-            <div className="mb-4"><span style={infoIcon}>✉️</span>
-              {content.email}
-            </div>
-            <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
-            <div className="box" style={{ background: '#f8fafc', marginBottom: 18 }}>
-              <Calendar
-                events={events}
-                onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
-              />
-            </div>
-            <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.contact_titre || "Contactez la mairie"}</h2>
-            <div className="box" style={{ background: '#f8fafc' }}>
-              {contactSent ? (
-                <div className="notification is-success">Votre message a bien été envoyé !</div>
-              ) : (
-                <form onSubmit={handleContactSubmit}>
-                  <div className="field">
-                    <label className="label">Nom</label>
-                    <div className="control">
-                      <input className="input" type="text" name="nom" value={contact.nom} onChange={handleContactChange} required />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label className="label">Email</label>
-                    <div className="control">
-                      <input className="input" type="email" name="email" value={contact.email} onChange={handleContactChange} required />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label className="label">Message</label>
-                    <div className="control">
-                      <textarea className="textarea" name="message" value={contact.message} onChange={handleContactChange} required />
-                    </div>
-                  </div>
-                  <div className="field is-grouped is-grouped-right">
-                    <div className="control">
-                      <button className="button is-link" type="submit">Envoyer</button>
-                    </div>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Widgets supplémentaires */}
-        <div className="columns">
-          <div className="column is-2">
-            {/* Widget météo */}
-            <div className="box has-text-centered" style={{ background: '#eaf6ff' }}>
-              <span style={{ fontSize: 38 }}>🌤️</span>
-              <div className="has-text-link has-text-weight-bold mt-2">{content.meteo}</div>
-              <div style={{ fontSize: 15 }}>{content.meteo_legende}</div>
+        {showModal && (
+          <div className="modal is-active">
+            <div className="modal-background" onClick={() => setShowModal(false)}></div>
+            <div className="modal-card">
+              <header className="modal-card-head">
+                <p className="modal-card-title">Événements du jour</p>
+                <button className="delete" aria-label="close" onClick={() => setShowModal(false)}></button>
+              </header>
+              <section className="modal-card-body">
+                {selectedDayEvents.map(ev => (
+                  <div key={ev.id} className="box mb-3">
+                    <div className="has-text-weight-bold">{ev.titre}</div>
+                    <div className="is-size-7 has-text-link">{ev.date}</div>
+                    {ev.lieu && <div className="is-size-7">📍 {ev.lieu}</div>}
+                    {ev.description && <div className="mt-2">{ev.description}</div>}
+                  </div>
+                ))}
+              </section>
+              <footer className="modal-card-foot">
+                <button className="button" onClick={() => setShowModal(false)}>Fermer</button>
+              </footer>
             </div>
           </div>
-          <div className="column is-8">
-            {/* ...Ton contenu principal ici... */}
-          </div>
-          <div className="column is-2">
-            {/* Widget réseaux sociaux */}
-            <div className="box has-text-centered" style={{ background: '#f8fafc' }}>
-              <div className="has-text-link has-text-weight-bold mb-2">{content.reseaux_titre || "Suivez-nous"}</div>
-              <a href={content.facebook} style={{ fontSize: 28, margin: 8 }}>📘</a>
-              <a href={content.instagram} style={{ fontSize: 28, margin: 8 }}>📸</a>
-              <a href={content.twitter} style={{ fontSize: 28, margin: 8 }}>🐦</a>
-            </div>
-            {/* Numéros d'urgence */}
-            <div className="box mt-4" style={{ background: '#fffbe6' }}>
-              <div className="has-text-danger has-text-weight-bold mb-1">{content.urgences_titre || "Urgences"}</div>
-              <div style={{ fontSize: 15 }}>
-                🚒 Pompiers : <b>{content.urgence_pompiers}</b><br />
-                🚓 Police : <b>{content.urgence_police}</b><br />
-                🚑 SAMU : <b>{content.urgence_samu}</b>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-
-      {showModal && (
-        <div className="modal is-active">
-          <div className="modal-background" onClick={() => setShowModal(false)}></div>
-          <div className="modal-card">
-            <header className="modal-card-head">
-              <p className="modal-card-title">Événements du jour</p>
-              <button className="delete" aria-label="close" onClick={() => setShowModal(false)}></button>
-            </header>
-            <section className="modal-card-body">
-              {selectedDayEvents.map(ev => (
-                <div key={ev.id} className="box mb-3">
-                  <div className="has-text-weight-bold">{ev.titre}</div>
-                  <div className="is-size-7 has-text-link">{ev.date}</div>
-                  {ev.lieu && <div className="is-size-7">📍 {ev.lieu}</div>}
-                  {ev.description && <div className="mt-2">{ev.description}</div>}
-                </div>
-              ))}
-            </section>
-            <footer className="modal-card-foot">
-              <button className="button" onClick={() => setShowModal(false)}>Fermer</button>
-            </footer>
-          </div>
-        </div>
-      )}
-    </div>
+    </Layout>
   );
 }
 

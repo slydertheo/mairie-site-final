@@ -42,7 +42,6 @@ const FIELDS = [
 ];
 
 const GROUPS = [
-  { key: 'header', icon: '📝', title: 'En-tête de la page' },
   { key: 'rapides', icon: '⚡', title: 'Démarches rapides' },
   { key: 'urbanisme', icon: '🏡', title: 'Urbanisme' },
   { key: 'autres', icon: '🔗', title: 'Autres démarches utiles' },

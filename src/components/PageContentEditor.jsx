@@ -12,12 +12,7 @@ const PAGES = [
 
 // Regroupe les champs par rubrique pour l'affichage
 const FIELD_GROUPS = [
-  {
-    key: 'bandeau',
-    icon: '🎉',
-    title: 'Bandeau principal',
-    fields: ['titre', 'sousTitre'],
-  },
+
   {
     key: 'maire',
     icon: '👨‍💼',
@@ -59,6 +54,7 @@ const FIELD_GROUPS = [
 const FIELDS = [
   { key: 'titre', label: 'Titre principal (bandeau)', type: 'text' },
   { key: 'sousTitre', label: 'Sous-titre (bandeau)', type: 'text' },
+  { key: 'titre_color', label: 'Couleur du mot "Friesen"', type: 'color' },
   { key: 'motMaire', label: 'Mot du Maire', type: 'textarea' },
   { key: 'agenda1_title', label: 'Agenda 1 - Titre', type: 'text' },
   { key: 'agenda1_date', label: 'Agenda 1 - Date', type: 'text' },
@@ -105,72 +101,79 @@ export default function PageContentEditor() {
   const handleSave = async e => {
     e.preventDefault();
     setLoading(true);
-    await Promise.all(FIELDS.map(f =>
-      fetch(`/api/pageContent?section=${f.key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page: SELECTED_PAGE,
-          titre: form[f.key],
-          contenu: form[f.key]
-        })
+    await fetch(`/api/pageContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: SELECTED_PAGE,
+        ...form
       })
-    ));
+    });
     setMsg('Modifications enregistrées !');
     setLoading(false);
     setTimeout(() => setMsg(''), 2000);
+    window.location.reload();
   };
 
   return (
-    <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
-      <form onSubmit={handleSave}>
-        {FIELD_GROUPS.map(group => (
-          <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
-            <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 22 }}>{group.icon}</span> {group.title}
-            </h3>
-            {group.fields.map(fieldKey => {
-              const f = FIELDS.find(ff => ff.key === fieldKey);
-              if (!f) return null;
-              return (
-                <div className="field" key={f.key} style={{ marginBottom: 16 }}>
-                  <label className="label">{f.label}</label>
-                  <div className="control">
-                    {f.type === 'textarea' ? (
-                      <textarea
-                        className="textarea"
-                        name={f.key}
-                        value={form[f.key] || ''}
-                        onChange={handleChange}
-                        readOnly={loading}
-                        style={{ background: loading ? "#f5f5f5" : "white" }}
-                      />
-                    ) : (
-                      <input
-                        className="input"
-                        type={f.type}
-                        name={f.key}
-                        value={form[f.key] || ''}
-                        onChange={handleChange}
-                        readOnly={loading}
-                        style={{ background: loading ? "#f5f5f5" : "white" }}
-                      />
-                    )}
+    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
+      <div className="box" style={{
+        borderRadius: 16,
+        background: '#fafdff',
+        boxShadow: '0 2px 16px #e0e7ef'
+      }}>
+        <form onSubmit={handleSave}>
+          <h2 className="title is-4 mb-4 has-text-link" style={{ textAlign: 'center', letterSpacing: 1 }}>
+            ⚙️ Paramètres de la page
+          </h2>
+          {FIELD_GROUPS.map(group => (
+            <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+              <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 22 }}>{group.icon}</span> {group.title}
+              </h3>
+              {group.fields.map(fieldKey => {
+                const f = FIELDS.find(ff => ff.key === fieldKey);
+                if (!f) return null;
+                return (
+                  <div className="field" key={f.key} style={{ marginBottom: 16 }}>
+                    <label className="label">{f.label}</label>
+                    <div className="control">
+                      {f.type === 'textarea' ? (
+                        <textarea
+                          className="textarea"
+                          name={f.key}
+                          value={form[f.key] || ''}
+                          onChange={handleChange}
+                          readOnly={loading}
+                          style={{ background: loading ? "#f5f5f5" : "white" }}
+                        />
+                      ) : (
+                        <input
+                          className="input"
+                          type={f.type}
+                          name={f.key}
+                          value={form[f.key] || ''}
+                          onChange={handleChange}
+                          readOnly={loading}
+                          style={{ background: loading ? "#f5f5f5" : "white" }}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          ))}
+          <div className="field is-grouped mt-3" style={{ justifyContent: 'center' }}>
+            <div className="control">
+              <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                Enregistrer
+              </button>
+            </div>
+            {msg && <div className="notification is-info is-light py-2 px-3 ml-3">{msg}</div>}
           </div>
-        ))}
-        <div className="field is-grouped mt-3">
-          <div className="control">
-            <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
-              Enregistrer
-            </button>
-          </div>
-          {msg && <div className="notification is-info is-light py-2 px-3 ml-3">{msg}</div>}
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import EcolesEditor from '../components/EcolesEditor';
 import CommercesCrud from '../components/CommercesCrud';
 import MarchesCrud from '../components/MarchesCrud';
 import IntercommunaliteEditor from '../components/EditeurIntercomunalité.jsx';
+import AssociationsEditor from '../components/AssociationsEditor';
+import EditeurDecouvrirFriesen from '../components/EditeurDecouvrirFriesen'; 
 
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
@@ -15,6 +17,8 @@ const PAGES = [
   { slug: 'ecoles', title: 'Écoles' },
   { slug: 'commerces', title: 'Commerces' },
   { slug: 'intercommunalite', title: 'Intercommunalité' },
+  { slug: 'associations', title: 'Associations' }, 
+  { slug: 'decouvrir', title: 'Découvrir Friesen' }, 
 ];
 
 export default function InterfaceAdmin() {
@@ -89,6 +93,8 @@ export default function InterfaceAdmin() {
               </>
             )}
             {selectedPage === 'intercommunalite' && <IntercommunaliteEditor />}
+            {selectedPage === 'associations' && <AssociationsEditor />}
+            {selectedPage === 'decouvrir' && <EditeurDecouvrirFriesen />} // 
           </div>
         )}
 

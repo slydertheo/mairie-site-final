@@ -17,13 +17,11 @@ export default function IntercommunaliteEditor() {
   useEffect(() => {
     fetch('/api/pageContent?page=intercommunalite')
       .then(res => res.json())
-      .then(data => setContent(data[0] || null));
+      .then(data => setContent(data[0] || {}));
   }, []);
 
-  // Champs simples
+  // Handlers
   const handleChange = e => setContent({ ...content, [e.target.name]: e.target.value });
-
-  // Organismes
   const handleOrgChange = (i, field, value) => {
     const organismes = [...content.organismes];
     organismes[i][field] = value;
@@ -35,7 +33,6 @@ export default function IntercommunaliteEditor() {
   });
   const removeOrg = i => setContent({ ...content, organismes: content.organismes.filter((_, idx) => idx !== i) });
 
-  // Projets
   const handleProjChange = (i, field, value) => {
     const projets = [...content.projets];
     projets[i][field] = value;
@@ -47,7 +44,6 @@ export default function IntercommunaliteEditor() {
   });
   const removeProj = i => setContent({ ...content, projets: content.projets.filter((_, idx) => idx !== i) });
 
-  // Représentants
   const handleRepChange = (i, field, value) => {
     const representants = [...content.representants];
     representants[i][field] = value;
@@ -67,16 +63,7 @@ export default function IntercommunaliteEditor() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         page: 'intercommunalite',
-        hero_titre: content.hero_titre,
-        titre: content.titre,
-        intro: content.intro,
-        titre_organismes: content.titre_organismes,
-        organismes: content.organismes,
-        projets: content.projets,
-        representants: content.representants,
-        contact: content.contact,
-        titre_representants: content.titre_representants,
-        titre_projets: content.titre_projets
+        ...content
       })
     });
     setLoading(false);
@@ -85,19 +72,19 @@ export default function IntercommunaliteEditor() {
   };
 
   return (
-    <div className="container py-5">
+    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
       <div className="box" style={{
-        borderRadius: 18,
-        background: 'linear-gradient(135deg, #fafdff 80%, #e0e7ef 100%)',
-        boxShadow: '0 2px 16px rgba(60, 100, 180, 0.08)'
+        borderRadius: 16,
+        background: '#fafdff',
+        boxShadow: '0 2px 16px #e0e7ef'
       }}>
-        <h2 className="title is-3 mb-5 has-text-link" style={{ textAlign: 'center', letterSpacing: 1 }}>
+        <h2 className="title is-4 mb-4 has-text-link" style={{ textAlign: 'center', letterSpacing: 1 }}>
           🗂️ Page Intercommunalité
         </h2>
         <form onSubmit={handleSave}>
           {/* Organismes */}
-          <fieldset className="mb-5" style={{ border: 'none', boxShadow: '0 1px 8px #e0e7ef', borderRadius: 14, background: '#fff' }}>
-            <legend className="subtitle is-4 mb-3" style={{ color: '#3273dc' }}>🏢 Organismes intercommunaux</legend>
+          <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+            <h3 className="subtitle is-5 mb-3" style={{ color: '#3273dc', fontWeight: 700 }}>🏢 Organismes intercommunaux</h3>
             <input
               className="input mb-2"
               name="titre_organismes"
@@ -117,17 +104,14 @@ export default function IntercommunaliteEditor() {
                 <textarea className="textarea mb-2" placeholder="Description" value={org.description} onChange={e => handleOrgChange(i, 'description', e.target.value)} />
                 <label className="label is-small">Compétences (une par ligne)</label>
                 <textarea className="textarea mb-2" placeholder="Compétences" value={org.competences ? org.competences.join('\n') : ''} onChange={e => handleOrgChange(i, 'competences', e.target.value.split('\n'))} />
-                <button type="button" className="button is-danger is-small" style={{ transition: '0.2s', marginTop: 4 }}
-                  onMouseOver={e => e.target.style.background = '#ff3860'}
-                  onMouseOut={e => e.target.style.background = ''}
-                  onClick={() => removeOrg(i)}>Supprimer</button>
+                <button type="button" className="button is-danger is-small mt-2" onClick={() => removeOrg(i)}>Supprimer</button>
               </div>
             ))}
             <button type="button" className="button is-link is-light is-small" onClick={addOrg}>Ajouter un organisme</button>
-          </fieldset>
+          </div>
           {/* Projets */}
-          <fieldset className="mb-5" style={{ border: 'none', boxShadow: '0 1px 8px #e0e7ef', borderRadius: 14, background: '#fff' }}>
-            <legend className="subtitle is-4 mb-3" style={{ color: '#3273dc' }}>🛠️ Projets intercommunaux</legend>
+          <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+            <h3 className="subtitle is-5 mb-3" style={{ color: '#3273dc', fontWeight: 700 }}>🛠️ Projets intercommunaux</h3>
             <input
               className="input mb-2"
               name="titre_projets"
@@ -135,7 +119,7 @@ export default function IntercommunaliteEditor() {
               value={content.titre_projets || ''}
               onChange={handleChange}
             />
-            {Array.isArray(content.projets) ? content.projets.map((proj, i) => (
+            {(content.projets || []).map((proj, i) => (
               <div key={i} className="box mb-3" style={{
                 background: "#fafdff",
                 borderRadius: 10,
@@ -145,17 +129,14 @@ export default function IntercommunaliteEditor() {
                 <input className="input mb-2" placeholder="Image (URL)" value={proj.image} onChange={e => handleProjChange(i, 'image', e.target.value)} />
                 <input className="input mb-2" placeholder="Structure" value={proj.structure} onChange={e => handleProjChange(i, 'structure', e.target.value)} />
                 <textarea className="textarea mb-2" placeholder="Description" value={proj.description} onChange={e => handleProjChange(i, 'description', e.target.value)} />
-                <button type="button" className="button is-danger is-small" style={{ transition: '0.2s', marginTop: 4 }}
-                  onMouseOver={e => e.target.style.background = '#ff3860'}
-                  onMouseOut={e => e.target.style.background = ''}
-                  onClick={() => removeProj(i)}>Supprimer</button>
+                <button type="button" className="button is-danger is-small mt-2" onClick={() => removeProj(i)}>Supprimer</button>
               </div>
-            )) : null}
+            ))}
             <button type="button" className="button is-link is-light is-small" onClick={addProj}>Ajouter un projet</button>
-          </fieldset>
+          </div>
           {/* Représentants */}
-          <fieldset className="mb-5" style={{ border: 'none', boxShadow: '0 1px 8px #e0e7ef', borderRadius: 14, background: '#fff' }}>
-            <legend className="subtitle is-4 mb-3" style={{ color: '#3273dc' }}>👥 Représentants</legend>
+          <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+            <h3 className="subtitle is-5 mb-3" style={{ color: '#3273dc', fontWeight: 700 }}>👥 Représentants</h3>
             <input
               className="input mb-2"
               name="titre_representants"
@@ -172,22 +153,19 @@ export default function IntercommunaliteEditor() {
                 <input className="input mb-2" placeholder="Structure" value={rep.structure} onChange={e => handleRepChange(i, 'structure', e.target.value)} />
                 <input className="input mb-2" placeholder="Délégués titulaires" value={rep.titulaires} onChange={e => handleRepChange(i, 'titulaires', e.target.value)} />
                 <input className="input mb-2" placeholder="Délégués suppléants" value={rep.suppleants} onChange={e => handleRepChange(i, 'suppleants', e.target.value)} />
-                <button type="button" className="button is-danger is-small" style={{ transition: '0.2s', marginTop: 4 }}
-                  onMouseOver={e => e.target.style.background = '#ff3860'}
-                  onMouseOut={e => e.target.style.background = ''}
-                  onClick={() => removeRep(i)}>Supprimer</button>
+                <button type="button" className="button is-danger is-small mt-2" onClick={() => removeRep(i)}>Supprimer</button>
               </div>
             ))}
             <button type="button" className="button is-link is-light is-small" onClick={addRep}>Ajouter un représentant</button>
-          </fieldset>
+          </div>
           {/* Contact */}
-          <fieldset className="mb-5" style={{ border: 'none', boxShadow: '0 1px 8px #e0e7ef', borderRadius: 14, background: '#fff' }}>
-            <legend className="subtitle is-4 mb-3" style={{ color: '#3273dc' }}>📞 Contact</legend>
+          <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+            <h3 className="subtitle is-5 mb-3" style={{ color: '#3273dc', fontWeight: 700 }}>📞 Contact</h3>
             <div className="field">
               <label className="label">Texte de contact</label>
               <input className="input" name="contact" value={content.contact || ''} onChange={handleChange} />
             </div>
-          </fieldset>
+          </div>
           <div className="field is-grouped mt-4" style={{ justifyContent: 'center' }}>
             <div className="control">
               <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
