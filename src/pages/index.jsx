@@ -70,7 +70,7 @@ export default function PageAcceuil() {
           <ActualiteCarousel actualites={actualites} />
 
           <div className="columns is-variable is-5">
-            {/* Colonne 1 : Mot du Maire + Galerie */}
+            {/* Colonne 1 : Mot du Maire + Galerie + Panneau d'affichage */}
             <div className="column is-two-thirds">
               <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
               <div className="box" style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f8fafc' }}>
@@ -88,6 +88,62 @@ export default function PageAcceuil() {
                   <div style={{ fontSize: 15, color: '#444' }}>
                     {content.motMaire}
                   </div>
+                </div>
+              </div>
+              {/* Ajout du panneau d'affichage ici */}
+              <div
+                className="box"
+                style={{
+                  background: 'repeating-linear-gradient(135deg, #c2a77d 0px, #c2a77d 28px, #b3936b 28px, #b3936b 56px)',
+                  borderRadius: 18,
+                  minHeight: 220,
+                  boxShadow: '0 4px 24px #a97c5020',
+                  position: 'relative',
+                  margin: '32px auto',
+                  maxWidth: 900,
+                  padding: '32px 24px'
+                }}
+              >
+                <h2 className="title is-4 has-text-dark mb-4" style={{ textShadow: '0 2px 8px #fffbe6', textAlign: 'center', letterSpacing: 1 }}>
+                  🗂️ Panneau d’affichage du village
+                </h2>
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {/* Exemple d'affiche */}
+                  <div style={{
+                    background: '#fffbe6',
+                    border: '2px dashed #a97c50',
+                    borderRadius: 12,
+                    boxShadow: '0 2px 12px #a97c5030',
+                    padding: '18px 22px',
+                    minWidth: 180,
+                    maxWidth: 220,
+                    marginBottom: 12,
+                    fontWeight: 500,
+                    color: '#a97c50',
+                    fontSize: 16,
+                    position: 'relative'
+                  }}>
+                    <span style={{ fontSize: 22, position: 'absolute', top: 8, right: 12 }}>📌</span>
+                    <div>Fête du village<br /><b>Samedi 21 septembre</b></div>
+                  </div>
+                  <div style={{
+                    background: '#eaf6ff',
+                    border: '2px solid #1277c6',
+                    borderRadius: 12,
+                    boxShadow: '0 2px 12px #1277c630',
+                    padding: '18px 22px',
+                    minWidth: 180,
+                    maxWidth: 220,
+                    marginBottom: 12,
+                    fontWeight: 500,
+                    color: '#1277c6',
+                    fontSize: 16,
+                    position: 'relative'
+                  }}>
+                    <span style={{ fontSize: 22, position: 'absolute', top: 8, right: 12 }}>📌</span>
+                    <div>Marché des producteurs<br /><b>Dimanche 6 octobre</b></div>
+                  </div>
+                  {/* Ajoute d'autres affiches ici */}
                 </div>
               </div>
             </div>
@@ -168,9 +224,6 @@ export default function PageAcceuil() {
                 <div style={{ fontSize: 15 }}>{content.meteo_legende}</div>
               </div>
             </div>
-            <div className="column is-8">
-              {/* ...Ton contenu principal ici... */}
-            </div>
             <div className="column is-2">
               {/* Widget réseaux sociaux */}
               <div className="box has-text-centered" style={{ background: '#f8fafc' }}>
@@ -210,9 +263,6 @@ export default function PageAcceuil() {
                   </div>
                 ))}
               </section>
-              <footer className="modal-card-foot">
-                <button className="button" onClick={() => setShowModal(false)}>Fermer</button>
-              </footer>
             </div>
           </div>
         )}

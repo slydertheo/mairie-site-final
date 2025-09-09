@@ -72,31 +72,32 @@ export default function AssociationsEditor() {
   };
 
   return (
-    <div className="container" style={{ maxWidth: 1100, margin: '0 auto', paddingTop: 32 }}>
+    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
       <div className="box" style={{
         borderRadius: 16,
         background: '#fafdff',
-        boxShadow: '0 2px 16px #e0e7ef'
+        boxShadow: '0 2px 16px #e0e7ef',
+        padding: '32px 24px'
       }}>
         <form onSubmit={handleSave}>
-          <h2 className="title is-4 mb-3 has-text-link" style={{ textAlign: 'center', letterSpacing: 1 }}>
+          <h2 className="title is-4 mb-4 has-text-link" style={{ textAlign: 'center', letterSpacing: 1 }}>
             🤝 Paramètres de la page Associations
           </h2>
           <div className="box mb-4">
-            <label className="label">Titre du bandeau</label>
+            <label className="label">🖼️ Titre du bandeau</label>
             <input className="input mb-2" name="hero_titre" value={content.hero_titre} onChange={handleChange} placeholder="Ex: Les associations de la commune" />
-            <label className="label">Titre de la page</label>
+            <label className="label">📄 Titre de la page</label>
             <input className="input mb-2" name="page_titre" value={content.page_titre} onChange={handleChange} placeholder="Ex: Découvrez les associations locales" />
-            <label className="label">Titre notification</label>
+            <label className="label">🔔 Titre notification</label>
             <input className="input mb-2" name="notification_titre" value={content.notification_titre} onChange={handleChange} placeholder="Ex: À la une" />
-            <label className="label">Texte notification</label>
+            <label className="label">💬 Texte notification</label>
             <textarea className="textarea mb-2" name="notification_texte" value={content.notification_texte} onChange={handleChange} placeholder="Message important à afficher en haut de la page" />
           </div>
 
           {/* Associations */}
           <fieldset className="box mb-4">
             <legend className="subtitle is-5 mb-2 has-text-link">
-              <span role="img" aria-label="associations">🤝</span> Associations ({content.associations?.length || 0})
+              🤝 Associations ({content.associations?.length || 0})
             </legend>
             {(content.associations || []).map((assoc, i) => (
               <div key={i} className="box mb-3" style={{ background: "#fafdff", borderRadius: 10 }}>
@@ -159,7 +160,7 @@ export default function AssociationsEditor() {
 
           {/* Events */}
           <fieldset className="box mb-4">
-            <legend className="subtitle is-5 mb-2 has-text-link">Événements associatifs</legend>
+            <legend className="subtitle is-5 mb-2 has-text-link">📅 Événements associatifs</legend>
             {(content.events || []).map((event, i) => (
               <div key={i} className="box mb-3" style={{ background: "#fafdff", borderRadius: 10 }}>
                 <input className="input mb-2" placeholder="Date" value={event.date} onChange={e => handleEventChange(i, 'date', e.target.value)} />
@@ -173,7 +174,7 @@ export default function AssociationsEditor() {
           </fieldset>
 
           <fieldset className="box mb-4">
-            <legend className="subtitle is-5 mb-2 has-text-link">Forum des associations</legend>
+            <legend className="subtitle is-5 mb-2 has-text-link">🗣️ Forum des associations</legend>
             <input
               className="input mb-2"
               name="forum_titre"
@@ -205,7 +206,7 @@ export default function AssociationsEditor() {
           </fieldset>
 
           <fieldset className="box mb-4">
-            <legend className="subtitle is-5 mb-2 has-text-link">Subventions aux associations</legend>
+            <legend className="subtitle is-5 mb-2 has-text-link">💶 Subventions aux associations</legend>
             <input
               className="input mb-2"
               name="subventions_titre"
@@ -237,7 +238,7 @@ export default function AssociationsEditor() {
           </fieldset>
 
           <fieldset className="box mb-4">
-            <legend className="subtitle is-5 mb-2 has-text-link">Créer une association</legend>
+            <legend className="subtitle is-5 mb-2 has-text-link">📝 Créer une association</legend>
             <input
               className="input mb-2"
               name="creation_titre"

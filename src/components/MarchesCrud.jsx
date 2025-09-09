@@ -39,7 +39,7 @@ export default function MarchesCrud() {
   };
 
   return (
-    <div className="container" style={{ maxWidth: 1100, margin: '0 auto', paddingTop: 32 }}>
+    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
       <div className="box" style={{
         borderRadius: 16,
         background: '#fafdff',
