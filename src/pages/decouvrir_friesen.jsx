@@ -21,7 +21,16 @@ export default function Visites() {
     },
     infosPratiques: [],
     accrocheVillage: "",
-    titreGuide: ""
+    introVillage: "", // <-- AJOUT ICI
+    titreGuide: "",
+    titrePedestre: "",
+    textePedestre: "", // <-- AJOUT
+    titreVTT: "",
+    texteVTT: "",
+    locationVTT: "",
+    locationVTTInfos: [],
+    equipementsSportifs: "",
+    equipementsSportifsInfos: []
   });
 
   useEffect(() => {
@@ -45,7 +54,16 @@ export default function Visites() {
           },
           infosPratiques: [],
           accrocheVillage: "",
-          titreGuide: ""
+          introVillage: "", // <-- AJOUT ICI AUSSI
+          titreGuide: "",
+          titrePedestre: "",
+          textePedestre: "", // <-- AJOUT
+          titreVTT: "",
+          texteVTT: "",
+          locationVTT: "",
+          locationVTTInfos: [],
+          equipementsSportifs: "",
+          equipementsSportifsInfos: []
         };
         setContent({ ...initial, ...(data[0] || {}) });
       });
@@ -62,8 +80,7 @@ export default function Visites() {
                   <strong>{content.accrocheVillage}</strong>
                 </p>
                 <p>
-                  Friesen vous invite à découvrir son riche patrimoine architectural, ses traditions vivantes et ses magnifiques paysages.
-                  Téléchargez notre guide complet ou suivez les points d'intérêt présentés ci-dessous pour une visite autonome.
+                  {content.introVillage}
                 </p>
                 <div className="buttons mt-4">
                   <a href="#" className="button is-link">
@@ -134,10 +151,11 @@ export default function Visites() {
                   <h3 className="title is-5 mb-3">Visites guidées</h3>
                   <p className="mb-3">{content.titreGuide}</p>
                   <ul className="mb-4">
-                    <li>Tous les samedis à 14h (d'avril à octobre)</li>
-                    <li>Sur réservation pour les groupes (minimum 5 personnes)</li>
-                    <li>Durée : environ 2h</li>
-                    <li>Tarif : 5€/personne (gratuit pour les moins de 12 ans)</li>
+                    {content.infosVisiteGuidee && content.infosVisiteGuidee.map((info, idx) => (
+                      <li key={idx}>
+                        <span style={{ whiteSpace: 'pre-line' }}>{info}</span>
+                      </li>
+                    ))}
                   </ul>
                   <a href="#" className="button is-link">Réserver une visite guidée</a>
                 </div>
@@ -152,11 +170,10 @@ export default function Visites() {
             <div className="content mb-5">
               <div className="notification is-info is-light">
                 <p className="is-size-5 mb-3">
-                  <strong>Randonnées pédestres autour de Friesen</strong>
+                  <strong>{content.titrePedestre}</strong>
                 </p>
                 <p>
-                  Explorez notre magnifique région au rythme de vos pas ! Nos sentiers balisés vous feront découvrir 
-                  des paysages variés, entre forêts, prairies et points de vue remarquables.
+                  {content.textePedestre}
                 </p>
                 <div className="buttons mt-4">
                   <a href="#" className="button is-link">
@@ -253,11 +270,10 @@ export default function Visites() {
             <div className="content mb-5">
               <div className="notification is-info is-light">
                 <p className="is-size-5 mb-3">
-                  <strong>Circuits VTT</strong>
+                  <strong>{content.titreVTT}</strong>
                 </p>
                 <p>
-                  Amateurs de VTT, Friesen et ses environs vous offrent des parcours variés pour tous les niveaux.
-                  Des balades familiales aux circuits techniques pour les plus sportifs, il y en a pour tous les goûts !
+                  {content.texteVTT}
                 </p>
                 <div className="buttons mt-4">
                   <a href="#" className="button is-link">
@@ -321,14 +337,12 @@ export default function Visites() {
                 <div className="column is-8">
                   <h3 className="title is-5 mb-3">Location de VTT</h3>
                   <p className="mb-3">
-                    Vous n'avez pas votre propre vélo ? Pas de problème ! Louez un VTT à l'office du tourisme 
-                    ou chez notre partenaire "Cycles du Sundgau".
+                    {content.locationVTT}
                   </p>
                   <ul>
-                    <li>VTT adultes et enfants</li>
-                    <li>VTT à assistance électrique</li>
-                    <li>Casques et accessoires</li>
-                    <li>Tarifs : à partir de 15€ la demi-journée</li>
+                    {content.locationVTTInfos && content.locationVTTInfos.map((info, idx) => (
+                      <li key={idx}>{info}</li>
+                    ))}
                   </ul>
                   <a href="#" className="button is-link mt-3">Réserver un VTT</a>
                 </div>
@@ -410,29 +424,22 @@ export default function Visites() {
               boxShadow: '0 2px 12px #1277c620',
               background: '#f0f7fd',
             }}>
-              <h3 className="title is-5 has-text-primary mb-3">Équipements sportifs à louer</h3>
-              
-              <div className="columns">
-                <div className="column">
-                  <div className="notification is-white" style={{ borderRadius: 12 }}>
-                    <p className="has-text-weight-bold mb-2">
-                      <span style={{ fontSize: 24, marginRight: 8 }}>🏀</span> Ballons et matériel
-                    </p>
-                    <p>Ballons (foot, basket, volley), raquettes de badminton et autres équipements disponibles à la mairie.</p>
-                    <p className="is-size-7 mt-2">Caution demandée. Réservation conseillée en période estivale.</p>
+              <h3 className="title is-5 has-text-primary mb-3">{content.equipementsSportifs}</h3>
+              <div className="columns is-multiline">
+                {content.equipementsSportifsInfos.map((eq, i) => (
+                  <div key={i} className="column is-6">
+                    <div className="notification is-white" style={{ borderRadius: 12 }}>
+                      <p className="has-text-weight-bold mb-2">
+                        <span style={{ fontSize: 24, marginRight: 8 }}>{eq.emoji}</span> {eq.titre}
+                      </p>
+                      <p>{eq.description}</p>
+                      {eq.note && <p className="is-size-7 mt-2">{eq.note}</p>}
+                    </div>
                   </div>
-                </div>
-                <div className="column">
-                  <div className="notification is-white" style={{ borderRadius: 12 }}>
-                    <p className="has-text-weight-bold mb-2">
-                      <span style={{ fontSize: 24, marginRight: 8 }}>🚲</span> Vélos
-                    </p>
-                    <p>Location de vélos classiques et électriques à l'office du tourisme pour découvrir la région.</p>
-                    <p className="is-size-7 mt-2">Tarifs : à partir de 10€ la demi-journée.</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
+            
           </div>
         );
 

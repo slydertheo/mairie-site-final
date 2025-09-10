@@ -2,22 +2,26 @@ import React, { useState, useEffect } from 'react';
 
 export default function EditeurDecouvrirFriesen() {
   const [content, setContent] = useState({
-    guideIntro: "",
+    introVillage: "",
     guideBouton: "",
     guidePlan: "",
-    titreGuide: "", // Visites guidées
-    accrocheVillage: "", // Découvrez le charme de notre village !
-    titrePedestre: "", // Randonnées pédestres autour de Friesen
-    consignesTitre: "", // Consignes de sécurité
-    consignes: [], // Liste des consignes
-    titreVTT: "", // Circuits VTT
-    locationVTT: "", // Location de VTT
-    equipementsSportifs: "", // Équipements sportifs à louer
-    titreInstallations: "", // Installations sportives
-    pointsInteret: [],
+    accrocheVillage: "",
+    infosVisiteGuidee: [],
+    titrePedestre: "",
+    textePedestre: "",
     circuitsPedestres: [],
+    titreVTT: "",
+    texteVTT: "",
     circuitsVTT: [],
+    locationVTT: "",
+    locationVTTInfos: [],
+    consignesTitre: "",
+    consignes: [],
+    titreInstallations: "",
+    texteInstallations: "",
     installationsSportives: [],
+    equipementsSportifs: "",
+    equipementsSportifsInfos: [],
     officeTourisme: {
       adresse: "",
       tel: "",
@@ -25,47 +29,21 @@ export default function EditeurDecouvrirFriesen() {
       horaires: "",
       site: ""
     },
-    infosPratiques: []
+    infosPratiques: [],
+    pointsInteret: []
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // Charger les données existantes
   useEffect(() => {
     fetch('/api/pageContent?page=decouvrir_friesen')
       .then(res => res.json())
       .then(data => {
-        const initial = {
-          guideIntro: "",
-          guideBouton: "",
-          guidePlan: "",
-          titreGuide: "", // Visites guidées
-          accrocheVillage: "", // Découvrez le charme de notre village !
-          titrePedestre: "", // Randonnées pédestres autour de Friesen
-          consignesTitre: "", // Consignes de sécurité
-          consignes: [], // Liste des consignes
-          titreVTT: "", // Circuits VTT
-          locationVTT: "", // Location de VTT
-          equipementsSportifs: "", // Équipements sportifs à louer
-          titreInstallations: "", // Installations sportives
-          pointsInteret: [],
-          circuitsPedestres: [],
-          circuitsVTT: [],
-          installationsSportives: [],
-          officeTourisme: {
-            adresse: "",
-            tel: "",
-            email: "",
-            horaires: "",
-            site: ""
-          },
-          infosPratiques: []
-        };
-        setContent({ ...initial, ...(data[0] || {}) });
+        setContent({ ...content, ...(data[0] || {}) });
       });
+    // eslint-disable-next-line
   }, []);
 
-  // Helpers pour listes
   const handleListChange = (section, idx, field, value) => {
     const arr = [...content[section]];
     arr[idx][field] = value;
@@ -78,7 +56,6 @@ export default function EditeurDecouvrirFriesen() {
     setContent({ ...content, [section]: content[section].filter((_, i) => i !== idx) });
   };
 
-  // Sauvegarde
   const handleSave = async e => {
     e.preventDefault();
     setLoading(true);
@@ -107,39 +84,25 @@ export default function EditeurDecouvrirFriesen() {
           🏞️ Éditeur - Découvrir Friesen
         </h1>
         <form onSubmit={handleSave}>
-          {/* GUIDE */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>📖</span> Guide de visite</h2>
-            <label className="label">Introduction</label>
-            <textarea className="textarea mb-2" value={content.guideIntro} onChange={e => setContent({ ...content, guideIntro: e.target.value })} />
+          {/* Guide de visite */}
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-link mb-4">🏞️ Page : Guide de visite</h2>
+            <label className="label">Accroche village</label>
+            <input className="input mb-2" value={content.accrocheVillage} onChange={e => setContent({ ...content, accrocheVillage: e.target.value })} />
+            <label className="label">Texte d’introduction</label>
+            <textarea className="textarea mb-2" value={content.introVillage} onChange={e => setContent({ ...content, introVillage: e.target.value })} />
+            <label className="label">Infos visites guidées (une ligne par info)</label>
+            <textarea className="textarea mb-2" value={(content.infosVisiteGuidee || []).join('\n')}
+              onChange={e => setContent({ ...content, infosVisiteGuidee: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })} rows={6} />
             <label className="label">Texte bouton PDF</label>
             <input className="input mb-2" value={content.guideBouton} onChange={e => setContent({ ...content, guideBouton: e.target.value })} />
             <label className="label">Texte bouton plan</label>
             <input className="input mb-2" value={content.guidePlan} onChange={e => setContent({ ...content, guidePlan: e.target.value })} />
           </div>
 
-          {/* Textes principaux */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3">Textes principaux</h2>
-            <label className="label">Accroche village</label>
-            <input
-              className="input mb-2"
-              value={content.accrocheVillage}
-              onChange={e => setContent({ ...content, accrocheVillage: e.target.value })}
-              placeholder="Découvrez le charme de notre village !"
-            />
-            <label className="label">Texte visites guidées</label>
-            <textarea
-              className="textarea mb-2"
-              value={content.titreGuide}
-              onChange={e => setContent({ ...content, titreGuide: e.target.value })}
-              placeholder="Texte pour la section visites guidées"
-            />
-          </div>
-
           {/* Points d'intérêt */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>📍</span> Points d'intérêt</h2>
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-primary mb-4">📍 Page : Points d'intérêt</h2>
             {(content.pointsInteret || []).map((point, i) => (
               <div key={i} className="box mb-2" style={{ background: "#fafdff" }}>
                 <label className="label">Nom</label>
@@ -161,8 +124,12 @@ export default function EditeurDecouvrirFriesen() {
           </div>
 
           {/* Circuits pédestres */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>🚶‍♂️</span> Circuits pédestres</h2>
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-success mb-4">🚶‍♂️ Page : Circuits pédestres</h2>
+            <label className="label">Titre section circuits pédestres</label>
+            <input className="input mb-2" value={content.titrePedestre} onChange={e => setContent({ ...content, titrePedestre: e.target.value })} />
+            <label className="label">Texte d’intro circuits pédestres</label>
+            <textarea className="textarea mb-2" value={content.textePedestre} onChange={e => setContent({ ...content, textePedestre: e.target.value })} rows={3} />
             {(content.circuitsPedestres || []).map((circuit, i) => (
               <div key={i} className="box mb-2" style={{ background: "#fafdff" }}>
                 <label className="label">Nom</label>
@@ -188,8 +155,12 @@ export default function EditeurDecouvrirFriesen() {
           </div>
 
           {/* Circuits VTT */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>🚵‍♂️</span> Circuits VTT</h2>
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-warning mb-4">🚵‍♂️ Page : Circuits VTT</h2>
+            <label className="label">Titre section circuits VTT</label>
+            <input className="input mb-2" value={content.titreVTT} onChange={e => setContent({ ...content, titreVTT: e.target.value })} />
+            <label className="label">Texte d’intro circuits VTT</label>
+            <textarea className="textarea mb-2" value={content.texteVTT} onChange={e => setContent({ ...content, texteVTT: e.target.value })} rows={3} />
             {content.circuitsVTT.map((circuit, i) => (
               <div key={i} className="box mb-2" style={{ background: "#fafdff" }}>
                 <label className="label">Nom</label>
@@ -214,9 +185,33 @@ export default function EditeurDecouvrirFriesen() {
             <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('circuitsVTT', { nom: "", distance: "", duree: "", difficulte: "", depart: "", description: "", denivele: "", image: "" })}>Ajouter un circuit VTT</button>
           </div>
 
+          {/* Location de VTT */}
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-link mb-4">🚲 Page : Location de VTT</h2>
+            <label className="label">Texte d’intro location VTT</label>
+            <textarea className="textarea mb-2" value={content.locationVTT} onChange={e => setContent({ ...content, locationVTT: e.target.value })} rows={3} />
+            <label className="label">Infos location VTT (une ligne par info)</label>
+            <textarea className="textarea mb-2" value={(content.locationVTTInfos || []).join('\n')}
+              onChange={e => setContent({ ...content, locationVTTInfos: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })} rows={4} />
+          </div>
+
+          {/* Consignes de sécurité */}
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-warning mb-4">⚠️ Page : Consignes de sécurité</h2>
+            <label className="label">Titre consignes</label>
+            <input className="input mb-2" value={content.consignesTitre} onChange={e => setContent({ ...content, consignesTitre: e.target.value })} />
+            <label className="label">Liste des consignes (une ligne par consigne)</label>
+            <textarea className="textarea mb-2" value={(content.consignes || []).join('\n')}
+              onChange={e => setContent({ ...content, consignes: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })} rows={5} />
+          </div>
+
           {/* Installations sportives */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>🏟️</span> Installations sportives</h2>
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-danger mb-4">🏟️ Page : Installations sportives</h2>
+            <label className="label">Titre section installations sportives</label>
+            <input className="input mb-2" value={content.titreInstallations} onChange={e => setContent({ ...content, titreInstallations: e.target.value })} />
+            <label className="label">Texte d’intro installations sportives</label>
+            <textarea className="textarea mb-2" value={content.texteInstallations} onChange={e => setContent({ ...content, texteInstallations: e.target.value })} rows={3} />
             {content.installationsSportives.map((inst, i) => (
               <div key={i} className="box mb-2" style={{ background: "#fafdff" }}>
                 <label className="label">Nom</label>
@@ -237,9 +232,66 @@ export default function EditeurDecouvrirFriesen() {
             <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('installationsSportives', { nom: "", description: "", equipements: [""], horaires: "", adresse: "", image: "" })}>Ajouter une installation sportive</button>
           </div>
 
+          {/* Équipements sportifs à louer */}
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-primary mb-4">🎾 Page : Équipements sportifs à louer</h2>
+            <label className="label">Titre équipements sportifs à louer</label>
+            <input className="input mb-2" value={content.equipementsSportifs} onChange={e => setContent({ ...content, equipementsSportifs: e.target.value })} />
+            <label className="label">Liste des équipements à louer</label>
+            <div className="columns is-multiline">
+              {content.equipementsSportifsInfos.map((eq, i) => (
+                <div key={i} className="column is-12-mobile is-6-tablet is-6-desktop">
+                  <div className="box" style={{ background: "#fafdff", borderRadius: 12 }}>
+                    <label className="label">Emoji</label>
+                    <input className="input mb-2" value={eq.emoji} onChange={e => {
+                      const arr = [...content.equipementsSportifsInfos];
+                      arr[i].emoji = e.target.value;
+                      setContent({ ...content, equipementsSportifsInfos: arr });
+                    }} placeholder="🏀" />
+                    <label className="label">Titre</label>
+                    <input className="input mb-2" value={eq.titre} onChange={e => {
+                      const arr = [...content.equipementsSportifsInfos];
+                      arr[i].titre = e.target.value;
+                      setContent({ ...content, equipementsSportifsInfos: arr });
+                    }} placeholder="Ballons et matériel" />
+                    <label className="label">Description</label>
+                    <textarea className="textarea mb-2" value={eq.description} onChange={e => {
+                      const arr = [...content.equipementsSportifsInfos];
+                      arr[i].description = e.target.value;
+                      setContent({ ...content, equipementsSportifsInfos: arr });
+                    }} placeholder="Ballons (foot, basket, volley), raquettes de badminton et autres équipements disponibles à la mairie." />
+                    <label className="label">Note (optionnel)</label>
+                    <input className="input mb-2" value={eq.note} onChange={e => {
+                      const arr = [...content.equipementsSportifsInfos];
+                      arr[i].note = e.target.value;
+                      setContent({ ...content, equipementsSportifsInfos: arr });
+                    }} placeholder="Caution demandée. Réservation conseillée en période estivale." />
+                    <button type="button" className="button is-danger is-light mt-2"
+                      onClick={() => setContent({
+                        ...content,
+                        equipementsSportifsInfos: content.equipementsSportifsInfos.filter((_, idx) => idx !== i)
+                      })}>
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="button is-link is-light is-small"
+              onClick={() => setContent({
+                ...content,
+                equipementsSportifsInfos: [
+                  ...content.equipementsSportifsInfos,
+                  { emoji: "", titre: "", description: "", note: "" }
+                ]
+              })}>
+              Ajouter une ligne
+            </button>
+          </div>
+
           {/* Office du tourisme */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>🏢</span> Office du tourisme</h2>
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-info mb-4">🏢 Page : Office du tourisme</h2>
             <label className="label">Adresse</label>
             <input className="input mb-2" value={content.officeTourisme.adresse} onChange={e => setContent({ ...content, officeTourisme: { ...content.officeTourisme, adresse: e.target.value } })} />
             <label className="label">Téléphone</label>
@@ -252,9 +304,9 @@ export default function EditeurDecouvrirFriesen() {
             <input className="input mb-2" value={content.officeTourisme.site} onChange={e => setContent({ ...content, officeTourisme: { ...content.officeTourisme, site: e.target.value } })} />
           </div>
 
-          {/* Infos pratiques */}
-          <div className="box mb-4">
-            <h2 className="subtitle is-5 mb-3"><span style={{fontSize:22}}>ℹ️</span> Informations pratiques</h2>
+          {/* Informations pratiques */}
+          <div className="box mb-6">
+            <h2 className="title is-4 has-text-grey mb-4">ℹ️ Page : Informations pratiques</h2>
             {content.infosPratiques.map((info, i) => (
               <div key={i} className="box mb-2" style={{ background: "#fafdff" }}>
                 <label className="label">Titre</label>
