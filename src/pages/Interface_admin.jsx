@@ -10,6 +10,7 @@ import MarchesCrud from '../components/MarchesCrud';
 import IntercommunaliteEditor from '../components/EditeurIntercomunalité.jsx';
 import AssociationsEditor from '../components/AssociationsEditor';
 import EditeurDecouvrirFriesen from '../components/EditeurDecouvrirFriesen'; 
+import EditeurInfosPratiques from '../components/EditeurInfosPratiques'; 
 
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
@@ -19,6 +20,7 @@ const PAGES = [
   { slug: 'intercommunalite', title: 'Intercommunalité' },
   { slug: 'associations', title: 'Associations' }, 
   { slug: 'decouvrir', title: 'Découvrir Friesen' }, 
+  { slug: 'infos_pratiques', title: 'Infos Pratiques' }, 
 ];
 
 export default function InterfaceAdmin() {
@@ -94,7 +96,8 @@ export default function InterfaceAdmin() {
             )}
             {selectedPage === 'intercommunalite' && <IntercommunaliteEditor />}
             {selectedPage === 'associations' && <AssociationsEditor />}
-            {selectedPage === 'decouvrir' && <EditeurDecouvrirFriesen />} // 
+            {selectedPage === 'decouvrir' && <EditeurDecouvrirFriesen />}
+            {selectedPage === 'infos_pratiques' && <EditeurInfosPratiques />} 
           </div>
         )}
 
