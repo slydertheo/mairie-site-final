@@ -109,6 +109,10 @@ export default function EditeurInfosPratiques() {
     setTimeout(() => setMsg(''), 2000);
   };
 
+  const handleSaveCollecteDechets = () => {
+    console.log("Collecte des déchets sauvegardée");
+  };
+
   return (
     <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
       <div className="box" style={{
@@ -139,7 +143,7 @@ export default function EditeurInfosPratiques() {
               <a onClick={() => setActiveTab('eau')}>Service des eaux</a>
             </li>
             <li className={activeTab === 'liens' ? 'is-active' : ''}>
-              <a onClick={() => setActiveTab('liens')}>Événement</a>
+              <a onClick={() => setActiveTab('liens')}>Événements & Liens</a>
             </li>
             <li className={activeTab === 'chasse' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('chasse')}>Chasse</a>
@@ -150,42 +154,373 @@ export default function EditeurInfosPratiques() {
         <form onSubmit={handleSave}>
           {activeTab === 'bulletins' && (
             <>
+              {/* Introduction et titres de la section Bulletins */}
               <div className="box mb-6">
-                <h2 className="title is-4 has-text-link mb-4">📰 Bulletins communaux</h2>
-                {content.bulletins.map((b, i) => (
-                  <div key={i} className="box mb-2">
-                    <label className="label">Titre</label>
-                    <input className="input mb-2" value={b.titre} onChange={e => handleListChange('bulletins', i, 'titre', e.target.value)} placeholder="Titre" />
-                    <label className="label">Date</label>
-                    <input className="input mb-2" value={b.date} onChange={e => handleListChange('bulletins', i, 'date', e.target.value)} placeholder="Date" />
-                    <label className="label">Nom du fichier</label>
-                    <input className="input mb-2" value={b.fichier} onChange={e => handleListChange('bulletins', i, 'fichier', e.target.value)} placeholder="Nom du fichier" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('bulletins', i)}>Supprimer</button>
-                  </div>
-                ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('bulletins', { titre: "", date: "", fichier: "" })}>Ajouter un bulletin</button>
+                <h2 className="title is-4 has-text-link mb-4">📝 Introduction - Bulletins communaux</h2>
+                
+                <label className="label">Titre principal</label>
+                <input 
+                  className="input mb-3" 
+                  value={content.bulletinsInfo?.titre || "Bulletin communal"} 
+                  onChange={e => setContent({ 
+                    ...content, 
+                    bulletinsInfo: { 
+                      ...content.bulletinsInfo, 
+                      titre: e.target.value 
+                    } 
+                  })} 
+                  placeholder="Titre de la section"
+                />
+                
+                <label className="label">Texte d'introduction</label>
+                <textarea 
+                  className="textarea mb-3" 
+                  value={content.bulletinsInfo?.introduction || "Retrouvez ici les bulletins municipaux publiés par la commune de Friesen. Ces publications trimestrielles vous informent des actualités et des projets de la commune."} 
+                  onChange={e => setContent({ 
+                    ...content, 
+                    bulletinsInfo: { 
+                      ...content.bulletinsInfo, 
+                      introduction: e.target.value 
+                    } 
+                  })} 
+                  placeholder="Texte d'introduction"
+                  rows={3}
+                />
               </div>
 
+              {/* Gestion des bulletins récents (affichés en cartes) */}
               <div className="box mb-6">
-                <h2 className="title is-4 has-text-link mb-4">🎉 Manifestations</h2>
-                {content.manifestations.map((m, i) => (
-                  <div key={i} className="box mb-2">
-                    <label className="label">Titre</label>
-                    <input className="input mb-2" value={m.titre} onChange={e => handleListChange('manifestations', i, 'titre', e.target.value)} placeholder="Titre" />
-                    <label className="label">Date</label>
-                    <input className="input mb-2" value={m.date} onChange={e => handleListChange('manifestations', i, 'date', e.target.value)} placeholder="Date" />
-                    <label className="label">Description</label>
-                    <textarea className="textarea mb-2" value={m.description} onChange={e => handleListChange('manifestations', i, 'description', e.target.value)} placeholder="Description" />
-                    <label className="label">Lieu</label>
-                    <input className="input mb-2" value={m.lieu} onChange={e => handleListChange('manifestations', i, 'lieu', e.target.value)} placeholder="Lieu" />
-                    <label className="checkbox">
-                      <input type="checkbox" checked={m.inscription} onChange={e => handleListChange('manifestations', i, 'inscription', e.target.checked)} />
-                      Inscription requise
-                    </label>
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('manifestations', i)}>Supprimer</button>
+                <h2 className="title is-4 has-text-link mb-4">📰 Bulletins récents</h2>
+                
+                {(content.bulletins || []).map((bulletin, i) => (
+                  <div key={i} className="box mb-3" style={{ position: 'relative' }}>
+                    <button 
+                      type="button" 
+                      className="delete is-medium" 
+                      style={{ position: 'absolute', top: 10, right: 10 }} 
+                      onClick={() => removeListItem('bulletins', i)}
+                      aria-label="Supprimer ce bulletin"
+                    ></button>
+                    
+                    <div className="columns">
+                      <div className="column is-3">
+                        <div className="field">
+                          <label className="label">Date</label>
+                          <input 
+                            className="input" 
+                            value={bulletin.date || ""} 
+                            onChange={e => handleListChange('bulletins', i, 'date', e.target.value)} 
+                            placeholder="Ex: Juin 2025"
+                          />
+                        </div>
+                      </div>
+                      <div className="column">
+                        <div className="field">
+                          <label className="label">Titre</label>
+                          <input 
+                            className="input" 
+                            value={bulletin.titre || ""} 
+                            onChange={e => handleListChange('bulletins', i, 'titre', e.target.value)} 
+                            placeholder="Ex: Bulletin municipal - Été 2025"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="field">
+                      <label className="label">Nom du fichier</label>
+                      <div className="control has-icons-left">
+                        <input 
+                          className="input" 
+                          value={bulletin.fichier || ""} 
+                          onChange={e => handleListChange('bulletins', i, 'fichier', e.target.value)} 
+                          placeholder="Ex: bulletin-ete-2025.pdf"
+                        />
+                        <span className="icon is-small is-left">
+                          <i className="fas fa-file-pdf"></i>
+                        </span>
+                      </div>
+                      <p className="help">Le fichier doit être uploadé dans le dossier /public/bulletins/</p>
+                    </div>
+                    
+                    <div className="field mt-3">
+                      <div className="buttons">
+                        <button 
+                          type="button" 
+                          className="button is-small is-info" 
+                          onClick={() => {
+                            const newBulletins = [...content.bulletins];
+                            if (i > 0) {
+                              [newBulletins[i], newBulletins[i-1]] = [newBulletins[i-1], newBulletins[i]];
+                              setContent({...content, bulletins: newBulletins});
+                            }
+                          }}
+                          disabled={i === 0}
+                        >
+                          <span className="icon"><i className="fas fa-arrow-up"></i></span>
+                          <span>Monter</span>
+                        </button>
+                        
+                        <button 
+                          type="button" 
+                          className="button is-small is-info" 
+                          onClick={() => {
+                            const newBulletins = [...content.bulletins];
+                            if (i < newBulletins.length - 1) {
+                              [newBulletins[i], newBulletins[i+1]] = [newBulletins[i+1], newBulletins[i]];
+                              setContent({...content, bulletins: newBulletins});
+                            }
+                          }}
+                          disabled={i === (content.bulletins || []).length - 1}
+                        >
+                          <span className="icon"><i className="fas fa-arrow-down"></i></span>
+                          <span>Descendre</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('manifestations', { titre: "", date: "", description: "", lieu: "", inscription: false })}>Ajouter une manifestation</button>
+                
+                <button 
+                  type="button" 
+                  className="button is-link" 
+                  onClick={() => addListItem('bulletins', { id: Date.now(), titre: "", date: "", fichier: "" })}
+                >
+                  <span className="icon"><i className="fas fa-plus"></i></span>
+                  <span>Ajouter un bulletin récent</span>
+                </button>
+              </div>
+
+              {/* Gestion des archives par année */}
+              <div className="box mb-6">
+                <h2 className="title is-4 has-text-link mb-4">🗄️ Archives des bulletins</h2>
+
+                {/* Gestion des années d'archives */}
+                <div className="field mb-5">
+                  <label className="label">Années disponibles</label>
+                  <div className="tags input-tag">
+                    {(content.archivesBulletinsAnnees || []).map((annee, i) => (
+                      <span key={i} className="tag is-link is-medium">
+                        {annee}
+                        <button 
+                          type="button" 
+                          className="delete is-small" 
+                          onClick={() => {
+                            const newAnnees = [...content.archivesBulletinsAnnees];
+                            newAnnees.splice(i, 1);
+                            setContent({...content, archivesBulletinsAnnees: newAnnees});
+                          }}
+                        ></button>
+                      </span>
+                    ))}
+                    
+                    <input 
+                      className="input is-small tag-input" 
+                      style={{ border: 'none', outline: 'none', width: '80px' }}
+                      placeholder="Ajouter..."
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && e.target.value.trim()) {
+                          const nouvelleAnnee = e.target.value.trim();
+                          if (!/^\d{4}$/.test(nouvelleAnnee)) {
+                            alert("Veuillez entrer une année au format YYYY (ex: 2024)");
+                            return;
+                          }
+                          
+                          const annees = [...(content.archivesBulletinsAnnees || [])];
+                          if (!annees.includes(nouvelleAnnee)) {
+                            annees.push(nouvelleAnnee);
+                            annees.sort((a, b) => parseInt(b) - parseInt(a)); // Trier par ordre décroissant
+                            setContent({...content, archivesBulletinsAnnees: annees});
+                            e.target.value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="help">Appuyez sur Entrée pour ajouter une année</p>
+                </div>
+
+                {/* Gestion des bulletins par année */}
+                {(content.archivesBulletinsAnnees || []).length > 0 && (
+                  <div className="field">
+                    <label className="label">Bulletins par année</label>
+                    
+                    <div className="tabs">
+                      <ul>
+                        {(content.archivesBulletinsAnnees || []).map((annee, i) => (
+                          <li key={i} className={content.archiveAnneeActive === annee ? 'is-active' : ''}>
+                            <a onClick={() => setContent({...content, archiveAnneeActive: annee})}>
+                              {annee}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    {content.archiveAnneeActive && (
+                      <>
+                        <table className="table is-fullwidth">
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Titre</th>
+                              <th>Fichier</th>
+                              <th width="150">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {((content.archivesBulletins || {})[content.archiveAnneeActive] || []).map((bulletin, i) => (
+                              <tr key={i}>
+                                <td>
+                                  <input 
+                                    className="input is-small" 
+                                    value={bulletin.date || ""} 
+                                    onChange={e => {
+                                      const newArchives = {...content.archivesBulletins};
+                                      newArchives[content.archiveAnneeActive][i].date = e.target.value;
+                                      setContent({...content, archivesBulletins: newArchives});
+                                    }} 
+                                    placeholder="Ex: Mars 2024"
+                                  />
+                                </td>
+                                <td>
+                                  <input 
+                                    className="input is-small" 
+                                    value={bulletin.titre || ""} 
+                                    onChange={e => {
+                                      const newArchives = {...content.archivesBulletins};
+                                      newArchives[content.archiveAnneeActive][i].titre = e.target.value;
+                                      setContent({...content, archivesBulletins: newArchives});
+                                    }} 
+                                    placeholder="Titre du bulletin"
+                                  />
+                                </td>
+                                <td>
+                                  <input 
+                                    className="input is-small" 
+                                    value={bulletin.fichier || ""} 
+                                    onChange={e => {
+                                      const newArchives = {...content.archivesBulletins};
+                                      newArchives[content.archiveAnneeActive][i].fichier = e.target.value;
+                                      setContent({...content, archivesBulletins: newArchives});
+                                    }} 
+                                    placeholder="Nom du fichier"
+                                  />
+                                </td>
+                                <td>
+                                  <div className="buttons are-small">
+                                    <button 
+                                      type="button" 
+                                      className="button is-danger is-small" 
+                                      onClick={() => {
+                                        const newArchives = {...content.archivesBulletins};
+                                        newArchives[content.archiveAnneeActive].splice(i, 1);
+                                        setContent({...content, archivesBulletins: newArchives});
+                                      }}
+                                    >
+                                      <span className="icon"><i className="fas fa-trash"></i></span>
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      className="button is-info is-small" 
+                                      onClick={() => {
+                                        const newArchives = {...content.archivesBulletins};
+                                        const bulletins = newArchives[content.archiveAnneeActive];
+                                        
+                                        if (i > 0) {
+                                          [bulletins[i], bulletins[i-1]] = [bulletins[i-1], bulletins[i]];
+                                          setContent({...content, archivesBulletins: newArchives});
+                                        }
+                                      }}
+                                      disabled={i === 0}
+                                    >
+                                      <span className="icon"><i className="fas fa-arrow-up"></i></span>
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      className="button is-info is-small" 
+                                      onClick={() => {
+                                        const newArchives = {...content.archivesBulletins};
+                                        const bulletins = newArchives[content.archiveAnneeActive];
+                                        
+                                        if (i < bulletins.length - 1) {
+                                          [bulletins[i], bulletins[i+1]] = [bulletins[i+1], bulletins[i]];
+                                          setContent({...content, archivesBulletins: newArchives});
+                                        }
+                                      }}
+                                      disabled={i === ((content.archivesBulletins || {})[content.archiveAnneeActive] || []).length - 1}
+                                    >
+                                      <span className="icon"><i className="fas fa-arrow-down"></i></span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        
+                        <button 
+                          type="button" 
+                          className="button is-link is-light" 
+                          onClick={() => {
+                            const newArchives = {...content.archivesBulletins || {}};
+                            
+                            if (!newArchives[content.archiveAnneeActive]) {
+                              newArchives[content.archiveAnneeActive] = [];
+                            }
+                            
+                            newArchives[content.archiveAnneeActive].push({
+                              date: "",
+                              titre: "",
+                              fichier: ""
+                            });
+                            
+                            setContent({...content, archivesBulletins: newArchives});
+                          }}
+                        >
+                          <span className="icon"><i className="fas fa-plus"></i></span>
+                          <span>Ajouter un bulletin pour {content.archiveAnneeActive}</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Paramètres d'affichage */}
+              <div className="box mb-6">
+                <h2 className="title is-4 has-text-link mb-4">⚙️ Paramètres d'affichage</h2>
+                
+                <div className="field">
+                  <label className="label">Année d'archive affichée par défaut</label>
+                  <div className="select">
+                    <select 
+                      value={content.archiveAnneeDefaut || ""} 
+                      onChange={e => setContent({...content, archiveAnneeDefaut: e.target.value})}
+                    >
+                      <option value="">Sélectionnez une année</option>
+                      {(content.archivesBulletinsAnnees || []).map((annee, i) => (
+                        <option key={i} value={annee}>{annee}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="help">Cette année sera sélectionnée par défaut dans la section archives</p>
+                </div>
+                
+                <div className="field">
+                  <label className="label">Nombre de bulletins récents à afficher</label>
+                  <div className="control">
+                    <input 
+                      type="number" 
+                      className="input" 
+                      value={content.nombreBulletinsRecents || 4} 
+                      onChange={e => setContent({...content, nombreBulletinsRecents: parseInt(e.target.value) || 4})}
+                      min="1" 
+                      max="8"
+                    />
+                  </div>
+                  <p className="help">Nombre de bulletins à afficher en haut de la page (recommandé: 4)</p>
+                </div>
               </div>
             </>
           )}
@@ -336,21 +671,21 @@ export default function EditeurInfosPratiques() {
           {activeTab === 'dechets' && (
             <>
               {/* Titre et introduction de la collecte des déchets */}
-              <div className="box mb-6">
-                <h2 className="title is-4 has-text-success mb-4">📝 Introduction - Collecte des déchets</h2>
-                <label className="label">Titre de la section</label>
-                <input 
-                  className="input mb-3" 
-                  value={content.collecteDechets?.titre || "Collecte des déchets à Friesen"} 
-                  onChange={e => setContent({ 
-                    ...content, 
-                    collecteDechets: { 
-                      ...content.collecteDechets, 
-                      titre: e.target.value 
-                    } 
-                  })} 
-                  placeholder="Titre de la section"
-                />
+                <div className="box mb-6">
+                  <h2 className="title is-4 has-text-success mb-4">📝 Introduction - Collecte des déchets</h2>
+                  <label className="label">Titre de la section</label>
+                  <input 
+                    className="input mb-3" 
+                    value={content.collecteDechets?.titre || "Collecte des déchets à Friesen"} 
+                    onChange={e => setContent({ 
+                      ...content, 
+                      collecteDechets: { 
+                        ...content.collecteDechets, 
+                        titre: e.target.value 
+                      } 
+                    })} 
+                    placeholder="Titre de la section"
+                  />
                 
                 <label className="label">Texte d'introduction</label>
                 <textarea 
@@ -368,19 +703,111 @@ export default function EditeurInfosPratiques() {
                 />
               </div>
 
-              {/* Collecte des déchets (section existante) */}
+              {/* Collecte des déchets (CRUD adapté) */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-success mb-4">♻️ Collecte des déchets</h2>
-                <label className="label">Ordures ménagères</label>
-                <input className="input mb-2" value={content.collecteDechets?.ordures || ""} onChange={e => setContent({ ...content, collecteDechets: { ...content.collecteDechets, ordures: e.target.value } })} />
-                <label className="label">Recyclables</label>
-                <input className="input mb-2" value={content.collecteDechets?.recyclables || ""} onChange={e => setContent({ ...content, collecteDechets: { ...content.collecteDechets, recyclables: e.target.value } })} />
-                <label className="label">Biodéchets</label>
-                <input className="input mb-2" value={content.collecteDechets?.biodechets || ""} onChange={e => setContent({ ...content, collecteDechets: { ...content.collecteDechets, biodechets: e.target.value } })} />
-                <label className="label">Verre</label>
-                <input className="input mb-2" value={content.collecteDechets?.verre || ""} onChange={e => setContent({ ...content, collecteDechets: { ...content.collecteDechets, verre: e.target.value } })} />
-                <label className="label">Encombrants</label>
-                <input className="input mb-2" value={content.collecteDechets?.encombrants || ""} onChange={e => setContent({ ...content, collecteDechets: { ...content.collecteDechets, encombrants: e.target.value } })} />
+                
+                <div className="field">
+                  <label className="label">Ordures ménagères</label>
+                  <div className="control">
+                    <input 
+                      className="input mb-2" 
+                      type="text" 
+                      value={content.collecteDechets?.ordures || ""} 
+                      onChange={e => setContent({ 
+                        ...content, 
+                        collecteDechets: { 
+                          ...content.collecteDechets, 
+                          ordures: e.target.value 
+                        } 
+                      })} 
+                      placeholder="Exemple : Le lundi matin" 
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label className="label">Recyclables</label>
+                  <div className="control">
+                    <input 
+                      className="input mb-2" 
+                      type="text" 
+                      value={content.collecteDechets?.recyclables || ""} 
+                      onChange={e => setContent({ 
+                        ...content, 
+                        collecteDechets: { 
+                          ...content.collecteDechets, 
+                          recyclables: e.target.value 
+                        } 
+                      })} 
+                      placeholder="Exemple : Le mercredi matin des semaines paires" 
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label className="label">Biodéchets</label>
+                  <div className="control">
+                    <input 
+                      className="input mb-2" 
+                      type="text" 
+                      value={content.collecteDechets?.biodechets || ""} 
+                      onChange={e => setContent({ 
+                        ...content, 
+                        collecteDechets: { 
+                          ...content.collecteDechets, 
+                          biodechets: e.target.value 
+                        } 
+                      })} 
+                      placeholder="Exemple : Le jeudi matin" 
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label className="label">Verre</label>
+                  <div className="control">
+                    <input 
+                      className="input mb-2" 
+                      type="text" 
+                      value={content.collecteDechets?.verre || ""} 
+                      onChange={e => setContent({ 
+                        ...content, 
+                        collecteDechets: { 
+                          ...content.collecteDechets, 
+                          verre: e.target.value 
+                        } 
+                      })} 
+                      placeholder="Exemple : Points d'apport volontaire (Place de la Mairie, Rue des Écoles)" 
+                    />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label className="label">Encombrants</label>
+                  <div className="control">
+                    <input 
+                      className="input mb-2" 
+                      type="text" 
+                      value={content.collecteDechets?.encombrants || ""} 
+                      onChange={e => setContent({ 
+                        ...content, 
+                        collecteDechets: { 
+                          ...content.collecteDechets, 
+                          encombrants: e.target.value 
+                        } 
+                      })} 
+                      placeholder="Exemple : 1er mardi des mois de mars, juin, septembre et décembre" 
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  className="button is-link mt-4" 
+                  onClick={() => handleSaveCollecteDechets()}
+                >
+                  Sauvegarder les modifications
+                </button>
               </div>
 
               <div className="box mb-6">
@@ -405,12 +832,6 @@ export default function EditeurInfosPratiques() {
                       arr[i].horaires = e.target.value;
                       setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries: arr } });
                     }} placeholder="Horaires" />
-                    <label className="label">Types de déchets acceptés</label>
-                    <textarea className="textarea mb-2" value={d.dechets} onChange={e => {
-                      const arr = [...content.collecteDechets.dechetteries];
-                      arr[i].dechets = e.target.value;
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries: arr } });
-                    }} placeholder="Types de déchets acceptés" />
                     <button type="button" className="button is-danger is-small mt-2" onClick={() => {
                       const arr = content.collecteDechets.dechetteries.filter((_, idx) => idx !== i);
                       setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries: arr } });
@@ -428,61 +849,147 @@ export default function EditeurInfosPratiques() {
                 {(content.collecteDechets?.documents || []).map((doc, i) => (
                   <div key={i} className="box mb-2">
                     <label className="label">Titre</label>
-                    <input className="input mb-2" value={doc.titre} onChange={e => {
-                      const arr = [...content.collecteDechets.documents];
-                      arr[i].titre = e.target.value;
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
-                    }} placeholder="Titre" />
-                    <label className="label">Description</label>
-                    <input className="input mb-2" value={doc.description} onChange={e => {
-                      const arr = [...content.collecteDechets.documents];
-                      arr[i].description = e.target.value;
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
-                    }} placeholder="Description" />
-                    <label className="label">Nom du fichier</label>
-                    <input className="input mb-2" value={doc.fichier} onChange={e => {
-                      const arr = [...content.collecteDechets.documents];
-                      arr[i].fichier = e.target.value;
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
-                    }} placeholder="Nom du fichier" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => {
-                      const arr = content.collecteDechets.documents.filter((_, idx) => idx !== i);
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
-                    }}>Supprimer</button>
+                    <input
+                      className="input mb-2"
+                      value={doc.titre}
+                      onChange={e => {
+                        const arr = [...content.collecteDechets.documents];
+                        arr[i].titre = e.target.value;
+                        setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                      }}
+                      placeholder="Titre"
+                    />
+
+                    <label className="label">Fichier</label>
+                    <div className="field has-addons">
+                      <div className="control is-expanded">
+                        <input
+                          className="input mb-2"
+                          type="text"
+                          value={doc.fichier || ""}
+                          readOnly
+                          placeholder="Aucun fichier sélectionné"
+                        />
+                      </div>
+                      <div className="control">
+                        <button
+                          type="button"
+                          className="button is-link"
+                          onClick={() => {
+                            const fileInput = document.createElement("input");
+                            fileInput.type = "file";
+                            fileInput.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg"; // Types de fichiers autorisés
+                            fileInput.onchange = async e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const formData = new FormData();
+                                formData.append("file", file);
+
+                                try {
+                                  const response = await fetch("/api/upload", {
+                                    method: "POST",
+                                    body: formData,
+                                  });
+                                  const data = await response.json();
+                                  if (response.ok) {
+                                    const arr = [...content.collecteDechets.documents];
+                                    arr[i].fichier = data.fileUrl; // URL du fichier retournée par l'API
+                                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                                  } else {
+                                    alert("Erreur lors de l'upload du fichier.");
+                                  }
+                                } catch (error) {
+                                  console.error("Erreur lors de l'upload :", error);
+                                  alert("Erreur lors de l'upload du fichier.");
+                                }
+                              }
+                            };
+                            fileInput.click();
+                          }}
+                        >
+                          Ajouter un fichier
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="button is-danger is-small mt-2"
+                      onClick={() => {
+                        const arr = content.collecteDechets.documents.filter((_, idx) => idx !== i);
+                        setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                      }}
+                    >
+                      Supprimer
+                    </button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => {
-                  const documents = [...(content.collecteDechets.documents || []), { titre: "", description: "", fichier: "" }];
-                  setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents } });
-                }}>Ajouter un document</button>
+
+                <button
+                  type="button"
+                  className="button is-link is-light is-small"
+                  onClick={() => {
+                    const documents = [...(content.collecteDechets.documents || []), { titre: "", fichier: "" }];
+                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents } });
+                  }}
+                >
+                  Ajouter un document
+                </button>
               </div>
 
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-success mb-4">❓ Questions fréquentes</h2>
                 {(content.collecteDechets?.faq || []).map((q, i) => (
-                  <div key={i} className="box mb-2">
-                    <label className="label">Question</label>
-                    <input className="input mb-2" value={q.question} onChange={e => {
-                      const arr = [...content.collecteDechets.faq];
-                      arr[i].question = e.target.value;
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
-                    }} placeholder="Question" />
-                    <label className="label">Réponse</label>
-                    <textarea className="textarea mb-2" value={q.reponse} onChange={e => {
-                      const arr = [...content.collecteDechets.faq];
-                      arr[i].reponse = e.target.value;
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
-                    }} placeholder="Réponse" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => {
-                      const arr = content.collecteDechets.faq.filter((_, idx) => idx !== i);
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
-                    }}>Supprimer</button>
+                  <div key={i} className="notification is-link is-light mb-4" style={{ borderRadius: 12 }}>
+                    <p className="has-text-weight-bold mb-2">Question {i + 1}</p>
+                    <div className="field">
+                      <label className="label">Question</label>
+                      <input
+                        className="input mb-2"
+                        value={q.question}
+                        onChange={e => {
+                          const arr = [...content.collecteDechets.faq];
+                          arr[i].question = e.target.value;
+                          setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
+                        }}
+                        placeholder="Entrez la question"
+                      />
+                    </div>
+                    <div className="field">
+                      <label className="label">Réponse</label>
+                      <textarea
+                        className="textarea mb-2"
+                        value={q.reponse}
+                        onChange={e => {
+                          const arr = [...content.collecteDechets.faq];
+                          arr[i].reponse = e.target.value;
+                          setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
+                        }}
+                        placeholder="Entrez la réponse"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="button is-danger is-small"
+                      onClick={() => {
+                        const arr = content.collecteDechets.faq.filter((_, idx) => idx !== i);
+                        setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
+                      }}
+                    >
+                      Supprimer
+                    </button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => {
-                  const faq = [...(content.collecteDechets.faq || []), { question: "", reponse: "" }];
-                  setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq } });
-                }}>Ajouter une question</button>
+                <button
+                  type="button"
+                  className="button is-link is-light is-small"
+                  onClick={() => {
+                    const faq = [...(content.collecteDechets.faq || []), { question: "", reponse: "" }];
+                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq } });
+                  }}
+                >
+                  Ajouter une question
+                </button>
               </div>
             </>
           )}
@@ -717,6 +1224,7 @@ export default function EditeurInfosPratiques() {
 
           {activeTab === 'liens' && (
             <>
+              {/* Liens utiles (section existante) */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">🔗 Liens utiles</h2>
                 {(content.liensUtiles || []).map((lien, i) => (
@@ -735,6 +1243,29 @@ export default function EditeurInfosPratiques() {
                 <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('liensUtiles', {
                   titre: "", description: "", url: "", categorie: ""
                 })}>Ajouter un lien</button>
+              </div>
+
+              {/* Manifestations (déplacées ici) */}
+              <div className="box mb-6">
+                <h2 className="title is-4 has-text-link mb-4">🎉 Manifestations</h2>
+                {content.manifestations.map((m, i) => (
+                  <div key={i} className="box mb-2">
+                    <label className="label">Titre</label>
+                    <input className="input mb-2" value={m.titre} onChange={e => handleListChange('manifestations', i, 'titre', e.target.value)} placeholder="Titre" />
+                    <label className="label">Date</label>
+                    <input className="input mb-2" value={m.date} onChange={e => handleListChange('manifestations', i, 'date', e.target.value)} placeholder="Date" />
+                    <label className="label">Description</label>
+                    <textarea className="textarea mb-2" value={m.description} onChange={e => handleListChange('manifestations', i, 'description', e.target.value)} placeholder="Description" />
+                    <label className="label">Lieu</label>
+                    <input className="input mb-2" value={m.lieu} onChange={e => handleListChange('manifestations', i, 'lieu', e.target.value)} placeholder="Lieu" />
+                    <label className="checkbox">
+                      <input type="checkbox" checked={m.inscription} onChange={e => handleListChange('manifestations', i, 'inscription', e.target.checked)} />
+                      Inscription requise
+                    </label>
+                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('manifestations', i)}>Supprimer</button>
+                  </div>
+                ))}
+                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('manifestations', { titre: "", date: "", description: "", lieu: "", inscription: false })}>Ajouter une manifestation</button>
               </div>
             </>
           )}

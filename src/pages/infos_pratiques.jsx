@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
 
@@ -15,6 +15,15 @@ export default function InfosPratiques() {
     participants: '',
     nature: ''
   });
+    // Calendrier de collecte des déchets
+  const collecteDechets = {
+    ordures: "Le lundi matin",
+    recyclables: "Le mercredi matin des semaines paires",
+    biodechets: "Le jeudi matin",
+    verre: "Points d'apport volontaire (Place de la Mairie, Rue des Écoles)",
+    encombrants: "1er mardi des mois de mars, juin, septembre et décembre"
+  };
+
   const [releveForm, setReleveForm] = useState({
     nom: '',
     adresse: '',
@@ -25,6 +34,35 @@ export default function InfosPratiques() {
     date: ''
   });
   const [formSubmitted, setFormSubmitted] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false); // Example state for admin check
+  const [isLoading, setIsLoading] = useState(false); // Example state for loading
+  const [pageData, setPageData] = useState({}); // Example state for dynamic data
+
+  useEffect(() => {
+    const fetchPageData = async () => {
+      try {
+        const response = await fetch('/api/pageContent?page=infos_pratiques');
+        const data = await response.json();
+
+        if (data && data[0]) {
+          setPageData({
+            ...data[0],
+            collecteDechets: {
+              ...data[0].collecteDechets,
+              faqTitle: data[0].collecteDechets?.faqTitle || "Questions sur la collecte ?",
+              faqDescription: data[0].collecteDechets?.faqDescription || "Contactez le service déchets de la CCSAL :",
+              contactPhone: data[0].collecteDechets?.contactPhone || "03.89.XX.XX.XX",
+              contactEmail: data[0].collecteDechets?.contactEmail || "dechets@sudalsace-largue.fr",
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des données :", error);
+      }
+    };
+
+    fetchPageData();
+  }, []);
 
   // Bulletins communaux
   const bulletins = [
@@ -76,91 +114,6 @@ export default function InfosPratiques() {
       lieu: "Départ : stade municipal",
       inscription: true
     },
-  ];
-
-  // Contacts d'urgence et services
-  const contacts = {
-    urgence: [
-      { service: "Urgences", numero: "15", details: "SAMU (urgences médicales)" },
-      { service: "Pompiers", numero: "18", details: "Incendies, accidents et urgences" },
-      { service: "Police / Gendarmerie", numero: "17", details: "Urgences sécurité et ordre public" },
-      { service: "Toutes urgences", numero: "112", details: "Numéro d'urgence européen" },
-      { service: "Enfance en danger", numero: "119", details: "Protection des enfants en danger" }
-    ],
-    securite: [
-      { 
-        service: "Gendarmerie de Dannemarie", 
-        numero: "03.89.XX.XX.XX", 
-        details: "1 rue de la Gendarmerie, 68210 Dannemarie",
-        horaires: "Lun-Sam: 8h-12h et 14h-18h, Dim: 9h-12h et 15h-18h" 
-      },
-      { 
-        service: "Gendarmerie de Pfetterhouse", 
-        numero: "03.89.XX.XX.XX", 
-        details: "2 rue des Vergers, 68480 Pfetterhouse",
-        horaires: "Lun-Ven: 8h-12h et 14h-19h, Sam: 8h-12h" 
-      },
-      { 
-        service: "Brigade Verte", 
-        numero: "03.89.XX.XX.XX", 
-        details: "Protection de l'environnement et tranquillité publique",
-        horaires: "Patrouilles régulières - Service d'astreinte 24h/24" 
-      },
-      { 
-        service: "Centre d'incendie et de secours", 
-        numero: "03.89.XX.XX.XX", 
-        details: "Corps de sapeurs-pompiers volontaires de Friesen",
-        horaires: "En cas d'urgence, appelez le 18 ou le 112" 
-      }
-    ],
-    services: [
-      { 
-        service: "Mairie de Friesen", 
-        numero: "03.89.XX.XX.XX", 
-        details: "2 place de la Mairie, 68580 Friesen",
-        horaires: "Lun, Mar, Jeu: 9h-12h et 14h-18h, Mer: fermé, Ven: 9h-12h et 14h-17h" 
-      },
-      { 
-        service: "CCSAL (Communauté de Communes Sud Alsace Largue)", 
-        numero: "03.89.XX.XX.XX", 
-        details: "Compétences intercommunales - www.sudalsace-largue.fr",
-        horaires: "Lun-Ven: 9h-12h et 14h-17h" 
-      },
-      { 
-        service: "Service des eaux", 
-        numero: "03.89.XX.XX.XX", 
-        details: "Gestion de l'eau potable",
-        horaires: "Lun-Ven: 8h-12h et 13h30-16h30" 
-      },
-      { 
-        service: "Service assainissement", 
-        numero: "03.89.XX.XX.XX", 
-        details: "Gestion des eaux usées",
-        horaires: "Lun-Ven: 8h-12h et 13h30-16h30" 
-      }
-    ]
-  };
-
-  // Calendrier de collecte des déchets
-  const collecteDechets = {
-    ordures: "Le lundi matin",
-    recyclables: "Le mercredi matin des semaines paires",
-    biodechets: "Le jeudi matin",
-    verre: "Points d'apport volontaire (Place de la Mairie, Rue des Écoles)",
-    encombrants: "1er mardi des mois de mars, juin, septembre et décembre"
-  };
-
-  // Réservations de salle
-  const reservations = [
-    { id: 1, date: "2025-07-10", salle: "Salle polyvalente", evenement: "Fête du village" },
-    { id: 2, date: "2025-07-11", salle: "Salle polyvalente", evenement: "Fête du village" },
-    { id: 3, date: "2025-07-12", salle: "Salle polyvalente", evenement: "Fête du village" },
-    { id: 4, date: "2025-05-24", salle: "Salle polyvalente", evenement: "Journée citoyenne" },
-    { id: 5, date: "2025-06-21", salle: "Salle des fêtes", evenement: "Fête de la musique" },
-    { id: 6, date: "2025-02-21", salle: "Salle polyvalente", evenement: "Théâtre alsacien" },
-    { id: 7, date: "2025-02-22", salle: "Salle polyvalente", evenement: "Théâtre alsacien" },
-    { id: 8, date: "2025-02-28", salle: "Salle polyvalente", evenement: "Théâtre alsacien" },
-    { id: 9, date: "2025-02-29", salle: "Salle polyvalente", evenement: "Théâtre alsacien" }
   ];
 
   // Gestion du formulaire de réservation
@@ -217,134 +170,150 @@ export default function InfosPratiques() {
       case 'contacts':
         return (
           <div>
-            <h2 className="title is-4 has-text-primary mb-4">Numéros d'urgence</h2>
-            
-            <div className="table-container">
-              <table className="table is-fullwidth">
-                <thead>
-                  <tr className="has-background-danger-light">
-                    <th>Service</th>
-                    <th>Numéro</th>
-                    <th>Informations</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contacts.urgence.map((contact, index) => (
-                    <tr key={index}>
-                      <td><strong>{contact.service}</strong></td>
-                      <td className="has-text-danger has-text-weight-bold">{contact.numero}</td>
-                      <td>{contact.details}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <h2 className="title is-4 has-text-primary mb-4 mt-6">Services de sécurité</h2>
-            
-            <div className="columns is-multiline">
-              {contacts.securite.map((contact, index) => (
-                <div key={index} className="column is-half">
-                  <div className="box" style={{ borderRadius: 12, height: '100%' }}>
-                    <p className="title is-5 mb-2">{contact.service}</p>
-                    <p className="has-text-weight-bold mb-2">
-                      <span className="icon"><i className="fas fa-phone"></i></span> {contact.numero}
-                    </p>
-                    <p className="mb-2">{contact.details}</p>
-                    <p className="is-size-7">{contact.horaires}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <h2 className="title is-4 has-text-primary mb-4 mt-6">Services publics</h2>
-            
-            <div className="columns is-multiline">
-              {contacts.services.map((contact, index) => (
-                <div key={index} className="column is-half">
-                  <div className="box" style={{ borderRadius: 12, height: '100%' }}>
-                    <p className="title is-5 mb-2">{contact.service}</p>
-                    <p className="has-text-weight-bold mb-2">
-                      <span className="icon"><i className="fas fa-phone"></i></span> {contact.numero}
-                    </p>
-                    <p className="mb-2">{contact.details}</p>
-                    <p className="is-size-7">{contact.horaires}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Liens utiles */}
-            <div className="box mt-5" style={{ 
-              borderRadius: 16, 
-              boxShadow: '0 2px 12px #1277c620',
-              background: '#f8fafc',
-            }}>
-              <h2 className="title is-5 has-text-primary mb-3">Liens utiles</h2>
-              
-              <div className="columns is-multiline">
-                <div className="column is-one-third">
-                  <a href="https://www.sudalsace-largue.fr/" target="_blank" rel="noopener noreferrer" 
-                    className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start', height: 'auto', padding: '12px' }}>
-                    <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                    <span>
-                      <strong>CCSAL</strong><br/>
-                      <small>Communauté de Communes Sud Alsace Largue</small>
-                    </span>
-                  </a>
-                </div>
-                <div className="column is-one-third">
-                  <a href="https://www.epage-largue.eu/" target="_blank" rel="noopener noreferrer" 
-                    className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start', height: 'auto', padding: '12px' }}>
-                    <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                    <span>
-                      <strong>EPAGE Largue</strong><br/>
-                      <small>Établissement Public d'Aménagement et de Gestion des Eaux</small>
-                    </span>
-                  </a>
-                </div>
-                <div className="column is-one-third">
-                  <a href="https://www.pays-sundgau.fr/" target="_blank" rel="noopener noreferrer" 
-                    className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start', height: 'auto', padding: '12px' }}>
-                    <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                    <span>
-                      <strong>PETR du Pays du Sundgau</strong><br/>
-                      <small>Pôle d'Équilibre Territorial et Rural</small>
-                    </span>
-                  </a>
-                </div>
-                <div className="column is-one-third">
-                  <a href="https://www.gendarmerie.interieur.gouv.fr/" target="_blank" rel="noopener noreferrer" 
-                    className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start', height: 'auto', padding: '12px' }}>
-                    <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                    <span>
-                      <strong>Gendarmerie Nationale</strong><br/>
-                      <small>Site officiel</small>
-                    </span>
-                  </a>
-                </div>
-                <div className="column is-one-third">
-                  <a href="https://www.pompiers.fr/" target="_blank" rel="noopener noreferrer" 
-                    className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start', height: 'auto', padding: '12px' }}>
-                    <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                    <span>
-                      <strong>Sapeurs-Pompiers</strong><br/>
-                      <small>Fédération nationale</small>
-                    </span>
-                  </a>
-                </div>
-                <div className="column is-one-third">
-                  <a href="https://www.service-public.fr/" target="_blank" rel="noopener noreferrer" 
-                    className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start', height: 'auto', padding: '12px' }}>
-                    <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                    <span>
-                      <strong>Service Public</strong><br/>
-                      <small>Le site officiel de l'administration française</small>
-                    </span>
-                  </a>
-                </div>
+            {/* Bouton d'édition pour les administrateurs */}
+            {isAdmin && (
+              <div className="is-flex is-justify-content-flex-end mb-4">
+                <Link href="/admin/editeur-infos-pratiques?tab=contacts" className="button is-link is-light">
+                  <span className="icon"><i className="fas fa-edit"></i></span>
+                  <span>Éditer cette section</span>
+                </Link>
               </div>
-            </div>
+            )
+            }
+            
+            {isLoading ? (
+              <div className="has-text-centered p-5">
+                <span className="icon is-large">
+                  <i className="fas fa-spinner fa-pulse fa-3x has-text-primary"></i>
+                </span>
+                <p className="mt-4 is-size-5 has-text-weight-semibold">Chargement des données...</p>
+              </div>
+            ) : (
+              <>
+                {/* Numéros d'urgence */}
+                <section className="box mb-6" style={{ borderRadius: 16, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' }}>
+                  <h2 className="title is-4 has-text-danger mb-4">
+                    <span className="icon"><i className="fas fa-phone-alt"></i></span> Numéros d'urgence
+                  </h2>
+                  <div className="table-container">
+                    <table className="table is-fullwidth is-hoverable">
+                      <thead>
+                        <tr className="has-background-danger-light">
+                          <th>Service</th>
+                          <th>Numéro</th>
+                          <th>Informations</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(pageData.contacts?.urgence || []).length > 0 ? (
+                          pageData.contacts.urgence.map((contact, index) => (
+                            <tr key={index}>
+                              <td><strong>{contact.service}</strong></td>
+                              <td className="has-text-danger has-text-weight-bold">{contact.numero}</td>
+                              <td>{contact.details}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="3" className="has-text-centered">
+                              Aucun numéro d'urgence disponible
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                {/* Services de sécurité */}
+                <section className="box mb-6" style={{ borderRadius: 16, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' }}>
+                  <h2 className="title is-4 has-text-link mb-4">
+                    <span className="icon"><i className="fas fa-shield-alt"></i></span> Services de sécurité
+                  </h2>
+                  {(pageData.contacts?.securite || []).length > 0 ? (
+                    <div className="columns is-multiline">
+                      {pageData.contacts.securite.map((contact, index) => (
+                        <div key={index} className="column is-half">
+                          <div className="box has-background-light" style={{ borderRadius: 12, height: '100%' }}>
+                            <p className="title is-5 mb-2">{contact.service}</p>
+                            <p className="has-text-weight-bold mb-2">
+                              <span className="icon"><i className="fas fa-phone"></i></span> {contact.numero}
+                            </p>
+                            <p className="mb-2">{contact.details}</p>
+                            <p className="is-size-7 has-text-grey">{contact.horaires}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="notification is-light">
+                      Aucun service de sécurité disponible
+                    </div>
+                  )}
+                </section>
+
+                {/* Services publics */}
+                <section className="box mb-6" style={{ borderRadius: 16, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' }}>
+                  <h2 className="title is-4 has-text-primary mb-4">
+                    <span className="icon"><i className="fas fa-building"></i></span> Services publics
+                  </h2>
+                  {(pageData.contacts?.services || []).length > 0 ? (
+                    <div className="columns is-multiline">
+                      {pageData.contacts.services.map((contact, index) => (
+                        <div key={index} className="column is-half">
+                          <div className="box has-background-light" style={{ borderRadius: 12, height: '100%' }}>
+                            <p className="title is-5 mb-2">{contact.service}</p>
+                            <p className="has-text-weight-bold mb-2">
+                              <span className="icon"><i className="fas fa-phone"></i></span> {contact.numero}
+                            </p>
+                            <p className="mb-2">{contact.details}</p>
+                            <p className="is-size-7 has-text-grey">{contact.horaires}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="notification is-light">
+                      Aucun service public disponible
+                    </div>
+                  )}
+                </section>
+
+                {/* Liens utiles */}
+                {(pageData.liensUtilesContacts || []).length > 0 && (
+                  <section className="box mt-5" style={{ borderRadius: 16, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' }}>
+                    <h2 className="title is-4 has-text-primary mb-4">
+                      <span className="icon"><i className="fas fa-link"></i></span> Liens utiles
+                    </h2>
+                    <div className="columns is-multiline">
+                      {pageData.liensUtilesContacts.map((lien, index) => (
+                        <div key={index} className="column is-one-third">
+                          <a
+                            href={lien.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="button is-light is-fullwidth"
+                            style={{
+                              justifyContent: 'flex-start',
+                              height: 'auto',
+                              padding: '16px',
+                              borderRadius: 12,
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                            }}
+                          >
+                            <span className="icon"><i className="fas fa-external-link-alt"></i></span>
+                            <span>
+                              <strong>{lien.titre}</strong><br />
+                              <small className="has-text-grey">{lien.description}</small>
+                            </span>
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
           </div>
         );
 
@@ -354,11 +323,10 @@ export default function InfosPratiques() {
             <div className="content mb-5">
               <div className="notification is-info is-light">
                 <p className="is-size-5 mb-3">
-                  <strong>Collecte des déchets à Friesen</strong>
+                  <strong>{pageData.collecteDechets?.titre || "Collecte des déchets à Friesen"}</strong>
                 </p>
                 <p>
-                  La collecte et le traitement des déchets sont gérés par la Communauté de Communes Sud Alsace Largue (CCSAL). 
-                  Consultez ci-dessous les jours de collecte et les consignes de tri.
+                  {pageData.collecteDechets?.introduction || "La collecte et le traitement des déchets sont gérés par la Communauté de Communes Sud Alsace Largue (CCSAL). Consultez ci-dessous les jours de collecte et les consignes de tri."}
                 </p>
               </div>
             </div>
@@ -370,27 +338,27 @@ export default function InfosPratiques() {
                 <tbody>
                   <tr>
                     <td width="180"><strong>Ordures ménagères</strong></td>
-                    <td>{collecteDechets.ordures}</td>
+                    <td>{pageData.collecteDechets?.ordures || "Non disponible"}</td>
                     <td><span className="tag is-dark">Bac gris</span></td>
                   </tr>
                   <tr>
                     <td><strong>Recyclables</strong></td>
-                    <td>{collecteDechets.recyclables}</td>
+                    <td>{pageData.collecteDechets?.recyclables || "Non disponible"}</td>
                     <td><span className="tag is-warning">Bac jaune</span></td>
                   </tr>
                   <tr>
                     <td><strong>Biodéchets</strong></td>
-                    <td>{collecteDechets.biodechets}</td>
+                    <td>{pageData.collecteDechets?.biodechets || "Non disponible"}</td>
                     <td><span className="tag is-success">Bac vert</span></td>
                   </tr>
                   <tr>
                     <td><strong>Verre</strong></td>
-                    <td>{collecteDechets.verre}</td>
+                    <td>{pageData.collecteDechets?.verre || "Non disponible"}</td>
                     <td><span className="tag is-link">Conteneurs</span></td>
                   </tr>
                   <tr>
                     <td><strong>Encombrants</strong></td>
-                    <td>{collecteDechets.encombrants}</td>
+                    <td>{pageData.collecteDechets?.encombrants || "Non disponible"}</td>
                     <td><span className="tag is-primary">Sur inscription</span></td>
                   </tr>
                 </tbody>
@@ -465,60 +433,128 @@ export default function InfosPratiques() {
               
               <div className="column">
                 <h2 className="title is-4 has-text-primary mb-4">Infos pratiques</h2>
-                
+
+                {/* Déchetteries */}
                 <div className="box" style={{ borderRadius: 12 }}>
                   <h3 className="title is-5 mb-3">Déchetteries</h3>
-                  
-                  <div className="media mb-4">
-                    <div className="media-left">
-                      <span style={{ fontSize: 40 }}>♻️</span>
+                  {(pageData.collecteDechets?.dechetteries || []).map((dechetterie, index) => (
+                    <div className="media mb-4" key={index}>
+                      <div className="media-left">
+                        <span style={{ fontSize: 40 }}>♻️</span>
+                      </div>
+                      <div className="media-content">
+                        <p className="has-text-weight-bold mb-1">{dechetterie.nom}</p>
+                        <p className="is-size-7 mb-1">{dechetterie.adresse}</p>
+                        <p className="is-size-7">{dechetterie.horaires}</p>
+                      </div>
                     </div>
-                    <div className="media-content">
-                      <p className="has-text-weight-bold mb-1">Déchetterie d'Altkirch</p>
-                      <p className="is-size-7 mb-1">2 rue des Casernes, 68130 Altkirch</p>
-                      <p className="is-size-7">Lun-Sam: 9h-12h et 14h-17h</p>
-                    </div>
-                  </div>
-                  
-                  <div className="media">
-                    <div className="media-left">
-                      <span style={{ fontSize: 40 }}>♻️</span>
-                    </div>
-                    <div className="media-content">
-                      <p className="has-text-weight-bold mb-1">Déchetterie de Dannemarie</p>
-                      <p className="is-size-7 mb-1">Rue de la Gare, 68210 Dannemarie</p>
-                      <p className="is-size-7">Mar-Sam: 9h-12h et 14h-17h</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-                
+
+                {/* Documents utiles */}
                 <div className="box mt-4" style={{ borderRadius: 12 }}>
                   <h3 className="title is-5 mb-3">Documents utiles</h3>
-                  
                   <div className="buttons">
-                    <a href="#" className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start' }}>
-                      <span className="icon"><i className="fas fa-download"></i></span>
-                      <span>Calendrier de collecte 2025 (PDF)</span>
-                    </a>
-                    <a href="#" className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start' }}>
-                      <span className="icon"><i className="fas fa-download"></i></span>
-                      <span>Guide complet du tri (PDF)</span>
-                    </a>
-                    <a href="#" className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start' }}>
-                      <span className="icon"><i className="fas fa-download"></i></span>
-                      <span>Formulaire de demande de bac</span>
-                    </a>
-                    <a href="#" className="button is-light is-fullwidth" style={{ justifyContent: 'flex-start' }}>
-                      <span className="icon"><i className="fas fa-download"></i></span>
-                      <span>Règlement de collecte</span>
-                    </a>
+                    {(pageData.collecteDechets?.documents || []).map((document, index) => (
+                      <a
+                        key={index}
+                        href={document.fichier}
+                        className="button is-light is-fullwidth"
+                        style={{ justifyContent: 'flex-start' }}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="icon">
+                          <i className="fas fa-download"></i>
+                        </span>
+                        <span>{document.titre}</span>
+                      </a>
+                    ))}
                   </div>
+
+                  {/* Formulaire d'upload pour les administrateurs */}
+                  {isAdmin && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        try {
+                          const response = await fetch('/api/upload_doc', {
+                            method: 'POST',
+                            body: formData,
+                          });
+                          const data = await response.json();
+                          if (data.fileUrl) {
+                            // Ajouter le nouveau document à la liste
+                            const newDocument = {
+                              titre: formData.get('titre'),
+                              fichier: data.fileUrl,
+                            };
+                            setPageData((prevData) => ({
+                              ...prevData,
+                              collecteDechets: {
+                                ...prevData.collecteDechets,
+                                documents: [...(prevData.collecteDechets?.documents || []), newDocument],
+                              },
+                            }));
+                          }
+                        } catch (error) {
+                          console.error('Erreur lors de l\'upload du fichier :', error);
+                        }
+                      }}
+                    >
+                      <div className="field">
+                        <label className="label">Titre du document</label>
+                        <div className="control">
+                          <input
+                            className="input"
+                            type="text"
+                            name="titre"
+                            placeholder="Titre du document"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label className="label">Fichier</label>
+                        <div className="control">
+                          <input
+                            className="input"
+                            type="file"
+                            name="file"
+                            accept=".pdf,.doc,.docx"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="field">
+                        <div className="control">
+                          <button className="button is-link" type="submit">
+                            Télécharger le document
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  )}
                 </div>
-                
+
+                {/* Questions fréquentes */}
                 <div className="notification is-link is-light mt-4" style={{ borderRadius: 12 }}>
-                  <p className="has-text-weight-bold mb-2">Questions sur la collecte ?</p>
-                  <p className="mb-2">Contactez le service déchets de la CCSAL :</p>
-                  <p>📞 03.89.XX.XX.XX | ✉️ dechets@sudalsace-largue.fr</p>
+                  {isLoading ? (
+                    <p>Chargement des données...</p>
+                  ) : (
+                    <>
+                      <div>
+                        {(pageData.collecteDechets?.faq || []).map((item, index) => (
+                          <div key={index} className="box mb-3" style={{ borderRadius: 12 }}>
+                            <p className="has-text-weight-bold mb-2">Question {index + 1} :</p>
+                            <p className="mb-2">{item.question || "Question non renseignée"}</p>
+                            <p className="has-text-grey">{item.reponse || "Réponse non renseignée"}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1464,7 +1500,7 @@ export default function InfosPratiques() {
     <>
       {/* En-tête hero */}
       <section
-        className="hero is-primary is-medium"
+        class="hero is-primary is-medium"
         style={{
           backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
           backgroundSize: 'cover',
@@ -1474,9 +1510,9 @@ export default function InfosPratiques() {
           marginBottom: 0,
         }}
       >
-        <div className="hero-body">
-          <div className="container has-text-centered">
-            <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
+        <div class="hero-body">
+          <div class="container has-text-centered">
+            <h1 class="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
               Bienvenue sur le site officiel de<br />
               la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span>
             </h1>
@@ -1486,60 +1522,60 @@ export default function InfosPratiques() {
 
       {/* Contenu principal */}
       <section
-        className="section"
+        class="section"
         style={{
           background: '#fafdff',
           minHeight: '100vh',
           marginTop: 0,
         }}
       >
-        <div className="container" style={{ maxWidth: 1100 }}>
-          <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
+        <div class="container" style={{ maxWidth: 1100 }}>
+          <h1 class="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
             Informations pratiques
           </h1>
           
           {/* Onglets de navigation */}
-          <div className="tabs is-boxed is-medium mb-5">
+          <div class="tabs is-boxed is-medium mb-5">
             <ul>
-              <li className={activeTab === 'contacts' ? 'is-active' : ''}>
+              <li class={activeTab === 'contacts' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('contacts')}>
-                  <span className="icon"><i className="fas fa-phone-alt"></i></span>
+                  <span class="icon"><i class="fas fa-phone-alt"></i></span>
                   <span>Contacts &amp; urgences</span>
                 </a>
               </li>
-              <li className={activeTab === 'dechets' ? 'is-active' : ''}>
+              <li class={activeTab === 'dechets' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('dechets')}>
-                  <span className="icon"><i className="fas fa-recycle"></i></span>
+                  <span class="icon"><i class="fas fa-recycle"></i></span>
                   <span>Déchets</span>
                 </a>
               </li>
-              <li className={activeTab === 'bulletin' ? 'is-active' : ''}>
+              <li class={activeTab === 'bulletin' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('bulletin')}>
-                  <span className="icon"><i className="fas fa-newspaper"></i></span>
+                  <span class="icon"><i class="fas fa-newspaper"></i></span>
                   <span>Bulletin communal</span>
                 </a>
               </li>
-              <li className={activeTab === 'salles' ? 'is-active' : ''}>
+              <li class={activeTab === 'salles' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('salles')}>
-                  <span className="icon"><i className="fas fa-calendar-alt"></i></span>
+                  <span class="icon"><i class="fas fa-calendar-alt"></i></span>
                   <span>Réserver une salle</span>
                 </a>
               </li>
-              <li className={activeTab === 'eau' ? 'is-active' : ''}>
+              <li class={activeTab === 'eau' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('eau')}>
-                  <span className="icon"><i className="fas fa-tint"></i></span>
+                  <span class="icon"><i class="fas fa-tint"></i></span>
                   <span>Service des eaux</span>
                 </a>
               </li>
-              <li className={activeTab === 'evenements' ? 'is-active' : ''}>
+              <li class={activeTab === 'evenements' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('evenements')}>
-                  <span className="icon"><i className="fas fa-calendar-check"></i></span>
+                  <span class="icon"><i class="fas fa-calendar-check"></i></span>
                   <span>Événements</span>
                 </a>
               </li>
-              <li className={activeTab === 'chasse' ? 'is-active' : ''}>
+              <li class={activeTab === 'chasse' ? 'is-active' : ''}>
                 <a onClick={() => setActiveTab('chasse')}>
-                  <span className="icon"><i className="fas fa-bullseye"></i></span>
+                  <span class="icon"><i class="fas fa-bullseye"></i></span>
                   <span>Chasse</span>
                 </a>
               </li>
