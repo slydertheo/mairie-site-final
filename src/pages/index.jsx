@@ -73,20 +73,44 @@ export default function PageAcceuil() {
             {/* Colonne 1 : Mot du Maire + Galerie + Panneau d'affichage */}
             <div className="column is-two-thirds">
               <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
-              <div className="box" style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f8fafc' }}>
-                <figure className="image is-96x96 mr-4">
-                  <img
-                    className="is-rounded"
-                    src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"}
-                    alt="Maire"
-                    style={{ objectFit: 'cover', border: '3px solid #1277c6' }}
-                    onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=128&q=80"; }}
-                  />
-                </figure>
-                <div>
-                  <div className="has-text-link has-text-weight-bold mb-1">{content.motMaire_accroche || "Chères habitantes, chers habitants"}</div>
-                  <div style={{ fontSize: 15, color: '#444' }}>
-                    {content.motMaire}
+              <div className="box p-5" style={{ background: '#f8fafc', borderRadius: 12 }}>
+                <div className="columns">
+                  {/* Colonne pour la photo */}
+                  <div className="column is-narrow">
+                    <figure className="image is-128x128" style={{ margin: '0 auto' }}>
+                      <img
+                        className="is-rounded"
+                        src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=200&q=80"}
+                        alt="Maire"
+                        style={{ 
+                          objectFit: 'cover', 
+                          border: '3px solid #1277c6',
+                          boxShadow: '0 4px 12px rgba(18, 119, 198, 0.2)',
+                          width: '100%',
+                          height: '100%'
+                        }}
+                        onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=200&q=80"; }}
+                      />
+                    </figure>
+                  </div>
+                  
+                  {/* Colonne pour le texte */}
+                  <div className="column">
+                    <div className="has-text-link has-text-weight-bold mb-3" style={{ fontSize: '1.1rem' }}>
+                      {content.motMaire_accroche || "Chères habitantes, chers habitants"}
+                    </div>
+                    <div style={{ 
+                      fontSize: 16, 
+                      color: '#444', 
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: '1.6' 
+                    }}>
+                      {content.motMaire}
+                    </div>
+                    <div className="has-text-right mt-4">
+                      <div className="has-text-weight-bold">{content.motMaire_nom || "Pierre Durand"}</div>
+                      <div className="is-italic" style={{ fontSize: '0.9rem' }}>{content.motMaire_titre_signature || "Maire de Friesen"}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -214,8 +238,8 @@ export default function PageAcceuil() {
             </div>
           </div>
 
-          {/* Widgets supplémentaires */}
-          <div className="columns">
+          {/* Widgets supplémentaires - MODIFIER CETTE PARTIE */}
+          <div className="columns mt-6 mb-5">
             <div className="column is-2">
               {/* Widget météo */}
               <div className="box has-text-centered" style={{ background: '#eaf6ff' }}>
@@ -228,9 +252,48 @@ export default function PageAcceuil() {
               {/* Widget réseaux sociaux */}
               <div className="box has-text-centered" style={{ background: '#f8fafc' }}>
                 <div className="has-text-link has-text-weight-bold mb-2">{content.reseaux_titre || "Suivez-nous"}</div>
-                <a href={content.facebook} style={{ fontSize: 28, margin: 8 }}>📘</a>
-                <a href={content.instagram} style={{ fontSize: 28, margin: 8 }}>📸</a>
-                <a href={content.twitter} style={{ fontSize: 28, margin: 8 }}>🐦</a>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                  {content.facebook && (
+                    <a href={content.facebook} target="_blank" rel="noopener noreferrer" 
+                      style={{ display: 'inline-block', transition: 'transform 0.2s' }}
+                      onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                      onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#3b5998">
+                        <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z"/>
+                      </svg>
+                    </a>
+                  )}
+                  {content.intramuros && (
+                    <a href={content.intramuros} target="_blank" rel="noopener noreferrer" 
+                      style={{ display: 'inline-block', transition: 'transform 0.2s' }}
+                      onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                      onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      {/* Utilisation d'une div stylisée pour garantir l'affichage */}
+                      <div style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '50%', 
+                        backgroundColor: '#1B9BD7',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        fontFamily: 'Arial, sans-serif',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        color: 'white'
+                      }}>
+                        IM
+                      </div>
+                    </a>
+                  )}
+                </div>
+                {content.intramuros && (
+                  <div className="mt-2" style={{ fontSize: '12px', color: '#666' }}>
+                    Application IntraMuros disponible
+                  </div>
+                )}
               </div>
               {/* Numéros d'urgence */}
               <div className="box mt-4" style={{ background: '#fffbe6' }}>
@@ -242,6 +305,7 @@ export default function PageAcceuil() {
                 </div>
               </div>
             </div>
+            {/* Ajoutez d'autres colonnes de widgets si nécessaire */}
           </div>
         </div>
 
@@ -302,26 +366,7 @@ function ActualiteCard({ img, date, title, color }) {
   );
 }
 
-// Composant pour une démarche rapide
-function QuickBox({ icon, label }) {
-  // Ajout d'une image illustrative pour chaque démarche rapide
-  const images = {
-    "Demande d’acte de naissance": "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=facearea&w=256&q=80",
-    "Inscription sur les listes électorales": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=facearea&w=256&q=80",
-    "Urbanisme / Permis de construire": "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=facearea&w=256&q=80",
-    "Prendre rendez-vous": "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=facearea&w=256&q=80",
-  };
-  const imgSrc = images[label] || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=facearea&w=256&q=80";
-  return (
-    <div className="box has-text-centered" style={{ background: '#f4f8fb', border: '1.5px solid #e0e7ef', cursor: 'pointer', transition: 'box-shadow 0.18s, border 0.18s' }}>
-      <figure className="image is-64x64" style={{ margin: '0 auto 8px auto' }}>
-        <img src={imgSrc} alt={label} style={{ objectFit: 'cover', borderRadius: 8, width: 48, height: 48 }} onError={e => { e.currentTarget.src = "/default.jpg"; }} />
-      </figure>
-      <span style={{ fontSize: 32, color: '#1277c6' }}>{icon}</span>
-      <div className="mt-2 has-text-weight-semibold">{label}</div>
-    </div>
-  );
-}
+
 
 // Composant pour un événement d'agenda
 function AgendaItem({ title, date }) {

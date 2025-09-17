@@ -1,44 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-const FIELDS = [
-  { key: 'titre', label: 'Titre principal', type: 'text', group: 'header' },
-  { key: 'intro', label: 'Introduction', type: 'textarea', group: 'header' },
-
-  // Démarches rapides
-  { key: 'demarche_rapide_1_label', label: 'Démarche rapide 1 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_1_url', label: 'Lien', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_2_label', label: 'Démarche rapide 2 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_2_url', label: 'Lien', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_3_label', label: 'Démarche rapide 3 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_3_url', label: 'Lien', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_4_label', label: 'Démarche rapide 4 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_4_url', label: 'Lien', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_5_label', label: 'Démarche rapide 5 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_5_url', label: 'Lien', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_6_label', label: 'Démarche rapide 6 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_6_url', label: 'Lien', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_7_label', label: 'Démarche rapide 7 - Texte', type: 'text', group: 'rapides' },
-  { key: 'demarche_rapide_7_url', label: 'Lien', type: 'text', group: 'rapides' },
-
-  // Urbanisme
-  { key: 'urbanisme_1_label', label: 'Urbanisme 1 - Texte', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_1_url', label: 'Lien', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_2_label', label: 'Urbanisme 2 - Texte', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_2_url', label: 'Lien', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_3_label', label: 'Urbanisme 3 - Texte', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_3_url', label: 'Lien', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_4_label', label: 'Urbanisme 4 - Texte', type: 'text', group: 'urbanisme' },
-  { key: 'urbanisme_4_url', label: 'Lien', type: 'text', group: 'urbanisme' },
-
-  // Autres démarches utiles
-  { key: 'autre_1_label', label: 'Autre démarche 1 - Texte', type: 'text', group: 'autres' },
-  { key: 'autre_1_url', label: 'Lien', type: 'text', group: 'autres' },
-  { key: 'autre_2_label', label: 'Autre démarche 2 - Texte', type: 'text', group: 'autres' },
-  { key: 'autre_2_url', label: 'Lien', type: 'text', group: 'autres' },
-  { key: 'autre_3_label', label: 'Autre démarche 3 - Texte', type: 'text', group: 'autres' },
-  { key: 'autre_3_url', label: 'Lien', type: 'text', group: 'autres' },
-  { key: 'pdf_reglement_label', label: 'Nom du PDF règlement', type: 'text', group: 'autres' },
-  { key: 'pdf_reglement_url', label: 'Lien PDF règlement', type: 'text', group: 'autres' },
+const HEADER_FIELDS = [
+  { key: 'titre', label: 'Titre principal', type: 'text' },
+  { key: 'intro', label: 'Introduction', type: 'textarea' },
 ];
 
 const GROUPS = [
@@ -48,89 +12,498 @@ const GROUPS = [
 ];
 
 export default function DemarchesEditor() {
-  const [form, setForm] = useState({});
+  const [headerForm, setHeaderForm] = useState({});
+  const [demarches, setDemarches] = useState({
+    rapides: [],
+    urbanisme: [],
+    autres: []
+  });
+  const [pdfReglement, setPdfReglement] = useState({
+    label: '',
+    url: '',
+    isFile: false
+  });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
+  // Charger les données existantes
   useEffect(() => {
     setLoading(true);
     fetch('/api/pageContent?page=demarches')
       .then(res => res.json())
       .then(data => {
         const obj = data[0] || {};
-        const initial = {};
-        FIELDS.forEach(f => {
-          initial[f.key] = obj[f.key] || '';
+        
+        // Initialiser l'en-tête
+        const headerData = {};
+        HEADER_FIELDS.forEach(f => {
+          headerData[f.key] = obj[f.key] || '';
         });
-        setForm(initial);
+        setHeaderForm(headerData);
+        
+        // Initialiser les démarches rapides
+        const rapidesData = [];
+        for (let i = 1; i <= 20; i++) { // Augmenté de 7 à 20
+          const labelKey = `demarche_rapide_${i}_label`;
+          const urlKey = `demarche_rapide_${i}_url`;
+          if (obj[labelKey]) {
+            rapidesData.push({
+              id: i,
+              label: obj[labelKey] || '',
+              url: obj[urlKey] || '',
+              isFile: obj[urlKey]?.endsWith('.pdf') || false
+            });
+          }
+        }
+        
+        // Initialiser les démarches urbanisme
+        const urbanismeData = [];
+        for (let i = 1; i <= 20; i++) { // Augmenté de 4 à 20
+          const labelKey = `urbanisme_${i}_label`;
+          const urlKey = `urbanisme_${i}_url`;
+          if (obj[labelKey]) {
+            urbanismeData.push({
+              id: i,
+              label: obj[labelKey] || '',
+              url: obj[urlKey] || '',
+              isFile: obj[urlKey]?.endsWith('.pdf') || false
+            });
+          }
+        }
+        
+        // Initialiser autres démarches
+        const autresData = [];
+        for (let i = 1; i <= 20; i++) { // Augmenté de 3 à 20
+          const labelKey = `autre_${i}_label`;
+          const urlKey = `autre_${i}_url`;
+          if (obj[labelKey]) {
+            autresData.push({
+              id: i,
+              label: obj[labelKey] || '',
+              url: obj[urlKey] || '',
+              isFile: obj[urlKey]?.endsWith('.pdf') || false
+            });
+          }
+        }
+        
+        // Initialiser le PDF règlement
+        setPdfReglement({
+          label: obj.pdf_reglement_label || '',
+          url: obj.pdf_reglement_url || '',
+          isFile: obj.pdf_reglement_url?.endsWith('.pdf') || false
+        });
+        
+        setDemarches({
+          rapides: rapidesData,
+          urbanisme: urbanismeData,
+          autres: autresData
+        });
       })
-      .catch(() => setForm({}))
+      .catch(err => {
+        console.error("Erreur lors du chargement des données:", err);
+        setHeaderForm({});
+        setDemarches({
+          rapides: [],
+          urbanisme: [],
+          autres: []
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  // Gérer les changements dans l'en-tête
+  const handleHeaderChange = e => {
+    setHeaderForm({ ...headerForm, [e.target.name]: e.target.value });
+  };
+  
+  // Ajouter une démarche
+  const addDemarche = (group) => {
+    setDemarches(prev => {
+      // Trouver le prochain ID disponible
+      const existingIds = prev[group].map(d => d.id);
+      let newId = 1;
+      
+      // Trouver le premier ID non utilisé ou le maximum + 1
+      if (existingIds.length > 0) {
+        newId = Math.max(...existingIds) + 1;
+      }
+      
+      return {
+        ...prev,
+        [group]: [...prev[group], { id: newId, label: '', url: '', isFile: false }]
+      };
+    });
+  };
+  
+  // Supprimer une démarche
+  const removeDemarche = (group, id) => {
+    setDemarches(prev => ({
+      ...prev,
+      [group]: prev[group].filter(d => d.id !== id)
+    }));
+  };
+  
+  // Mettre à jour une démarche
+  const updateDemarche = (group, id, field, value) => {
+    setDemarches(prev => ({
+      ...prev,
+      [group]: prev[group].map(d => 
+        d.id === id ? { ...d, [field]: value } : d
+      )
+    }));
+  };
+  
+  // Mettre à jour le PDF règlement
+  const handlePdfReglementChange = (field, value) => {
+    setPdfReglement(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
+  // Transformer les données pour la sauvegarde
+  const prepareDataForSave = () => {
+    const saveData = {
+      page: 'demarches',
+      ...headerForm
+    };
+    
+    // Réinitialiser tous les champs existants pour éviter les doublons
+    for (let i = 1; i <= 20; i++) {  // Augmenté à 20 pour supporter plus d'entrées
+      saveData[`demarche_rapide_${i}_label`] = '';
+      saveData[`demarche_rapide_${i}_url`] = '';
+      saveData[`urbanisme_${i}_label`] = '';
+      saveData[`urbanisme_${i}_url`] = '';
+      saveData[`autre_${i}_label`] = '';
+      saveData[`autre_${i}_url`] = '';
+    }
+    
+    // Démarches rapides - utiliser l'index + 1 pour une numérotation séquentielle
+    demarches.rapides.forEach((d, index) => {
+      const i = index + 1;
+      saveData[`demarche_rapide_${i}_label`] = d.label;
+      saveData[`demarche_rapide_${i}_url`] = d.url;
+    });
+    
+    // Démarches urbanisme
+    demarches.urbanisme.forEach((d, index) => {
+      const i = index + 1;
+      saveData[`urbanisme_${i}_label`] = d.label;
+      saveData[`urbanisme_${i}_url`] = d.url;
+    });
+    
+    // Autres démarches
+    demarches.autres.forEach((d, index) => {
+      const i = index + 1;
+      saveData[`autre_${i}_label`] = d.label;
+      saveData[`autre_${i}_url`] = d.url;
+    });
+    
+    // PDF règlement
+    saveData.pdf_reglement_label = pdfReglement.label;
+    saveData.pdf_reglement_url = pdfReglement.url;
+    
+    return saveData; // Assurez-vous que cette ligne est présente
+  };
+
+  // Sauvegarder les données
   const handleSave = async e => {
     e.preventDefault();
     setLoading(true);
-    await fetch('/api/pageContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        page: 'demarches',
-        ...form
-      })
-    });
-    setMsg('Modifications enregistrées !');
-    setLoading(false);
-    setTimeout(() => setMsg(''), 2000);
+    
+    const saveData = prepareDataForSave();
+    
+    try {
+      await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+      });
+      setMsg('Modifications enregistrées !');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      setMsg('Erreur lors de la sauvegarde');
+      console.error("Erreur de sauvegarde:", error);
+      setTimeout(() => setMsg(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gérer l'upload de fichiers PDF
+  const handleFileUpload = async (group, id) => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf';
+    
+    fileInput.onchange = async (e) => {
+      if (!e.target.files || !e.target.files[0]) return;
+      
+      const file = e.target.files[0];
+      
+      setLoading(true);
+      try {
+        // Créer une FormData
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/upload_doc', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Échec du téléchargement: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (group === 'reglement') {
+          handlePdfReglementChange('url', data.fileUrl);
+          handlePdfReglementChange('isFile', true);
+        } else {
+          updateDemarche(group, id, 'url', data.fileUrl);
+          updateDemarche(group, id, 'isFile', true);
+        }
+        
+        setMsg('Fichier téléchargé avec succès!');
+        setTimeout(() => setMsg(''), 2000);
+      } catch (error) {
+        setMsg('Erreur lors du téléchargement: ' + error.message);
+        console.error('Erreur upload:', error);
+        setTimeout(() => setMsg(''), 3000);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fileInput.click();
   };
 
   return (
     <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
       <h2 className="title is-4 mb-4 has-text-link">🗂️ Contenu de la page Démarches</h2>
       <form onSubmit={handleSave}>
+        {/* Sections de démarches */}
         {GROUPS.map(group => (
           <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+            {/* En-tête sans bouton d'ajout */}
             <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 22 }}>{group.icon}</span> {group.title}
             </h3>
-            {FIELDS.filter(f => f.group === group.key).map((f, idx, arr) => (
-              <div className="field" key={f.key} style={{ marginBottom: idx < arr.length - 1 ? 16 : 0 }}>
-                <label className="label">{f.label}</label>
-                <div className="control">
-                  {f.type === 'textarea' ? (
-                    <textarea
-                      className="textarea"
-                      name={f.key}
-                      value={form[f.key] || ''}
-                      onChange={handleChange}
-                      readOnly={loading}
-                      style={{ background: loading ? "#f5f5f5" : "white" }}
-                    />
-                  ) : (
-                    <input
-                      className="input"
-                      type={f.type}
-                      name={f.key}
-                      value={form[f.key] || ''}
-                      onChange={handleChange}
-                      readOnly={loading}
-                      style={{ background: loading ? "#f5f5f5" : "white" }}
-                    />
-                  )}
+            
+            {demarches[group.key].length === 0 ? (
+              <div>
+                <div className="notification is-light is-info is-size-7 py-2 px-3 mb-3">
+                  Aucune démarche ajoutée.
                 </div>
               </div>
-            ))}
+            ) : (
+              <div style={{ paddingRight: '5px' }}>
+                {demarches[group.key].sort((a, b) => a.id - b.id).map((demarche, index) => (
+                  <div 
+                    key={demarche.id} 
+                    className="box mb-3 pt-3 pb-3" 
+                    style={{ background: '#f9fbfd', borderRadius: 8 }}
+                  >
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-info is-light">Démarche #{index + 1}</span>
+                      <button 
+                        type="button" 
+                        className="delete" 
+                        onClick={() => removeDemarche(group.key, demarche.id)}
+                        disabled={loading}
+                      />
+                    </div>
+                    
+                    {/* Reste du contenu de la démarche */}
+                    <div className="field mb-3">
+                      <label className="label is-small">Texte à afficher</label>
+                      <div className="control">
+                        <input
+                          className="input"
+                          type="text"
+                          value={demarche.label}
+                          onChange={(e) => updateDemarche(group.key, demarche.id, 'label', e.target.value)}
+                          readOnly={loading}
+                          style={{ background: loading ? "#f5f5f5" : "white" }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="field">
+                      <label className="label is-small">Type de ressource</label>
+                      <div className="control">
+                        <div className="select is-fullwidth">
+                          <select
+                            value={demarche.isFile ? "file" : "link"}
+                            onChange={(e) => updateDemarche(group.key, demarche.id, 'isFile', e.target.value === "file")}
+                            disabled={loading}
+                          >
+                            <option value="link">Lien URL</option>
+                            <option value="file">Fichier PDF</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="field">
+                      {demarche.isFile ? (
+                        <div>
+                          <label className="label is-small">Fichier PDF</label>
+                          <div className="is-flex">
+                            <input
+                              className="input"
+                              type="text"
+                              value={demarche.url}
+                              onChange={(e) => updateDemarche(group.key, demarche.id, 'url', e.target.value)}
+                              readOnly={true}
+                              placeholder="Choisir un fichier..."
+                              style={{ background: "#f5f5f5" }}
+                            />
+                            <button
+                              type="button"
+                              className="button is-info ml-2"
+                              onClick={() => handleFileUpload(group.key, demarche.id)}
+                              disabled={loading}
+                            >
+                              <span className="icon">
+                                <i className="fas fa-upload"></i>
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="label is-small">URL du lien</label>
+                          <div className="control">
+                            <input
+                              className="input"
+                              type="text"
+                              value={demarche.url}
+                              onChange={(e) => updateDemarche(group.key, demarche.id, 'url', e.target.value)}
+                              readOnly={loading}
+                              style={{ background: loading ? "#f5f5f5" : "white" }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Bouton d'ajout toujours en bas */}
+            <div className="has-text-centered mt-3">
+              <button 
+                type="button" 
+                className="button is-info is-light" 
+                onClick={() => addDemarche(group.key)}
+                disabled={loading}
+              >
+                <span className="icon">
+                  <i className="fas fa-plus"></i>
+                </span>
+                <span>Ajouter une démarche</span>
+              </button>
+            </div>
           </div>
         ))}
+        
+        {/* PDF Règlement */}
+        <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+          <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 22 }}>📑</span> PDF Règlement
+          </h3>
+          
+          <div className="field mb-3">
+            <label className="label is-small">Nom du PDF règlement</label>
+            <div className="control">
+              <input
+                className="input"
+                type="text"
+                value={pdfReglement.label}
+                onChange={(e) => handlePdfReglementChange('label', e.target.value)}
+                readOnly={loading}
+                style={{ background: loading ? "#f5f5f5" : "white" }}
+              />
+            </div>
+          </div>
+          
+          <div className="field">
+            <label className="label is-small">Type de ressource</label>
+            <div className="control">
+              <div className="select is-fullwidth">
+                <select
+                  value={pdfReglement.isFile ? "file" : "link"}
+                  onChange={(e) => handlePdfReglementChange('isFile', e.target.value === "file")}
+                  disabled={loading}
+                >
+                  <option value="link">Lien URL</option>
+                  <option value="file">Fichier PDF</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="field">
+            {pdfReglement.isFile ? (
+              <div>
+                <label className="label is-small">Fichier PDF</label>
+                <div className="is-flex">
+                  <input
+                    className="input"
+                    type="text"
+                    value={pdfReglement.url}
+                    onChange={(e) => handlePdfReglementChange('url', e.target.value)}
+                    readOnly={true}
+                    placeholder="Choisir un fichier..."
+                    style={{ background: "#f5f5f5" }}
+                  />
+                  <button
+                    type="button"
+                    className="button is-info ml-2"
+                    onClick={() => handleFileUpload('reglement', null)}
+                    disabled={loading}
+                  >
+                    <span className="icon">
+                      <i className="fas fa-upload"></i>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="label is-small">URL du lien</label>
+                <div className="control">
+                  <input
+                    className="input"
+                    type="text"
+                    value={pdfReglement.url}
+                    onChange={(e) => handlePdfReglementChange('url', e.target.value)}
+                    readOnly={loading}
+                    style={{ background: loading ? "#f5f5f5" : "white" }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Boutons de sauvegarde */}
         <div className="field is-grouped mt-4">
           <div className="control">
             <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
               Enregistrer
             </button>
           </div>
-          {msg && <div className="notification is-info is-light py-2 px-3 ml-3">{msg}</div>}
+          {msg && (
+            <div className={`notification is-light ${msg.includes('Erreur') ? 'is-danger' : 'is-success'} py-2 px-3 ml-3`}>
+              {msg}
+            </div>
+          )}
         </div>
       </form>
     </div>

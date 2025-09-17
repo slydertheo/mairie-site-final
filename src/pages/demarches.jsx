@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
-function QuickBox({ icon, label, href }) {
+function QuickBox({ icon, label, href, isFile }) {
+  // Déterminer si c'est un PDF (soit par le flag isFile ou par l'extension .pdf)
+  const isPdf = isFile || (href && href.toLowerCase().endsWith('.pdf'));
+  
   return (
     <a
       href={href}
@@ -32,22 +35,82 @@ function QuickBox({ icon, label, href }) {
         e.currentTarget.style.background = '#fff';
       }}
     >
-      <span style={{ fontSize: 32 }}>{icon}</span>
-      {label}
+      <span style={{ fontSize: 32 }}>{isPdf ? '📄' : icon}</span>
+      <div>
+        {label}
+        {isPdf && <span className="tag is-small is-info is-light ml-2">PDF</span>}
+      </div>
     </a>
   );
 }
 
 export default function Demarches() {
   const [content, setContent] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetch('/api/pageContent?page=demarches')
       .then(res => res.json())
       .then(data => {
         setContent(data[0] || {});
-      });
+      })
+      .catch(err => {
+        console.error("Erreur lors du chargement des démarches:", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
+
+  // Créer des arrays à partir des données pour faciliter le rendu
+  const demarchesRapides = [];
+  const demarchesUrbanisme = [];
+  const demarchesAutres = [];
+
+  // Extraire les démarches rapides
+  for (let i = 1; i <= 20; i++) { // Augmenté à 20
+    const labelKey = `demarche_rapide_${i}_label`;
+    const urlKey = `demarche_rapide_${i}_url`;
+    if (content[labelKey]) {
+      demarchesRapides.push({
+        id: i,
+        label: content[labelKey],
+        url: content[urlKey] || '#',
+        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false
+      });
+    }
+  }
+
+  // Extraire les démarches urbanisme
+  for (let i = 1; i <= 20; i++) { // Augmenté à 20
+    const labelKey = `urbanisme_${i}_label`;
+    const urlKey = `urbanisme_${i}_url`;
+    if (content[labelKey]) {
+      demarchesUrbanisme.push({
+        id: i,
+        label: content[labelKey],
+        url: content[urlKey] || '#',
+        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false
+      });
+    }
+  }
+
+  // Extraire les autres démarches
+  for (let i = 1; i <= 20; i++) { // Augmenté à 20
+    const labelKey = `autre_${i}_label`;
+    const urlKey = `autre_${i}_url`;
+    if (content[labelKey]) {
+      demarchesAutres.push({
+        id: i,
+        label: content[labelKey],
+        url: content[urlKey] || '#',
+        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false
+      });
+    }
+  }
+
+  // Icônes pour les démarches (associées par index)
+  const rapideIcons = ["📄", "👨‍👩‍👧‍👦", "📝", "🗳️", "🪪", "🎖️", "🤝"];
+  const urbanismeIcons = ["🗺️", "📄", "📝", "📐"];
 
   return (
     <>
@@ -79,47 +142,100 @@ export default function Demarches() {
           <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
             {content.titre || "Démarches administratives"}
           </h1>
-          <div className="columns is-variable is-5">
-            {/* Colonne 1 : Démarches rapides */}
-            <div className="column is-half">
-              <h2 className="title is-5 has-text-primary mb-3">Démarches rapides</h2>
-              <QuickBox icon="📄" label={content.demarche_rapide_1_label || "Demande d’acte de naissance"} href={content.demarche_rapide_1_url || "#"} />
-              <QuickBox icon="👨‍👩‍👧‍👦" label={content.demarche_rapide_2_label || "Livret de famille"} href={content.demarche_rapide_2_url || "#"} />
-              <QuickBox icon="📝" label={content.demarche_rapide_3_label || "S'inscrire à Friesen"} href={content.demarche_rapide_3_url || "#"} />
-              <QuickBox icon="🗳️" label={content.demarche_rapide_4_label || "Inscription sur les listes électorales"} href={content.demarche_rapide_4_url || "#"} />
-              <QuickBox icon="🪪" label={content.demarche_rapide_5_label || "CNI / Passeport (Altkirch)"} href={content.demarche_rapide_5_url || "#"} />
-              <QuickBox icon="🎖️" label={content.demarche_rapide_6_label || "Recensement militaire"} href={content.demarche_rapide_6_url || "#"} />
-              <QuickBox icon="🤝" label={content.demarche_rapide_7_label || "Espace France Services"} href={content.demarche_rapide_7_url || "#"} />
+
+          {loading ? (
+            <div className="has-text-centered py-6">
+              <span className="icon is-large">
+                <i className="fas fa-spinner fa-pulse fa-2x"></i>
+              </span>
+              <p className="mt-2">Chargement des démarches...</p>
             </div>
-            {/* Colonne 2 : Urbanisme et autres liens */}
-            <div className="column is-half">
-              <h2 className="title is-5 has-text-primary mb-3">Urbanisme</h2>
-              <QuickBox icon="🗺️" label={content.urbanisme_1_label || "Plan carte communale"} href={content.urbanisme_1_url || "#"} />
-              <QuickBox icon="📄" label={content.urbanisme_2_label || "Règlement téléchargeable"} href={content.urbanisme_2_url || "#"} />
-              <QuickBox icon="📝" label={content.urbanisme_3_label || "Formulaires permis de construire (Guichet unique PETR)"} href={content.urbanisme_3_url || "#"} />
-              <QuickBox icon="📐" label={content.urbanisme_4_label || "Cadastre (éditer/consulter un plan)"} href={content.urbanisme_4_url || "#"} />
-              <div className="box mt-5" style={{ background: '#f4f8fb', border: '1.5px solid #e0e7ef', borderRadius: 14 }}>
-                <h3 className="subtitle is-6 has-text-link mb-2">Autres démarches utiles</h3>
-                <ul style={{ paddingLeft: 18, fontSize: 15 }}>
-                  <li>
-                    <a href={content.autre_1_url || "#"} target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">
-                      {content.autre_1_label || "Portail Service Public"}
+          ) : (
+            <div className="columns is-variable is-5">
+              {/* Colonne 1 : Démarches rapides */}
+              <div className="column is-half">
+                <h2 className="title is-5 has-text-primary mb-3">Démarches rapides</h2>
+                {demarchesRapides.length === 0 ? (
+                  <div className="notification is-light is-info">
+                    Aucune démarche rapide n'a été configurée.
+                  </div>
+                ) : (
+                  demarchesRapides.map((demarche, index) => (
+                    <QuickBox 
+                      key={demarche.id}
+                      icon={rapideIcons[index % rapideIcons.length]} 
+                      label={demarche.label} 
+                      href={demarche.url}
+                      isFile={demarche.isFile}
+                    />
+                  ))
+                )}
+              </div>
+
+              {/* Colonne 2 : Urbanisme et autres liens */}
+              <div className="column is-half">
+                <h2 className="title is-5 has-text-primary mb-3">Urbanisme</h2>
+                {demarchesUrbanisme.length === 0 ? (
+                  <div className="notification is-light is-info">
+                    Aucune démarche d'urbanisme n'a été configurée.
+                  </div>
+                ) : (
+                  demarchesUrbanisme.map((demarche, index) => (
+                    <QuickBox 
+                      key={demarche.id}
+                      icon={urbanismeIcons[index % urbanismeIcons.length]} 
+                      label={demarche.label} 
+                      href={demarche.url}
+                      isFile={demarche.isFile}
+                    />
+                  ))
+                )}
+
+                {/* Autres démarches */}
+                <div className="box mt-5" style={{ background: '#f4f8fb', border: '1.5px solid #e0e7ef', borderRadius: 14 }}>
+                  <h3 className="subtitle is-6 has-text-link mb-2">Autres démarches utiles</h3>
+                  {demarchesAutres.length === 0 ? (
+                    <div className="notification is-light is-info is-size-7 py-2">
+                      Aucune autre démarche n'a été configurée.
+                    </div>
+                  ) : (
+                    <ul style={{ paddingLeft: 18, fontSize: 15 }}>
+                      {demarchesAutres.map(demarche => (
+                        <li key={demarche.id}>
+                          <a 
+                            href={demarche.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="has-text-link is-underlined"
+                          >
+                            {demarche.label}
+                            {demarche.isFile && <span className="tag is-small is-info is-light ml-1">PDF</span>}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* PDF Règlement */}
+                {content.pdf_reglement_label && content.pdf_reglement_url && (
+                  <div className="has-text-centered mt-4">
+                    <a 
+                      href={content.pdf_reglement_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="button is-link is-outlined"
+                    >
+                      <span className="icon">
+                        <i className="fas fa-file-pdf"></i>
+                      </span>
+                      <span>{content.pdf_reglement_label}</span>
                     </a>
-                  </li>
-                  <li>
-                    <a href={content.autre_2_url || "#"} target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">
-                      {content.autre_2_label || "Demander un acte d'état civil"}
-                    </a>
-                  </li>
-                  <li>
-                    <a href={content.autre_3_url || "#"} target="_blank" rel="noopener noreferrer" className="has-text-link is-underlined">
-                      {content.autre_3_label || "Mariage / PACS"}
-                    </a>
-                  </li>
-                </ul>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </>
