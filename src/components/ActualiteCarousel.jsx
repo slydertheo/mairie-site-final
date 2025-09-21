@@ -8,14 +8,17 @@ export default function ActualiteCarousel({ actualites }) {
   
   // Responsive settings
   const getVisibleItemsCount = () => {
-    if (windowWidth < 768) return 1; // Mobile
-    if (windowWidth < 1024) return 2; // Tablet
-    return 3; // Desktop
+    // Limiter le nombre d'éléments visibles au nombre total d'actualités
+    const baseCount = windowWidth < 768 ? 1 : windowWidth < 1024 ? 2 : 3;
+    return Math.min(baseCount, actualites.length);
   };
   
   const visibleItems = getVisibleItemsCount();
   const totalItems = actualites.length;
   const maxIndex = Math.max(0, totalItems - visibleItems);
+  
+  // Déterminer si les contrôles de navigation sont nécessaires
+  const needsNavigation = totalItems > visibleItems;
   
   // Window resize listener
   useEffect(() => {
@@ -31,18 +34,18 @@ export default function ActualiteCarousel({ actualites }) {
     return () => window.removeEventListener('resize', handleResize);
   }, [currentIndex, totalItems]);
   
-  // Rotation automatique
+  // Rotation automatique uniquement si nécessaire
   useEffect(() => {
-    if (!isPaused && totalItems > visibleItems && !isAnimating) {
+    if (!isPaused && needsNavigation && !isAnimating) {
       const timer = setTimeout(() => {
         nextSlide();
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [currentIndex, isPaused, totalItems, visibleItems, isAnimating]);
+  }, [currentIndex, isPaused, needsNavigation, isAnimating]);
 
   const nextSlide = () => {
-    if (isAnimating) return;
+    if (isAnimating || !needsNavigation) return;
     setIsAnimating(true);
     
     setCurrentIndex((current) => {
@@ -54,7 +57,7 @@ export default function ActualiteCarousel({ actualites }) {
   };
   
   const prevSlide = () => {
-    if (isAnimating) return;
+    if (isAnimating || !needsNavigation) return;
     setIsAnimating(true);
     
     setCurrentIndex((current) => {
@@ -66,7 +69,7 @@ export default function ActualiteCarousel({ actualites }) {
   };
 
   const goToSlide = (index) => {
-    if (isAnimating) return;
+    if (isAnimating || !needsNavigation) return;
     setIsAnimating(true);
     setCurrentIndex(index);
     setTimeout(() => setIsAnimating(false), 800);
@@ -74,12 +77,22 @@ export default function ActualiteCarousel({ actualites }) {
 
   // Calculer toutes les cartes avec leur position pour l'animation 3D
   const renderCards = () => {
-    const itemWidth = 100 / visibleItems;
+    // Adapter la largeur des cartes selon le nombre total d'actualités
+    // Si moins d'actualités que d'emplacements visibles, utiliser toute la largeur disponible
+    const itemWidth = totalItems < visibleItems 
+      ? 100 / totalItems 
+      : 100 / visibleItems;
+    
     const perspective = windowWidth < 768 ? 600 : 1200;
     
     return actualites.map((actu, index) => {
       const position = index - currentIndex;
-      const isVisible = position >= 0 && position < visibleItems;
+      
+      // Ajuster la logique de visibilité pour les petits ensembles d'actualités
+      const isVisible = totalItems <= visibleItems 
+        ? index < totalItems  // Tous visibles si peu d'éléments
+        : position >= 0 && position < visibleItems;
+      
       const isNext = position >= visibleItems && position < visibleItems + 1;
       const isPrev = position === -1;
       
@@ -104,13 +117,18 @@ export default function ActualiteCarousel({ actualites }) {
         translateZ = -120;
       }
       
+      // Position adaptée pour les petits ensembles d'actualités
+      const leftPosition = totalItems <= visibleItems
+        ? index * itemWidth  // Position fixe si tous visibles
+        : position * itemWidth;
+      
       return (
         <div 
           key={index}
           className="carousel-card-wrapper"
           style={{ 
             position: 'absolute',
-            left: `${position * itemWidth}%`,
+            left: `${leftPosition}%`,
             width: `${itemWidth}%`,
             height: '100%',
             padding: windowWidth < 768 ? '0.5rem' : '1rem',
@@ -125,9 +143,8 @@ export default function ActualiteCarousel({ actualites }) {
             zIndex: isVisible ? 2 : 1
           }}
         >
-          <div 
-            className="card" 
-            style={{ 
+          {/* Reste du code de la carte inchangé */}
+          <div className="card" style={{ 
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -137,8 +154,8 @@ export default function ActualiteCarousel({ actualites }) {
               transition: 'transform 0.5s ease, box-shadow 0.5s ease',
               backfaceVisibility: 'hidden',
               transformStyle: 'preserve-3d',
-            }}
-          >
+            }}>
+            {/* ... Reste du contenu de carte inchangé ... */}
             <div 
               className="card-image"
               style={{
@@ -150,7 +167,6 @@ export default function ActualiteCarousel({ actualites }) {
                 overflow: 'hidden',
               }}
             >
-              {/* Overlay gradient effect */}
               <div style={{
                 position: 'absolute',
                 top: 0,
@@ -206,6 +222,15 @@ export default function ActualiteCarousel({ actualites }) {
     });
   };
 
+  // Message alternatif si aucune actualité
+  if (totalItems === 0) {
+    return (
+      <div className="notification is-info">
+        Aucune actualité n'est disponible pour le moment.
+      </div>
+    );
+  }
+
   return (
     <div 
       className="carousel-container"
@@ -231,76 +256,80 @@ export default function ActualiteCarousel({ actualites }) {
         {renderCards()}
       </div>
       
-      {/* Boutons de navigation avec effet 3D */}
-      <button 
-        onClick={prevSlide} 
-        className="button is-rounded carousel-nav prev"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: windowWidth < 768 ? '5px' : '10px',
-          transform: 'translateY(-50%)',
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: 'none',
-          width: windowWidth < 768 ? '36px' : '44px',
-          height: windowWidth < 768 ? '36px' : '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          zIndex: 10,
-          padding: 0,
-          boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
-          transition: 'all 0.3s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-          e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-        }}
-        aria-label="Précédent"
-      >
-        <i className="fas fa-chevron-left"></i>
-      </button>
-      <button 
-        onClick={nextSlide} 
-        className="button is-rounded carousel-nav next"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: windowWidth < 768 ? '5px' : '10px',
-          transform: 'translateY(-50%)',
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: 'none',
-          width: windowWidth < 768 ? '36px' : '44px',
-          height: windowWidth < 768 ? '36px' : '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          zIndex: 10,
-          padding: 0,
-          boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
-          transition: 'all 0.3s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-          e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-        }}
-        aria-label="Suivant"
-      >
-        <i className="fas fa-chevron-right"></i>
-      </button>
+      {/* Boutons de navigation - affichés uniquement si nécessaires */}
+      {needsNavigation && (
+        <>
+          <button 
+            onClick={prevSlide} 
+            className="button is-rounded carousel-nav prev"
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: windowWidth < 768 ? '5px' : '10px',
+              transform: 'translateY(-50%)',
+              background: 'rgba(255, 255, 255, 0.9)',
+              border: 'none',
+              width: windowWidth < 768 ? '36px' : '44px',
+              height: windowWidth < 768 ? '36px' : '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              padding: 0,
+              boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+            }}
+            aria-label="Précédent"
+          >
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <button 
+            onClick={nextSlide} 
+            className="button is-rounded carousel-nav next"
+            style={{
+              position: 'absolute',
+              top: '50%',
+              right: windowWidth < 768 ? '5px' : '10px',
+              transform: 'translateY(-50%)',
+              background: 'rgba(255, 255, 255, 0.9)',
+              border: 'none',
+              width: windowWidth < 768 ? '36px' : '44px',
+              height: windowWidth < 768 ? '36px' : '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              padding: 0,
+              boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+            }}
+            aria-label="Suivant"
+          >
+            <i className="fas fa-chevron-right"></i>
+          </button>
+        </>
+      )}
       
-      {/* Indicateurs avec animation 3D */}
-      {windowWidth >= 768 && (
+      {/* Indicateurs avec animation 3D - affichés uniquement si nécessaires */}
+      {windowWidth >= 768 && needsNavigation && (
         <div className="carousel-indicators" style={{
           position: 'absolute',
           bottom: '15px',
