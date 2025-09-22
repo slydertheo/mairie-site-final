@@ -100,52 +100,60 @@ export default function PageAcceuil() {
   useEffect(() => {
     fetch('/api/pageContent?page=accueil')
       .then(res => res.json())
-      .then(data => {
-        const pageContent = data[0] || {};
-        setContent(pageContent);
-        
-        // Essayer de charger les événements depuis différentes sources
+      .then(pageContent => {
+        const pageContentData = pageContent[0] || {};
+        setContent(pageContentData);
+
         let agendaEvents = [];
-        
-        // 1. D'abord, essayer de charger depuis agendaItems_json
-        try {
-          if (pageContent.agendaItems_json) {
-            const parsedItems = JSON.parse(pageContent.agendaItems_json);
-            agendaEvents = parsedItems.map((item, idx) => ({
-              id: item.id || `event-${idx}`,
-              titre: item.title || '',
-              date: item.date || '',
-              description: item.description || '',
-              image: item.image
-            }));
-            console.log('Événements chargés depuis agendaItems_json:', agendaEvents);
+        if (pageContentData.agendaItems_json) {
+          try {
+            const raw = typeof pageContentData.agendaItems_json === 'string'
+              ? JSON.parse(pageContentData.agendaItems_json)
+              : pageContentData.agendaItems_json;
+
+            if (Array.isArray(raw)) {
+              agendaEvents = raw.map((item, idx) => ({
+                id: item.id || `event-${idx}`,
+                // accepte "titre" ou "title"
+                titre: (item.titre ?? item.title ?? '').toString(),
+                date: (item.date ?? '').toString(),
+                description: (item.description ?? '').toString(),
+                image: (item.image ?? '').toString(),
+                lieu: (item.lieu ?? '').toString(),
+              }));
+            } else {
+              console.warn('agendaItems_json n’est pas un tableau:', raw);
+            }
+          } catch (e) {
+            console.error('Failed to parse agendaItems_json:', e);
           }
-        } catch (e) {
-          console.error('Erreur lors du parsing de agendaItems_json:', e);
         }
-        
-        // 2. Si vide, essayer avec les champs individuels
+
+        // Fallback si pas de JSON valide
         if (agendaEvents.length === 0) {
-          if (pageContent.agenda1_title || pageContent.agenda1_date) {
+          if (pageContentData.agenda1_title || pageContentData.agenda1_date) {
             agendaEvents.push({
-              id: 'agenda1',
-              titre: pageContent.agenda1_title || '',
-              date: pageContent.agenda1_date || '',
-              description: pageContent.agenda1_description || ''
+              id: 'event-0',
+              // ces champs sont nommés *_title côté contenu
+              titre: pageContentData.agenda1_title || '',
+              date: pageContentData.agenda1_date || '',
+              description: pageContentData.agenda1_description || '',
+              image: '',
+              lieu: '',
             });
           }
-          
-          if (pageContent.agenda2_title || pageContent.agenda2_date) {
+          if (pageContentData.agenda2_title || pageContentData.agenda2_date) {
             agendaEvents.push({
-              id: 'agenda2',
-              titre: pageContent.agenda2_title || '',
-              date: pageContent.agenda2_date || '',
-              description: pageContent.agenda2_description || ''
+              id: 'event-1',
+              titre: pageContentData.agenda2_title || '',
+              date: pageContentData.agenda2_date || '',
+              description: pageContentData.agenda2_description || '',
+              image: '',
+              lieu: '',
             });
           }
         }
-        
-        // Mettre à jour la liste des événements
+
         setEvents(agendaEvents);
       })
       .catch(error => {
@@ -333,13 +341,14 @@ export default function PageAcceuil() {
               <AnimateOnScroll animation="fade-left" delay={150}>
                 <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
                 <div className="mb-4">
-                  {/* Afficher tous les événements dynamiquement au lieu de juste 2 fixes */}
                   {events.length > 0 ? (
                     events.map((event, index) => (
                       <AgendaItem 
                         key={event.id || index}
-                        title={event.titre || event.title} 
-                        date={event.date} 
+                        title={event.titre || event.title}
+                        date={event.date}
+                        image={event.image}
+                        lieu={event.lieu}
                       />
                     ))
                   ) : (
@@ -586,10 +595,10 @@ export default function PageAcceuil() {
                           <div className="column is-narrow">
                             <figure className="image is-64x64">
                               <img 
-                                src={ev.image || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=facearea&w=128&q=80"} 
+                                src={ev.image || "https://via.placeholder.com/128?text=Event"} 
                                 alt={ev.titre} 
                                 style={{ objectFit: 'cover', borderRadius: 8 }} 
-                                onError={e => { e.currentTarget.src = "/default.jpg"; }} 
+                                onError={e => { e.currentTarget.src = "https://via.placeholder.com/128?text=Event"; }} 
                               />
                             </figure>
                           </div>
@@ -666,24 +675,24 @@ function ActualiteCard({ img, date, title, color }) {
   );
 }
 
-
-
 // Composant pour un événement d'agenda
-function AgendaItem({ title, date }) {
-  // Ajout d'une image illustrative pour chaque événement
-  const images = {
-    "Exposition à la médiathèque": "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=facearea&w=128&q=80",
-    "Marché de producteurs": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=facearea&w=128&q=80",
-  };
-  const imgSrc = images[title] || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=facearea&w=128&q=80";
+function AgendaItem({ title, date, image, lieu }) {
+  const fallback = "https://via.placeholder.com/64?text=EVT";
+  const imgSrc = image || fallback;
   return (
     <div className="box is-flex is-align-items-center mb-2" style={{ background: '#f8fafc', gap: 10, padding: '8px 12px' }}>
       <figure className="image is-48x48">
-        <img src={imgSrc} alt={title} style={{ objectFit: 'cover', borderRadius: 8, width: 36, height: 36 }} onError={e => { e.currentTarget.src = "/default.jpg"; }} />
+        <img
+          src={imgSrc}
+          alt={title}
+          style={{ objectFit: 'cover', borderRadius: 8, width: 36, height: 36 }}
+          onError={e => { e.currentTarget.src = fallback; }}
+        />
       </figure>
       <div>
         <div className="has-text-weight-semibold has-text-dark">{title}</div>
         <div className="has-text-link is-size-7">{date}</div>
+        {lieu ? <div className="is-size-7">📍 {lieu}</div> : null}
       </div>
     </div>
   );

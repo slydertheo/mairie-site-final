@@ -21,12 +21,15 @@ export default function Ecoles() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [content, setContent] = useState({});
   const [vacances, setVacances] = useState([]);
+  const [ecoles, setEcoles] = useState([]);
 
   useEffect(() => {
     fetch('/api/pageContent?page=ecoles')
       .then(res => res.json())
       .then(data => {
-        setContent(data[0] || {});
+        const obj = data?.[0] || {};
+        setContent(obj);
+        setEcoles(Array.isArray(obj.ecoles_json) ? obj.ecoles_json : []);
       });
   }, []);
 
@@ -104,66 +107,59 @@ export default function Ecoles() {
           </h1>
 
           <div className="columns is-variable is-5">
-            {/* Colonne 1 : Écoles */}
+            {/* Colonne 1 : Écoles dynamiques au format “avant” */}
             <div className="column is-half">
               <div className="box" style={{ background: '#f8fafc', borderRadius: 16 }}>
                 <h2 className="title is-4 has-text-primary mb-4">Nos écoles</h2>
-                
-                <div className="media mb-5">
-                  <figure className="media-left">
-                    <p className="image is-96x96">
-                      <img 
-                        src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=200&q=80" 
-                        alt="École maternelle"
-                        style={{ objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    </p>
-                  </figure>
-                  <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-2">{content.ecole_maternelle_nom || 'École maternelle "Les Petits Explorateurs"'}</h3>
-                    <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {content.ecole_maternelle_adresse || "3 Rue des Écoles, 68580 Friesen"}
-                    </p>
-                    <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> {content.ecole_maternelle_tel || "03.89.XX.XX.XX"}
-                    </p>
-                    <p className="has-text-grey">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> {content.ecole_maternelle_email || "maternelle@ecole-friesen.fr"}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="media">
-                  <figure className="media-left">
-                    <p className="image is-96x96">
-                      <img 
-                        src="https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=200&q=80" 
-                        alt="École élémentaire"
-                        style={{ objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    </p>
-                  </figure>
-                  <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-2">{content.ecole_elementaire_nom || 'École élémentaire "Jean Moulin"'}</h3>
-                    <p style={{ fontStyle: 'italic', fontSize: 15 }} className="mb-2">
-                      {content.ecole_elementaire_partenaire || "En partenariat avec la commune d'Altkirch"}
-                    </p>
-                    <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {content.ecole_elementaire_adresse || "5 Rue des Écoles, 68130 Altkirch"}
-                    </p>
-                    <p className="has-text-grey mb-2">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> {content.ecole_elementaire_tel || "03.89.XX.XX.XX"}
-                    </p>
-                    <p className="has-text-grey">
-                      <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> {content.ecole_elementaire_email || "elementaire@ecole-altkirch.fr"}
-                    </p>
+                {ecoles.length === 0 && (
+                  <p className="has-text-grey">Aucune école renseignée pour le moment.</p>
+                )}
+
+                {ecoles.map((e) => (
+                  <div className="media mb-5" key={e.id}>
+                    <figure className="media-left">
+                      <p className="image is-96x96">
+                        <img
+                          src={e.image || 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=200&q=80'}
+                          alt={e.nom}
+                          style={{ objectFit: 'cover', borderRadius: 8 }}
+                          onError={(ev) => { ev.currentTarget.src = 'https://via.placeholder.com/96?text=Logo'; }}
+                        />
+                      </p>
+                    </figure>
+                    <div className="media-content">
+                      <h3 className="subtitle is-5 has-text-link mb-2">{e.nom || 'Nom de l’école'}</h3>
+                      {e.partenaire ? (
+                        <p style={{ fontStyle: 'italic', fontSize: 15 }} className="mb-2">{e.partenaire}</p>
+                      ) : null}
+                      {e.adresse && (
+                        <p className="has-text-grey mb-2">
+                          <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {e.adresse}
+                        </p>
+                      )}
+                      {e.tel && (
+                        <p className="has-text-grey mb-2">
+                          <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> {e.tel}
+                        </p>
+                      )}
+                      {e.email && (
+                        <p className="has-text-grey">
+                          <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> {e.email}
+                        </p>
+                      )}
+                      {e.site && (
+                        <p className="mt-1">
+                          <a className="has-text-link is-underlined" href={e.site} target="_blank" rel="noopener noreferrer">🌐 Site web</a>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ))}
 
                 <div className="notification is-info is-light mt-5">
                   <p className="has-text-weight-bold mb-2">📢 Information transport scolaire</p>
-                  <p>{content.info_transport || "Un service de ramassage scolaire est disponible pour les élèves de Friesen se rendant à l'école élémentaire d'Altkirch."}</p>
-                  <p className="mt-2">Consultez les <a href={content.transport_url || "#"} className="has-text-link is-underlined">horaires et points de ramassage</a>.</p>
+                  <p>{content.info_transport || "Un service de ramassage scolaire est disponible."}</p>
                 </div>
               </div>
 

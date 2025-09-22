@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import 'bulma/css/bulma.min.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Choisis la page à éditer ici (exemple : accueil)
 const SELECTED_PAGE = 'accueil';
@@ -43,12 +46,6 @@ const FIELD_GROUPS = [
     title: 'Réseaux sociaux',
     fields: ['facebook', 'instagram', 'twitter'],
   },
-  {
-    key: 'urgence',
-    icon: '🚨',
-    title: 'Numéros d\'urgence',
-    fields: ['urgence_pompiers', 'urgence_police', 'urgence_samu'],
-  },
 ];
 
 const FIELDS = [
@@ -73,458 +70,428 @@ const FIELDS = [
   { key: 'facebook', label: 'Lien Facebook', type: 'text' },
   { key: 'instagram', label: 'Lien Instagram', type: 'text' },
   { key: 'twitter', label: 'Lien Twitter', type: 'text' },
-  { key: 'urgence_pompiers', label: 'Numéro Pompiers', type: 'text' },
-  { key: 'urgence_police', label: 'Numéro Police', type: 'text' },
-  { key: 'urgence_samu', label: 'Numéro SAMU', type: 'text' },
+
 ];
 
-export default function PageContentEditor() {
-  const [form, setForm] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [agendaItems, setAgendaItems] = useState([]);
-  const [currentAgendaItem, setCurrentAgendaItem] = useState(null);
-  const [showAgendaForm, setShowAgendaForm] = useState(false);
+export default function PageAcceuil() {
+  const [contact, setContact] = useState({ nom: '', email: '', message: '' });
+  const [contactSent, setContactSent] = useState(false);
+  const [content, setContent] = useState({});
+  const [events, setEvents] = useState([]);
+  const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [showAllEventsModal, setShowAllEventsModal] = useState(false);
+  const [actualites, setActualites] = useState([]);
 
+  // Formulaire style "Actualité"
+  const [form, setForm] = useState({ titre: '', date: '', description: '', image: '', lieu: '' });
+  const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editIndex, setEditIndex] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+
+  // Utilitaires
+  const normalizeEvents = (pageContentData) => {
+    if (pageContentData?.agendaItems_json) {
+      try {
+        const raw = typeof pageContentData.agendaItems_json === 'string'
+          ? JSON.parse(pageContentData.agendaItems_json)
+          : pageContentData.agendaItems_json;
+        if (Array.isArray(raw)) {
+          return raw.map((item, idx) => ({
+            id: item.id || `event-${idx}-${Date.now()}`,
+            titre: item.titre ?? item.title ?? '',
+            date: item.date ?? '',
+            description: item.description ?? '',
+            image: item.image ?? '',
+            lieu: item.lieu ?? ''
+          }));
+        }
+      } catch (e) {
+        console.error('Erreur parsing agendaItems_json:', e);
+      }
+    }
+    const out = [];
+    if (pageContentData?.agenda1_title || pageContentData?.agenda1_date) {
+      out.push({
+        id: 'event-0',
+        titre: pageContentData.agenda1_title || '',
+        date: pageContentData.agenda1_date || '',
+        description: pageContentData.agenda1_description || '',
+        image: '',
+        lieu: ''
+      });
+    }
+    if (pageContentData?.agenda2_title || pageContentData?.agenda2_date) {
+      out.push({
+        id: 'event-1',
+        titre: pageContentData.agenda2_title || '',
+        date: pageContentData.agenda2_date || '',
+        description: pageContentData.agenda2_description || '',
+        image: '',
+        lieu: ''
+      });
+    }
+    return out;
+  };
+
+  const persistEvents = async (eventsToSave) => {
+    const res = await fetch('/api/pageContent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: 'accueil',
+        agendaItems_json: JSON.stringify(eventsToSave)
+      })
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      throw new Error(`Erreur serveur (${res.status}): ${t || 'POST /api/pageContent a échoué'}`);
+    }
+    return res.json().catch(() => ({}));
+  };
+
+  // Charger contenu + events
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/pageContent?page=${SELECTED_PAGE}`)
-      .then(res => res.json())
-      .then(data => {
-        const obj = data[0] || {};
-        const initial = {};
-        FIELDS.forEach(f => {
-          initial[f.key] = obj[f.key] || '';
-        });
-        setForm(initial);
-        
-        // Initialiser agendaItems à partir des champs individuels et du tableau existant
-        let items = [];
-        
-        // Ajouter les événements à partir des champs individuels s'ils existent
-        if (obj.agenda1_title || obj.agenda1_date) {
-          items.push({
-            title: obj.agenda1_title || '',
-            date: obj.agenda1_date || ''
-          });
-        }
-        
-        if (obj.agenda2_title || obj.agenda2_date) {
-          items.push({
-            title: obj.agenda2_title || '',
-            date: obj.agenda2_date || ''
-          });
-        }
-        
-        // MODIFICATION ICI: Vérifier d'abord obj.agendaItems (qui sera parsé automatiquement par l'API)
-        if (obj.agendaItems && Array.isArray(obj.agendaItems) && obj.agendaItems.length > 0) {
-          if (items.length > 0) {
-            const additionalItems = obj.agendaItems.slice(items.length);
-            items = [...items, ...additionalItems];
-          } else {
-            items = [...obj.agendaItems];
-          }
-        }
-        // Puis essayer avec agendaItems_json comme fallback
-        else if (obj.agendaItems_json) {
-          try {
-            const parsedItems = JSON.parse(obj.agendaItems_json);
-            if (items.length > 0) {
-              const additionalItems = parsedItems.slice(items.length);
-              items = [...items, ...additionalItems];
-            } else {
-              items = [...parsedItems];
-            }
-          } catch (e) {
-            console.error('Erreur lors du parsing de agendaItems_json:', e);
-          }
-        }
-        
-        setAgendaItems(items);
+    let cancelled = false;
+    fetch('/api/pageContent?page=accueil')
+      .then(res => res.ok ? res.json() : Promise.reject(new Error('Impossible de charger le contenu')))
+      .then(pageContent => {
+        if (cancelled) return;
+        const pageContentData = pageContent?.[0] || {};
+        setContent(pageContentData);
+        setEvents(normalizeEvents(pageContentData));
       })
-      .catch(() => {
-        setForm({});
-        setAgendaItems([]);
-      })
-      .finally(() => setLoading(false));
+      .catch(error => console.error('Erreur lors du chargement des données:', error));
+    return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    fetch('/api/actualites')
+      .then(res => res.ok ? res.json() : [])
+      .then(setActualites)
+      .catch(() => {});
+  }, []);
+
+  // Handlers "comme Actualité"
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Modifier la fonction handleSave pour corriger les problèmes d'enregistrement
-  const handleSave = async e => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg('');
-    
+  const compressImage = (file, options = {}) => {
+    return new Promise((resolve, reject) => {
+      const maxWidth = options.maxWidth || 1200;
+      const maxHeight = options.maxHeight || 1200;
+      const quality = options.quality || 0.7;
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = event => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL(file.type, quality);
+          resolve(compressedBase64);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.includes('image/')) {
+      toast.error('Veuillez sélectionner une image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop volumineuse (max 5MB).');
+      return;
+    }
+    const loadingId = toast.loading("Traitement de l'image...");
     try {
-      // Créer une copie des données du formulaire
-      const formData = { ...form };
-      
-      // Convertir les événements d'agenda en format compatible avec votre API
-      if (agendaItems.length > 0) {
-        formData.agenda1_title = agendaItems[0].title || '';
-        formData.agenda1_date = agendaItems[0].date || '';
-        formData.agenda1_description = agendaItems[0].description || '';
+      const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.7 });
+      setPreviewImage(compressed);
+      setForm(prev => ({ ...prev, image: compressed }));
+      toast.update(loadingId, { render: 'Image optimisée', type: 'success', isLoading: false, autoClose: 2000 });
+    } catch (err) {
+      toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
+    }
+  };
+
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+    try {
+      const d = new Date(dateString);
+      return d.toISOString().split('T')[0];
+    } catch {
+      return '';
+    }
+  };
+
+  const resetForm = () => {
+    setForm({ titre: '', date: '', description: '', image: '', lieu: '' });
+    setPreviewImage(null);
+    setEditMode(false);
+    setEditIndex(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.titre.trim() || !form.date.trim()) {
+      toast.error('Titre et date sont obligatoires.');
+      return;
+    }
+    // Base64 guard (optionnel)
+    if (form.image && form.image.length > 800000) {
+      toast.error("L'image est trop volumineuse après compression.");
+      return;
+    }
+
+    setLoading(true);
+    const toastId = toast.loading(editMode ? 'Modification en cours...' : 'Ajout en cours...');
+    try {
+      const next = [...events];
+      if (editMode && editIndex != null) {
+        const id = next[editIndex]?.id;
+        next[editIndex] = { id, ...form };
       } else {
-        formData.agenda1_title = '';
-        formData.agenda1_date = '';
-        formData.agenda1_description = '';
+        next.push({ id: `event-${crypto?.randomUUID?.() || Date.now()}`, ...form });
       }
-      
-      if (agendaItems.length > 1) {
-        formData.agenda2_title = agendaItems[1].title || '';
-        formData.agenda2_date = agendaItems[1].date || '';
-        formData.agenda2_description = agendaItems[1].description || '';
-      } else {
-        formData.agenda2_title = '';
-        formData.agenda2_date = '';
-        formData.agenda2_description = '';
-      }
-      
-      // MODIFICATION: Envoyer également une version JSON stringifiée
-      formData.agendaItems_json = JSON.stringify(agendaItems);
-      // Garder également l'objet pour la compatibilité
-      formData.agendaItems = agendaItems;
-      
-      console.log('Tentative d\'enregistrement avec les données:', {
-        page: SELECTED_PAGE,
-        ...formData
-      });
-      
-      // Envoyer la requête
-      const response = await fetch(`/api/pageContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page: SELECTED_PAGE,
-          ...formData
-        })
-      });
-      
-      // Vérification explicite du succès
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Erreur serveur (${response.status}): ${errorData}`);
-      }
-      
-      const result = await response.json();
-      console.log('Réponse du serveur:', result);
-      
-      setMsg('✅ Modifications enregistrées !');
-      
-      // Notification explicite
-      alert('Les modifications ont été enregistrées avec succès. La page va se rafraîchir.');
-      
-      // Rafraîchir la page pour voir les changements
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Erreur lors de l\'enregistrement:', error);
-      setMsg(`❌ Erreur: ${error.message}`);
-      alert(`Une erreur est survenue: ${error.message}`);
+      setEvents(next);
+      await persistEvents(next);
+      toast.update(toastId, { render: editMode ? 'Événement modifié' : 'Événement ajouté', type: 'success', isLoading: false, autoClose: 2000 });
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      toast.update(toastId, { render: 'Erreur lors de la sauvegarde', type: 'error', isLoading: false, autoClose: 3000 });
     } finally {
       setLoading(false);
     }
   };
 
-  // Fonctions CRUD pour l'agenda
-  const handleAddAgendaItem = () => {
-    setCurrentAgendaItem({ title: '', date: '', description: '' });
-    setShowAgendaForm(true);
+  const handleEdit = (idx) => {
+    const ev = events[idx];
+    if (!ev) return;
+    setEditMode(true);
+    setEditIndex(idx);
+    setForm({
+      titre: ev.titre || '',
+      date: ev.date || '',
+      description: ev.description || '',
+      image: ev.image || '',
+      lieu: ev.lieu || ''
+    });
+    setPreviewImage(ev.image || null);
   };
 
-  const handleEditAgendaItem = (item, index) => {
-    setCurrentAgendaItem({ ...item, index });
-    setShowAgendaForm(true);
+  const handleDelete = (idx) => {
+    const ev = events[idx];
+    if (!ev) return;
+
+    const confirmToastId = `confirm-delete-${ev.id || idx}`;
+
+    toast.info(
+      <div>
+        <p>Supprimer “{ev.titre}” ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={async () => {
+              // Fermer uniquement le toast de confirmation
+              toast.dismiss(confirmToastId);
+
+              const loadingId = toast.loading('Suppression...');
+              const prev = events;
+              const next = events.filter((_, i) => i !== idx);
+              setEvents(next);
+              try {
+                await persistEvents(next);
+                toast.update(loadingId, { render: 'Événement supprimé', type: 'success', isLoading: false, autoClose: 2000 });
+              } catch (e) {
+                setEvents(prev);
+                toast.update(loadingId, { render: 'Erreur lors de la suppression', type: 'error', isLoading: false, autoClose: 3000 });
+              }
+            }}
+          >
+            Confirmer
+          </button>
+          <button
+            className="button is-light is-small"
+            onClick={() => toast.dismiss(confirmToastId)}
+          >
+            Annuler
+          </button>
+        </div>
+      </div>,
+      { toastId: confirmToastId, autoClose: false, closeButton: false, closeOnClick: false, draggable: false }
+    );
   };
 
-  const handleDeleteAgendaItem = (index) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet événement?')) {
-      const newItems = [...agendaItems];
-      newItems.splice(index, 1);
-      setAgendaItems(newItems);
-    }
-  };
+  // Contact (inchangé)
+  const handleContactChange = (e) => setContact({ ...contact, [e.target.name]: e.target.value });
+  const handleContactSubmit = (e) => { e.preventDefault(); setContactSent(true); setContact({ nom: '', email: '', message: '' }); };
 
-  const handleAgendaFormSubmit = (e) => {
-    e.preventDefault();
-    
-    // Vérifier que le titre et la date sont remplis
-    if (!currentAgendaItem.title.trim() || !currentAgendaItem.date.trim()) {
-      alert("Le titre et la date sont obligatoires");
-      return;
-    }
-    
-    // Nettoyer les données
-    const cleanedItem = {
-      title: currentAgendaItem.title.trim(),
-      date: currentAgendaItem.date.trim(),
-      description: currentAgendaItem.description?.trim() || '',
-      // Ajouter un identifiant unique pour chaque élément
-      id: currentAgendaItem.id || `event-${Date.now()}`
-    };
-    
-    // Log pour le débogage
-    console.log("Événement à ajouter/modifier:", cleanedItem);
-    
-    if (currentAgendaItem.index !== undefined) {
-      // Mode édition
-      const newItems = [...agendaItems];
-      newItems[currentAgendaItem.index] = cleanedItem;
-      setAgendaItems(newItems);
-      console.log("Événements après modification:", newItems);
-    } else {
-      // Mode ajout
-      const newItems = [...agendaItems, cleanedItem];
-      setAgendaItems(newItems);
-      console.log("Événements après ajout:", newItems);
-    }
-    
-    setShowAgendaForm(false);
-    setCurrentAgendaItem(null);
-  };
-
-  // Rendu du composant
+  // Rendu “comme Actualité”
   return (
-    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
-      <div className="box" style={{
-        borderRadius: 16,
-        background: '#fafdff',
-        boxShadow: '0 2px 16px #e0e7ef'
-      }}>
-        <form onSubmit={handleSave}>
-          <h2 className="title is-4 mb-4 has-text-link" style={{ textAlign: 'center', letterSpacing: 1 }}>
-            ⚙️ Paramètres de la page
-          </h2>
-          {FIELD_GROUPS.map(group => (
-            <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
-              <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 22 }}>{group.icon}</span> {group.title}
-              </h3>
-              
-              {group.key === 'agenda' ? (
-                // Interface CRUD pour l'agenda
-                <div className="agenda-crud">
-                  {/* Titre de la section agenda */}
-                  <div className="field">
-                    <label className="label">Titre de la section agenda</label>
-                    <div className="control">
-                      <input
-                        className="input"
-                        type="text"
-                        name="agenda_titre"
-                        value={form.agenda_titre || ''}
-                        onChange={handleChange}
-                        placeholder="Agenda des événements"
-                        readOnly={loading}
-                        style={{ background: loading ? "#f5f5f5" : "white" }}
-                      />
-                    </div>
-                  </div>
+    <section className="section">
+      <div className="container">
+        <div className="box" style={{ borderRadius: 12 }}>
+          <h2 className="title is-5">{editMode ? 'Modifier un événement' : 'Ajouter un événement'}</h2>
 
-                  {/* Liste des événements existants */}
-                  {agendaItems.length > 0 ? (
-                    <table className="table is-fullwidth is-striped">
-                      <thead>
-                        <tr>
-                          <th>Titre</th>
-                          <th>Date</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {agendaItems.map((item, index) => (
-                          <tr key={index}>
-                            <td>{item.title}</td>
-                            <td>{item.date}</td>
-                            <td>
-                              <div className="buttons are-small">
-                                <button 
-                                  type="button" 
-                                  className="button is-info" 
-                                  onClick={() => handleEditAgendaItem(item, index)}
-                                >
-                                  <span className="icon">✏️</span>
-                                </button>
-                                <button 
-                                  type="button" 
-                                  className="button is-danger" 
-                                  onClick={() => handleDeleteAgendaItem(index)}
-                                >
-                                  <span className="icon">🗑️</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p className="has-text-grey has-text-centered my-4">Aucun événement dans l'agenda</p>
-                  )}
-                  
-                  <button 
-                    type="button" 
-                    className="button is-primary my-2" 
-                    onClick={handleAddAgendaItem}
-                  >
-                    <span className="icon">➕</span>
-                    <span>Ajouter un événement</span>
-                  </button>
-                  
-                  {/* Formulaire pour ajouter/modifier un événement */}
-                  {showAgendaForm && currentAgendaItem && (
-                    <div className="box mt-4" style={{ background: '#f7f9fc' }}>
-                      <h4 className="subtitle is-6">
-                        {currentAgendaItem.index !== undefined ? 'Modifier l\'événement' : 'Nouvel événement'}
-                      </h4>
-                      <form onSubmit={handleAgendaFormSubmit}>
-                        <div className="field">
-                          <label className="label">Titre</label>
-                          <div className="control">
-                            <input 
-                              className="input" 
-                              type="text" 
-                              value={currentAgendaItem.title} 
-                              onChange={e => setCurrentAgendaItem({...currentAgendaItem, title: e.target.value})}
-                              required
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="field">
-                          <label className="label">Date</label>
-                          <div className="control">
-                            <input 
-                              className="input" 
-                              type="text" 
-                              value={currentAgendaItem.date} 
-                              onChange={e => setCurrentAgendaItem({...currentAgendaItem, date: e.target.value})}
-                              required
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="field">
-                          <label className="label">Description</label>
-                          <div className="control">
-                            <textarea 
-                              className="textarea" 
-                              value={currentAgendaItem.description || ''} 
-                              onChange={e => setCurrentAgendaItem({...currentAgendaItem, description: e.target.value})}
-                            ></textarea>
-                          </div>
-                        </div>
-                        
-                        <div className="field is-grouped">
-                          <div className="control">
-                            <button className="button is-success" type="submit">
-                              Enregistrer
-                            </button>
-                          </div>
-                          <div className="control">
-                            <button 
-                              className="button is-text" 
-                              type="button"
-                              onClick={() => {
-                                setShowAgendaForm(false);
-                                setCurrentAgendaItem(null);
-                              }}
-                            >
-                              Annuler
-                            </button>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                  )}
-                  
-                  {/* Champ pour le lien et son libellé */}
-                  <div className="columns mt-4">
-                    <div className="column is-8">
-                      <div className="field">
-                        <label className="label">Lien vers l'agenda complet</label>
-                        <div className="control">
-                          <input
-                            className="input"
-                            type="text"
-                            name="agenda_link"
-                            value={form.agenda_link || ''}
-                            onChange={handleChange}
-                            readOnly={loading}
-                            style={{ background: loading ? "#f5f5f5" : "white" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="column is-4">
-                      <div className="field">
-                        <label className="label">Texte du lien</label>
-                        <div className="control">
-                          <input
-                            className="input"
-                            type="text"
-                            name="agenda_lien_label"
-                            value={form.agenda_lien_label || ''}
-                            onChange={handleChange}
-                            placeholder="Voir tous les événements"
-                            readOnly={loading}
-                            style={{ background: loading ? "#f5f5f5" : "white" }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+          <form onSubmit={handleSubmit} className="mb-5">
+            <div className="columns">
+              <div className="column is-7">
+                <div className="field">
+                  <label className="label">Titre</label>
+                  <div className="control">
+                    <input className="input" name="titre" value={form.titre} onChange={handleChange} required />
                   </div>
                 </div>
-              ) : (
-                // Autres groupes de champs (non-agenda)
-                group.fields.map(fieldKey => {
-                  const f = FIELDS.find(ff => ff.key === fieldKey);
-                  if (!f) return null;
-                  return (
-                    <div className="field" key={f.key} style={{ marginBottom: 16 }}>
-                      <label className="label">{f.label}</label>
-                      <div className="control">
-                        {f.type === 'textarea' ? (
-                          <textarea
-                            className="textarea"
-                            name={f.key}
-                            value={form[f.key] || ''}
-                            onChange={handleChange}
-                            readOnly={loading}
-                            style={{ background: loading ? "#f5f5f5" : "white" }}
-                          />
-                        ) : (
-                          <input
-                            className="input"
-                            type={f.type}
-                            name={f.key}
-                            value={form[f.key] || ''}
-                            onChange={handleChange}
-                            readOnly={loading}
-                            style={{ background: loading ? "#f5f5f5" : "white" }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+
+                <div className="field is-grouped">
+                  <div className="control is-expanded">
+                    <label className="label">Date</label>
+                    <input className="input" type="date" name="date" value={formatDateForInput(form.date)} onChange={handleChange} required />
+                  </div>
+                  <div className="control is-expanded">
+                    <label className="label">Lieu</label>
+                    <input className="input" name="lieu" value={form.lieu} onChange={handleChange} placeholder="Ex: Salle des fêtes" />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label className="label">Description</label>
+                  <div className="control">
+                    <textarea className="textarea" name="description" rows={4} value={form.description} onChange={handleChange} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="column is-5">
+                <label className="label">Image</label>
+                <div className="file has-name is-fullwidth mb-2">
+                  <label className="file-label">
+                    <input className="file-input" type="file" accept="image/*" onChange={handleImageUpload} />
+                    <span className="file-cta">
+                      <span className="file-icon"><i className="fas fa-upload"></i></span>
+                      <span className="file-label">Choisir une image...</span>
+                    </span>
+                    <span className="file-name">
+                      {previewImage ? 'Image sélectionnée' : 'Aucun fichier sélectionné'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="control mb-2">
+                  <input
+                    className="input"
+                    name="image"
+                    value={form.image}
+                    onChange={(e) => { handleChange(e); setPreviewImage(e.target.value || null); }}
+                    placeholder="Ou entrez l'URL d'une image"
+                  />
+                </div>
+
+                {previewImage && (
+                  <div className="mt-2">
+                    <p className="is-size-7 mb-1">Aperçu :</p>
+                    <img
+                      src={previewImage}
+                      alt="Aperçu"
+                      style={{ maxHeight: '150px', maxWidth: '300px', objectFit: 'cover', border: '1px solid #ddd', borderRadius: 6 }}
+                      onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/300x150?text=Event'; }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="field is-grouped mt-4">
+              <div className="control">
+                <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                  {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
+                </button>
+              </div>
+              {editMode && (
+                <div className="control">
+                  <button type="button" className="button is-light" onClick={resetForm}>Annuler</button>
+                </div>
               )}
             </div>
-          ))}
-          <div className="field is-grouped mt-3" style={{ justifyContent: 'center' }}>
-            <div className="control">
-              <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
-                Enregistrer
-              </button>
-            </div>
-            {msg && <div className="notification is-info is-light py-2 px-3 ml-3">{msg}</div>}
+          </form>
+
+          <h3 className="title is-5 mt-6 mb-3">Liste des événements</h3>
+          <div className="table-container">
+            <table className="table is-fullwidth is-striped is-hoverable">
+              <thead>
+                <tr>
+                  <th style={{ width: 90 }}>Image</th>
+                  <th>Date</th>
+                  <th>Titre</th>
+                  <th>Lieu</th>
+                  <th>Description</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((ev, idx) => (
+                  <tr key={ev.id || idx}>
+                    <td>
+                      {ev.image && (
+                        <img
+                          src={ev.image}
+                          alt={ev.titre}
+                          style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }}
+                          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/80x50?text=Img'; }}
+                        />
+                      )}
+                    </td>
+                    <td>{ev.date}</td>
+                    <td className="has-text-weight-semibold">{ev.titre || ev.title}</td>
+                    <td>{ev.lieu}</td>
+                    <td style={{ maxWidth: 360 }} className="is-size-7">{ev.description}</td>
+                    <td>
+                      <div className="buttons are-small">
+                        <button className="button is-info" type="button" onClick={() => handleEdit(idx)}>
+                          <span className="icon"><i className="fas fa-edit"></i></span>
+                          <span>Modifier</span>
+                        </button>
+                        <button className="button is-danger" type="button" onClick={() => handleDelete(idx)}>
+                          <span className="icon"><i className="fas fa-trash"></i></span>
+                          <span>Supprimer</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {events.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="has-text-centered">Aucun événement ajouté</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </form>
+        </div>
+
+        <ToastContainer position="top-right" autoClose={3000} newestOnTop />
       </div>
-    </div>
+    </section>
   );
 }
