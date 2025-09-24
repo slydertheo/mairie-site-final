@@ -428,7 +428,7 @@ export default function ActualiteAdmin() {
                   type="submit" 
                   disabled={loading}
                 >
-                  {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
+                  Enregistrer
                 </button>
               </div>
               
@@ -504,21 +504,17 @@ export default function ActualiteAdmin() {
                         }} 
                         disabled={loading}
                         type="button"
+                        title="Modifier"
                       >
-                        <span className="icon">
-                          <i className="fas fa-edit"></i>
-                        </span>
-                        <span>Modifier</span>
+                        ✏️
                       </button>
                       <button 
                         className="button is-danger" 
                         onClick={() => handleDelete(actu.id)} 
                         disabled={loading}
+                        title="Supprimer"
                       >
-                        <span className="icon">
-                          <i className="fas fa-trash"></i>
-                        </span>
-                        <span>Supprimer</span>
+                        🗑️
                       </button>
                     </div>
                   </td>

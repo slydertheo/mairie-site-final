@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import 'bulma/css/bulma.min.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -96,6 +96,8 @@ export default function PageAcceuil() {
 
   // Ajouter un état pour l'aperçu de la photo du maire
   const [mairePreviewImage, setMairePreviewImage] = useState(null);
+
+  const formRef = useRef(null);
 
   // Utilitaires
   const normalizeEvents = (pageContentData) => {
@@ -318,6 +320,10 @@ export default function PageAcceuil() {
       lieu: ev.lieu || ''
     });
     setPreviewImage(ev.image || null);
+    // Scroll to the form
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleDelete = (idx) => {
@@ -444,7 +450,7 @@ export default function PageAcceuil() {
         </div>
         <div className="field is-grouped mt-4">
           <div className="control">
-            <button className="button is-link" onClick={() => saveContent(content)}>Sauvegarder</button>
+            <button className="button is-link" onClick={() => saveContent(content)}>Enregistrer</button>
           </div>
         </div>
       </div>
@@ -503,13 +509,13 @@ export default function PageAcceuil() {
         </div>
         <div className="field is-grouped mt-4">
           <div className="control">
-            <button className="button is-link" onClick={() => saveContent(content)}>Sauvegarder</button>
+            <button className="button is-link" onClick={() => saveContent(content)}>Enregistrer</button>
           </div>
         </div>
       </div>
 
       {/* Section formulaire d'ajout/modification */}
-      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+      <div ref={formRef} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
         <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 22 }}>📝</span> 
           {editMode ? 'Modifier un événement' : 'Ajouter un événement'}
@@ -621,7 +627,7 @@ export default function PageAcceuil() {
           <div className="field is-grouped mt-4">
             <div className="control">
               <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
-                {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
+                Enregistrer
               </button>
             </div>
             {editMode && (
@@ -658,12 +664,14 @@ export default function PageAcceuil() {
               >
                 <div className="is-flex is-justify-content-space-between mb-2">
                   <span className="tag is-info is-light">Événement #{idx + 1}</span>
-                  <button 
-                    type="button" 
-                    className="delete" 
-                    onClick={() => handleDelete(idx)}
-                    disabled={loading}
-                  />
+                  <div className="buttons are-small">
+                    <button className="button is-info" onClick={() => handleEdit(idx)} disabled={loading}>
+                      ✏️
+                    </button>
+                    <button className="button is-danger" onClick={() => handleDelete(idx)} disabled={loading}>
+                      🗑️
+                    </button>
+                  </div>
                 </div>
 
                 <div className="columns is-mobile">
@@ -698,15 +706,6 @@ export default function PageAcceuil() {
                         <p className="is-size-7">{ev.description}</p>
                       </div>
                     )}
-                  </div>
-                </div>
-
-                <div className="field is-grouped mt-3">
-                  <div className="control">
-                    <button className="button is-info is-small" type="button" onClick={() => handleEdit(idx)} disabled={loading}>
-                      <span className="icon"><i className="fas fa-edit"></i></span>
-                      <span>Modifier</span>
-                    </button>
                   </div>
                 </div>
               </div>
