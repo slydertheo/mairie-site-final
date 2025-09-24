@@ -95,6 +95,8 @@ export default function PageAcceuil() {
   const [showModal, setShowModal] = useState(false);
   const [showAllEventsModal, setShowAllEventsModal] = useState(false); // Nouvel état
   const [actualites, setActualites] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // Ajout pour navigation
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear()); // Ajout pour navigation
 
   useEffect(() => {
     fetch('/api/pageContent?page=accueil')
@@ -174,6 +176,20 @@ export default function PageAcceuil() {
     setContactSent(true);
     setContact({ nom: '', email: '', message: '' });
   }
+
+  const handleMonthChange = (direction) => { // Fonction pour changer de mois
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    }
+    setCurrentMonth(newMonth);
+    setCurrentYear(newYear);
+  };
 
   return (
     <div className="has-background-light" style={{ minHeight: '100vh' }}>
@@ -406,6 +422,9 @@ export default function PageAcceuil() {
                 <Calendar
                   events={events}
                   onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
+                  currentMonth={currentMonth}
+                  currentYear={currentYear}
+                  onMonthChange={handleMonthChange}
                 />
               </div>
             </AnimateOnScroll>
@@ -696,91 +715,122 @@ function AgendaItem({ title, date, image, lieu }) {
 }
 
 // Petit composant calendrier simple
-function Calendar({ events, onDayClick }) {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange }) {
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay() || 7; // Lundi = 1
 
   function getEventsForDay(day) {
-    const d = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const d = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return events.filter(ev => ev.date === d);
   }
 
+  const monthNames = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  ];
+
+  const rows = [];
+  let cells = [];
+  let dayNum = 1;
+
+  // Jours vides avant le premier jour
+  for (let i = 1; i < firstDay; i++) {
+    cells.push(<td key={`empty-${i}`}></td>);
+  }
+
+  // Jours du mois
+  for (let i = firstDay; i <= 7; i++) {
+    if (dayNum <= daysInMonth) {
+      const dayEvents = getEventsForDay(dayNum);
+      cells.push(
+        <td
+          key={dayNum}
+          className={`has-text-centered ${dayEvents.length ? 'has-background-info-light' : ''}`}
+          style={{
+            cursor: dayEvents.length ? 'pointer' : 'default',
+            padding: '8px',
+            border: '1px solid #e0e7ef',
+            borderRadius: 4
+          }}
+          onClick={() => dayEvents.length && onDayClick(dayEvents)}
+        >
+          <div className="has-text-weight-bold">{dayNum}</div>
+          {dayEvents.map(ev => (
+            <div key={ev.id} className="is-size-7 has-text-link" style={{ marginTop: 2 }}>
+              {ev.titre}
+            </div>
+          ))}
+        </td>
+      );
+      dayNum++;
+    }
+  }
+  rows.push(<tr key="row-1">{cells}</tr>);
+
+  // Semaines suivantes
+  while (dayNum <= daysInMonth) {
+    cells = [];
+    for (let i = 0; i < 7; i++) {
+      if (dayNum <= daysInMonth) {
+        const dayEvents = getEventsForDay(dayNum);
+        cells.push(
+          <td
+            key={dayNum}
+            className={`has-text-centered ${dayEvents.length ? 'has-background-info-light' : ''}`}
+            style={{
+              cursor: dayEvents.length ? 'pointer' : 'default',
+              padding: '8px',
+              border: '1px solid #e0e7ef',
+              borderRadius: 4
+            }}
+            onClick={() => dayEvents.length && onDayClick(dayEvents)}
+          >
+            <div className="has-text-weight-bold">{dayNum}</div>
+            {dayEvents.map(ev => (
+              <div key={ev.id} className="is-size-7 has-text-link" style={{ marginTop: 2 }}>
+                {ev.titre}
+              </div>
+            ))}
+          </td>
+        );
+        dayNum++;
+      } else {
+        cells.push(<td key={`empty-${dayNum + i}`}></td>);
+      }
+    }
+    rows.push(<tr key={`row-${dayNum}`}>{cells}</tr>);
+  }
+
   return (
-    <table className="table is-bordered is-narrow is-fullwidth has-background-white-ter" style={{ fontSize: 14 }}>
-      <thead>
-        <tr>
-          <th colSpan={7} className="has-background-link has-text-white has-text-centered">
-            {today.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })}
-          </th>
-        </tr>
-        <tr>
-          {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(j => <th key={j} className="has-text-centered">{j}</th>)}
-        </tr>
-      </thead>
-      <tbody>
-        {(() => {
-          const firstDay = new Date(year, month, 1).getDay() || 7;
-          const rows = [];
-          let cells = [];
-          let dayNum = 1;
-          for (let i = 1; i < firstDay; i++) cells.push(<td key={`empty-${i}`}></td>);
-          for (let i = firstDay; i <= 7; i++) {
-            if (dayNum <= daysInMonth) {
-              const dayEvents = getEventsForDay(dayNum);
-              cells.push(
-                <td
-                  key={dayNum}
-                  style={{
-                    background: dayEvents.length ? '#eaf6ff' : undefined,
-                    fontWeight: dayEvents.length ? 700 : 400,
-                    cursor: dayEvents.length ? 'pointer' : undefined
-                  }}
-                  onClick={() => dayEvents.length && onDayClick(dayEvents)}
-                >
-                  {dayNum}
-                  {dayEvents.map(ev => (
-                    <div key={ev.id} style={{ fontSize: 10, color: '#1277c6' }}>{ev.titre}</div>
-                  ))}
-                </td>
-              );
-              dayNum++;
-            }
-          }
-          rows.push(<tr key="row-1">{cells}</tr>);
-          while (dayNum <= daysInMonth) {
-            cells = [];
-            for (let i = 0; i < 7; i++) {
-              if (dayNum <= daysInMonth) {
-                const dayEvents = getEventsForDay(dayNum);
-                cells.push(
-                  <td
-                    key={dayNum}
-                    style={{
-                      background: dayEvents.length ? '#eaf6ff' : undefined,
-                      fontWeight: dayEvents.length ? 700 : 400,
-                      cursor: dayEvents.length ? 'pointer' : undefined
-                    }}
-                    onClick={() => dayEvents.length && onDayClick(dayEvents)}
-                  >
-                    {dayNum}
-                    {dayEvents.map(ev => (
-                      <div key={ev.id} style={{ fontSize: 10, color: '#1277c6' }}>{ev.titre}</div>
-                    ))}
-                  </td>
-                );
-                dayNum++;
-              } else {
-                cells.push(<td key={`empty-${dayNum + i}`}></td>);
-              }
-            }
-            rows.push(<tr key={`row-${dayNum}`}>{cells}</tr>);
-          }
-          return rows;
-        })()}
-      </tbody>
-    </table>
+    <div className="box" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+      <div className="level mb-4">
+        <div className="level-left">
+          <button className="button is-small" onClick={() => onMonthChange(-1)}>
+            ←
+          </button>
+        </div>
+        <div className="level-item">
+          <h3 className="title is-5 has-text-link">{monthNames[currentMonth]} {currentYear}</h3>
+        </div>
+        <div className="level-right">
+          <button className="button is-small" onClick={() => onMonthChange(1)}>
+            →
+          </button>
+        </div>
+      </div>
+      <div style={{ overflowX: 'auto' }}> {/* Ajout pour éviter le dépassement */}
+        <table className="table is-fullwidth is-bordered" style={{ borderRadius: 8, minWidth: '100%' }}>
+          <thead>
+            <tr className="has-background-link has-text-white">
+              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(j => (
+                <th key={j} className="has-text-centered">{j}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
