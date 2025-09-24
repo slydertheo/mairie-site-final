@@ -89,6 +89,7 @@ export default function PageAcceuil() {
   const [editMode, setEditMode] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [msg, setMsg] = useState('');
 
   // Utilitaires
   const normalizeEvents = (pageContentData) => {
@@ -308,7 +309,7 @@ export default function PageAcceuil() {
 
     toast.info(
       <div>
-        <p>Supprimer “{ev.titre}” ?</p>
+        <p>Supprimer "{ev.titre}" ?</p>
         <div className="buttons mt-3">
           <button
             className="button is-danger is-small"
@@ -347,151 +348,219 @@ export default function PageAcceuil() {
   const handleContactChange = (e) => setContact({ ...contact, [e.target.name]: e.target.value });
   const handleContactSubmit = (e) => { e.preventDefault(); setContactSent(true); setContact({ nom: '', email: '', message: '' }); };
 
-  // Rendu “comme Actualité”
+  // Rendu adapté au style DemarchesEditor
   return (
-    <section className="section">
-      <div className="container">
-        <div className="box" style={{ borderRadius: 12 }}>
-          <h2 className="title is-5">{editMode ? 'Modifier un événement' : 'Ajouter un événement'}</h2>
+    <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
+      <h2 className="title is-4 mb-4 has-text-link">🗓️ Gestion des événements - Page Accueil</h2>
+      
+      {/* Section formulaire d'ajout/modification */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>📝</span> 
+          {editMode ? 'Modifier un événement' : 'Ajouter un événement'}
+        </h3>
 
-          <form onSubmit={handleSubmit} className="mb-5">
-            <div className="columns">
-              <div className="column is-7">
-                <div className="field">
-                  <label className="label">Titre</label>
-                  <div className="control">
-                    <input className="input" name="titre" value={form.titre} onChange={handleChange} required />
-                  </div>
-                </div>
-
-                <div className="field is-grouped">
-                  <div className="control is-expanded">
-                    <label className="label">Date</label>
-                    <input className="input" type="date" name="date" value={formatDateForInput(form.date)} onChange={handleChange} required />
-                  </div>
-                  <div className="control is-expanded">
-                    <label className="label">Lieu</label>
-                    <input className="input" name="lieu" value={form.lieu} onChange={handleChange} placeholder="Ex: Salle des fêtes" />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="label">Description</label>
-                  <div className="control">
-                    <textarea className="textarea" name="description" rows={4} value={form.description} onChange={handleChange} />
-                  </div>
+        <form onSubmit={handleSubmit}>
+          <div className="columns">
+            <div className="column is-7">
+              <div className="field mb-3">
+                <label className="label is-small">Titre</label>
+                <div className="control">
+                  <input 
+                    className="input" 
+                    name="titre" 
+                    value={form.titre} 
+                    onChange={handleChange} 
+                    required 
+                    readOnly={loading}
+                    style={{ background: loading ? "#f5f5f5" : "white" }}
+                  />
                 </div>
               </div>
 
-              <div className="column is-5">
-                <label className="label">Image</label>
-                <div className="file has-name is-fullwidth mb-2">
-                  <label className="file-label">
-                    <input className="file-input" type="file" accept="image/*" onChange={handleImageUpload} />
-                    <span className="file-cta">
-                      <span className="file-icon"><i className="fas fa-upload"></i></span>
-                      <span className="file-label">Choisir une image...</span>
-                    </span>
-                    <span className="file-name">
-                      {previewImage ? 'Image sélectionnée' : 'Aucun fichier sélectionné'}
-                    </span>
-                  </label>
-                </div>
-
-                <div className="control mb-2">
-                  <input
-                    className="input"
-                    name="image"
-                    value={form.image}
-                    onChange={(e) => { handleChange(e); setPreviewImage(e.target.value || null); }}
-                    placeholder="Ou entrez l'URL d'une image"
+              <div className="field is-grouped mb-3">
+                <div className="control is-expanded">
+                  <label className="label is-small">Date</label>
+                  <input 
+                    className="input" 
+                    type="date" 
+                    name="date" 
+                    value={formatDateForInput(form.date)} 
+                    onChange={handleChange} 
+                    required 
+                    readOnly={loading}
+                    style={{ background: loading ? "#f5f5f5" : "white" }}
                   />
                 </div>
+                <div className="control is-expanded">
+                  <label className="label is-small">Lieu</label>
+                  <input 
+                    className="input" 
+                    name="lieu" 
+                    value={form.lieu} 
+                    onChange={handleChange} 
+                    placeholder="Ex: Salle des fêtes" 
+                    readOnly={loading}
+                    style={{ background: loading ? "#f5f5f5" : "white" }}
+                  />
+                </div>
+              </div>
 
-                {previewImage && (
-                  <div className="mt-2">
-                    <p className="is-size-7 mb-1">Aperçu :</p>
-                    <img
-                      src={previewImage}
-                      alt="Aperçu"
-                      style={{ maxHeight: '150px', maxWidth: '300px', objectFit: 'cover', border: '1px solid #ddd', borderRadius: 6 }}
-                      onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/300x150?text=Event'; }}
-                    />
-                  </div>
-                )}
+              <div className="field mb-3">
+                <label className="label is-small">Description</label>
+                <div className="control">
+                  <textarea 
+                    className="textarea" 
+                    name="description" 
+                    rows={4} 
+                    value={form.description} 
+                    onChange={handleChange} 
+                    readOnly={loading}
+                    style={{ background: loading ? "#f5f5f5" : "white" }}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="field is-grouped mt-4">
-              <div className="control">
-                <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
-                  {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
-                </button>
+            <div className="column is-5">
+              <label className="label is-small">Image</label>
+              <div className="file has-name is-fullwidth mb-2">
+                <label className="file-label">
+                  <input className="file-input" type="file" accept="image/*" onChange={handleImageUpload} disabled={loading} />
+                  <span className="file-cta">
+                    <span className="file-icon"><i className="fas fa-upload"></i></span>
+                    <span className="file-label">Choisir une image...</span>
+                  </span>
+                  <span className="file-name">
+                    {previewImage ? 'Image sélectionnée' : 'Aucun fichier sélectionné'}
+                  </span>
+                </label>
               </div>
-              {editMode && (
-                <div className="control">
-                  <button type="button" className="button is-light" onClick={resetForm}>Annuler</button>
+
+              <div className="control mb-2">
+                <input
+                  className="input"
+                  name="image"
+                  value={form.image}
+                  onChange={(e) => { handleChange(e); setPreviewImage(e.target.value || null); }}
+                  placeholder="Ou entrez l'URL d'une image"
+                  readOnly={loading}
+                  style={{ background: loading ? "#f5f5f5" : "white" }}
+                />
+              </div>
+
+              {previewImage && (
+                <div className="mt-2">
+                  <p className="is-size-7 mb-1">Aperçu :</p>
+                  <img
+                    src={previewImage}
+                    alt="Aperçu"
+                    style={{ maxHeight: '150px', maxWidth: '300px', objectFit: 'cover', border: '1px solid #ddd', borderRadius: 6 }}
+                    onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/300x150?text=Event'; }}
+                  />
                 </div>
               )}
             </div>
-          </form>
-
-          <h3 className="title is-5 mt-6 mb-3">Liste des événements</h3>
-          <div className="table-container">
-            <table className="table is-fullwidth is-striped is-hoverable">
-              <thead>
-                <tr>
-                  <th style={{ width: 90 }}>Image</th>
-                  <th>Date</th>
-                  <th>Titre</th>
-                  <th>Lieu</th>
-                  <th>Description</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((ev, idx) => (
-                  <tr key={ev.id || idx}>
-                    <td>
-                      {ev.image && (
-                        <img
-                          src={ev.image}
-                          alt={ev.titre}
-                          style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }}
-                          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/80x50?text=Img'; }}
-                        />
-                      )}
-                    </td>
-                    <td>{ev.date}</td>
-                    <td className="has-text-weight-semibold">{ev.titre || ev.title}</td>
-                    <td>{ev.lieu}</td>
-                    <td style={{ maxWidth: 360 }} className="is-size-7">{ev.description}</td>
-                    <td>
-                      <div className="buttons are-small">
-                        <button className="button is-info" type="button" onClick={() => handleEdit(idx)}>
-                          <span className="icon"><i className="fas fa-edit"></i></span>
-                          <span>Modifier</span>
-                        </button>
-                        <button className="button is-danger" type="button" onClick={() => handleDelete(idx)}>
-                          <span className="icon"><i className="fas fa-trash"></i></span>
-                          <span>Supprimer</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {events.length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="has-text-centered">Aucun événement ajouté</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
-        </div>
 
-        <ToastContainer position="top-right" autoClose={3000} newestOnTop />
+          <div className="field is-grouped mt-4">
+            <div className="control">
+              <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
+              </button>
+            </div>
+            {editMode && (
+              <div className="control">
+                <button type="button" className="button is-light" onClick={resetForm} disabled={loading}>Annuler</button>
+              </div>
+            )}
+            {msg && (
+              <div className={`notification is-light ${msg.includes('Erreur') ? 'is-danger' : 'is-success'} py-2 px-3 ml-3`}>
+                {msg}
+              </div>
+            )}
+          </div>
+        </form>
       </div>
-    </section>
+
+      {/* Section liste des événements */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>📋</span> Liste des événements
+        </h3>
+
+        {events.length === 0 ? (
+          <div className="notification is-light is-info is-size-7 py-2 px-3 mb-3">
+            Aucun événement ajouté.
+          </div>
+        ) : (
+          <div style={{ paddingRight: '5px' }}>
+            {events.map((ev, idx) => (
+              <div 
+                key={ev.id || idx}
+                className="box mb-3 pt-3 pb-3" 
+                style={{ background: '#f9fbfd', borderRadius: 8 }}
+              >
+                <div className="is-flex is-justify-content-space-between mb-2">
+                  <span className="tag is-info is-light">Événement #{idx + 1}</span>
+                  <button 
+                    type="button" 
+                    className="delete" 
+                    onClick={() => handleDelete(idx)}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="columns is-mobile">
+                  <div className="column is-narrow" style={{ width: 90 }}>
+                    {ev.image && (
+                      <img
+                        src={ev.image}
+                        alt={ev.titre}
+                        style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }}
+                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/80x50?text=Img'; }}
+                      />
+                    )}
+                  </div>
+                  <div className="column">
+                    <div className="columns is-mobile">
+                      <div className="column">
+                        <p className="is-size-7 has-text-grey mb-1">Date</p>
+                        <p className="has-text-weight-medium">{ev.date}</p>
+                      </div>
+                      <div className="column">
+                        <p className="is-size-7 has-text-grey mb-1">Titre</p>
+                        <p className="has-text-weight-semibold">{ev.titre || ev.title}</p>
+                      </div>
+                      <div className="column">
+                        <p className="is-size-7 has-text-grey mb-1">Lieu</p>
+                        <p>{ev.lieu}</p>
+                      </div>
+                    </div>
+                    {ev.description && (
+                      <div className="mt-2">
+                        <p className="is-size-7 has-text-grey mb-1">Description</p>
+                        <p className="is-size-7">{ev.description}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="field is-grouped mt-3">
+                  <div className="control">
+                    <button className="button is-info is-small" type="button" onClick={() => handleEdit(idx)} disabled={loading}>
+                      <span className="icon"><i className="fas fa-edit"></i></span>
+                      <span>Modifier</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <ToastContainer position="top-right" autoClose={3000} newestOnTop />
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -11,20 +11,10 @@ export default function ActualiteAdmin() {
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
-    fetchActualites();
+    fetch('/api/actualites')
+      .then(res => res.json())
+      .then(setActualites);
   }, []);
-
-  const fetchActualites = async () => {
-    try {
-      const response = await fetch('/api/actualites');
-      if (!response.ok) throw new Error('Erreur lors du chargement');
-      const data = await response.json();
-      setActualites(data);
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Erreur lors du chargement des actualités');
-    }
-  };
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -197,7 +187,8 @@ export default function ActualiteAdmin() {
       }
 
       resetForm();
-      await fetchActualites();
+      const updated = await fetch('/api/actualites').then(res => res.json());
+      setActualites(updated);
     } catch (error) {
       console.error("Erreur lors de l'opération:", error);
       
@@ -235,7 +226,8 @@ export default function ActualiteAdmin() {
                   body: JSON.stringify({ id })
                 });
                 
-                await fetchActualites();
+                const updated = await fetch('/api/actualites').then(res => res.json());
+                setActualites(updated);
                 
                 // Remplacer toast de chargement par toast de succès
                 toast.update(loadingToastId, { 
@@ -273,6 +265,8 @@ export default function ActualiteAdmin() {
         closeButton: false,
         closeOnClick: false,
         draggable: false,
+        pauseOnFocusLoss: false,
+        pauseOnHover: false,
       }
     );
   };
@@ -323,218 +317,223 @@ export default function ActualiteAdmin() {
 
   return (
     <>
-      <div className="box" style={{ borderRadius: 12 }}>
-        <h2 className="title is-5">
-          {editMode ? 'Modifier une actualité' : 'Ajouter une actualité'}
-        </h2>
+      <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
+        <h2 className="title is-4 mb-4 has-text-link">📰 Gestion des actualités</h2>
         
-        <form onSubmit={handleSubmit} className="mb-5">
-          <div className="field">
-            <label className="label">Titre</label>
-            <div className="control">
-              <input 
-                className="input" 
-                name="title" 
-                value={form.title} 
-                onChange={handleChange} 
-                required 
-              />
-            </div>
-          </div>
+        <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+          <h3 className="subtitle is-5 mb-3">
+            {editMode ? 'Modifier une actualité' : 'Ajouter une actualité'}
+          </h3>
           
-          <div className="field">
-            <label className="label">Date</label>
-            <div className="control">
-              <input 
-                className="input" 
-                type="date" 
-                name="date" 
-                value={formatDateForInput(form.date)} 
-                onChange={handleChange} 
-                required 
-              />
-            </div>
-          </div>
-
-          <div className="field">
-            <label className="label">Description</label>
-            <div className="control">
-              <textarea 
-                className="textarea" 
-                name="description" 
-                value={form.description} 
-                onChange={handleChange}
-                placeholder="Description détaillée de l'actualité..."
-                rows={4}
-              />
-            </div>
-            <p className="help">Cette description sera affichée dans la modal de détail</p>
-          </div>
-          
-          <div className="field">
-            <label className="label">Image</label>
-            <div className="file has-name is-fullwidth mb-2">
-              <label className="file-label">
+          <form onSubmit={handleSubmit} className="mb-5">
+            <div className="field">
+              <label className="label is-small">Titre</label>
+              <div className="control">
                 <input 
-                  className="file-input" 
-                  type="file" 
-                  name="imageFile" 
-                  accept="image/*"
-                  onChange={handleImageUpload} 
-                />
-                <span className="file-cta">
-                  <span className="file-icon">
-                    <i className="fas fa-upload"></i>
-                  </span>
-                  <span className="file-label">
-                    Choisir une image...
-                  </span>
-                </span>
-                <span className="file-name">
-                  {previewImage ? 'Image sélectionnée' : 'Aucun fichier sélectionné'}
-                </span>
-              </label>
-            </div>
-            
-            <div className="control">
-              <input 
-                className="input" 
-                name="imgSrc" 
-                value={form.imgSrc} 
-                onChange={handleChange}
-                placeholder="Ou entrez l'URL d'une image" 
-              />
-            </div>
-            
-            {previewImage && (
-              <div className="mt-2">
-                <p className="is-size-7 mb-1">Aperçu :</p>
-                <img 
-                  src={previewImage} 
-                  alt="Aperçu" 
-                  style={{ 
-                    maxHeight: "150px", 
-                    maxWidth: "300px", 
-                    objectFit: "contain",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px"
-                  }} 
+                  className="input" 
+                  name="title" 
+                  value={form.title} 
+                  onChange={handleChange} 
+                  required 
                 />
               </div>
-            )}
-          </div>
-          
-          <div className="field is-grouped mt-4">
-            <div className="control">
-              <button 
-                className={`button is-link${loading ? ' is-loading' : ''}`} 
-                type="submit" 
-                disabled={loading}
-              >
-                {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
-              </button>
             </div>
             
-            {editMode && (
+            <div className="field">
+              <label className="label is-small">Date</label>
+              <div className="control">
+                <input 
+                  className="input" 
+                  type="date" 
+                  name="date" 
+                  value={formatDateForInput(form.date)} 
+                  onChange={handleChange} 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="field">
+              <label className="label is-small">Description</label>
+              <div className="control">
+                <textarea 
+                  className="textarea" 
+                  name="description" 
+                  value={form.description} 
+                  onChange={handleChange}
+                  placeholder="Description détaillée de l'actualité..."
+                  rows={4}
+                />
+              </div>
+              <p className="help">Cette description sera affichée dans la modal de détail</p>
+            </div>
+            
+            <div className="field">
+              <label className="label is-small">Image</label>
+              <div className="file has-name is-fullwidth mb-2">
+                <label className="file-label">
+                  <input 
+                    className="file-input" 
+                    type="file" 
+                    name="imageFile" 
+                    accept="image/*"
+                    onChange={handleImageUpload} 
+                  />
+                  <span className="file-cta">
+                    <span className="file-icon">
+                      <i className="fas fa-upload"></i>
+                    </span>
+                    <span className="file-label">
+                      Choisir une image...
+                    </span>
+                  </span>
+                  <span className="file-name">
+                    {previewImage ? 'Image sélectionnée' : 'Aucun fichier sélectionné'}
+                  </span>
+                </label>
+              </div>
+              
+              <div className="control">
+                <input 
+                  className="input" 
+                  name="imgSrc" 
+                  value={form.imgSrc} 
+                  onChange={handleChange}
+                  placeholder="Ou entrez l'URL d'une image" 
+                />
+              </div>
+              
+              {previewImage && (
+                <div className="mt-2">
+                  <p className="is-size-7 mb-1">Aperçu :</p>
+                  <img 
+                    src={previewImage} 
+                    alt="Aperçu" 
+                    style={{ 
+                      maxHeight: "150px", 
+                      maxWidth: "300px", 
+                      objectFit: "contain",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px"
+                    }} 
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="field is-grouped mt-4">
               <div className="control">
                 <button 
-                  type="button"
-                  className="button is-light" 
-                  onClick={resetForm}
+                  className={`button is-link${loading ? ' is-loading' : ''}`} 
+                  type="submit" 
+                  disabled={loading}
                 >
-                  Annuler
+                  {editMode ? 'Enregistrer les modifications' : 'Ajouter'}
                 </button>
               </div>
-            )}
-          </div>
-        </form>
+              
+              {editMode && (
+                <div className="control">
+                  <button 
+                    type="button"
+                    className="button is-light" 
+                    onClick={resetForm}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
+            </div>
+          </form>
+        </div>
         
-        <h3 className="title is-5 mt-6 mb-3">Liste des actualités</h3>
-        <table className="table is-fullwidth is-striped is-hoverable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Titre</th>
-              <th>Description</th>
-              <th>Image</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {actualites.map(actu => (
-              <tr key={actu.id}>
-                <td>{actu.date}</td>
-                <td>{actu.title}</td>
-                <td style={{ maxWidth: '200px' }}>
-                  {actu.description ? (
-                    <div className="is-size-7" style={{ 
-                      maxHeight: '60px', 
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'pre-line'
-                    }}>
-                      {actu.description.length > 100 
-                        ? `${actu.description.substring(0, 100)}...` 
-                        : actu.description
-                      }
-                    </div>
-                  ) : (
-                    <span className="has-text-grey-light is-italic">Aucune description</span>
-                  )}
-                </td>
-                <td>
-                  {actu.imgSrc && (
-                    <img 
-                      src={actu.imgSrc} 
-                      alt={actu.title} 
-                      style={{ 
-                        width: 80, 
-                        height: 50, 
-                        objectFit: 'cover',
-                        borderRadius: '4px' 
-                      }} 
-                    />
-                  )}
-                </td>
-                <td>
-                  <div className="buttons are-small">
-                    <button 
-                      className="button is-info" 
-                      onClick={() => {
-                        console.log("Clic sur modifier pour:", actu);
-                        handleEdit(actu);
-                      }} 
-                      disabled={loading}
-                      type="button"
-                    >
-                      <span className="icon">
-                        <i className="fas fa-edit"></i>
-                      </span>
-                      <span>Modifier</span>
-                    </button>
-                    <button 
-                      className="button is-danger" 
-                      onClick={() => handleDelete(actu.id)} 
-                      disabled={loading}
-                    >
-                      <span className="icon">
-                        <i className="fas fa-trash"></i>
-                      </span>
-                      <span>Supprimer</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {actualites.length === 0 && (
+        <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+          <h3 className="subtitle is-5 mb-3">Liste des actualités</h3>
+          <table className="table is-fullwidth is-striped is-hoverable">
+            <thead>
               <tr>
-                <td colSpan="4" className="has-text-centered">
-                  Aucune actualité n'a été ajoutée
-                </td>
+                <th>Date</th>
+                <th>Titre</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {actualites.map(actu => (
+                <tr key={actu.id}>
+                  <td>{actu.date}</td>
+                  <td>{actu.title}</td>
+                  <td style={{ maxWidth: '200px' }}>
+                    {actu.description ? (
+                      <div className="is-size-7" style={{ 
+                        maxHeight: '60px', 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {actu.description.length > 100 
+                          ? `${actu.description.substring(0, 100)}...` 
+                          : actu.description
+                        }
+                      </div>
+                    ) : (
+                      <span className="has-text-grey-light is-italic">Aucune description</span>
+                    )}
+                  </td>
+                  <td>
+                    {actu.imgSrc && (
+                      <img 
+                        src={actu.imgSrc} 
+                        alt={actu.title} 
+                        style={{ 
+                          width: 80, 
+                          height: 50, 
+                          objectFit: 'cover',
+                          borderRadius: '4px' 
+                        }} 
+                      />
+                    )}
+                  </td>
+                  <td>
+                    <div className="buttons are-small">
+                      <button 
+                        className="button is-info" 
+                        onClick={() => {
+                          console.log("Clic sur modifier pour:", actu);
+                          handleEdit(actu);
+                        }} 
+                        disabled={loading}
+                        type="button"
+                      >
+                        <span className="icon">
+                          <i className="fas fa-edit"></i>
+                        </span>
+                        <span>Modifier</span>
+                      </button>
+                      <button 
+                        className="button is-danger" 
+                        onClick={() => handleDelete(actu.id)} 
+                        disabled={loading}
+                      >
+                        <span className="icon">
+                          <i className="fas fa-trash"></i>
+                        </span>
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {actualites.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="has-text-centered">
+                    Aucune actualité n'a été ajoutée
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       
       <ToastContainer 
