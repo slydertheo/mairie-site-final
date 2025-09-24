@@ -72,6 +72,8 @@ const FIELDS = [
   { key: 'facebook', label: 'Lien Facebook', type: 'text' },
   { key: 'instagram', label: 'Lien Instagram', type: 'text' },
   { key: 'twitter', label: 'Lien Twitter', type: 'text' },
+  { key: 'infos_titre', label: 'Titre de la section infos pratiques', type: 'text' },
+  { key: 'horaires_titre', label: 'Titre horaires', type: 'text' },
 ];
 
 export default function PageAcceuil() {
@@ -438,6 +440,65 @@ export default function PageAcceuil() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+        <div className="field is-grouped mt-4">
+          <div className="control">
+            <button className="button is-link" onClick={() => saveContent(content)}>Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Section spéciale pour Infos pratiques */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>🏛️</span> Infos pratiques
+        </h3>
+        <div className="field mb-3">
+          <label className="label">Horaires</label>
+          <div className="control">
+            <textarea 
+              className="textarea" 
+              rows={3} 
+              placeholder="Horaires d'ouverture" 
+              value={content.horaires || ''} 
+              onChange={(e) => setContent({ ...content, horaires: e.target.value })} 
+            />
+          </div>
+        </div>
+        <div className="field mb-3">
+          <label className="label">Adresse</label>
+          <div className="control">
+            <textarea 
+              className="textarea" 
+              rows={2} 
+              placeholder="Adresse mairie" 
+              value={content.adresse || ''} 
+              onChange={(e) => setContent({ ...content, adresse: e.target.value })} 
+            />
+          </div>
+        </div>
+        <div className="field mb-3">
+          <label className="label">Téléphone</label>
+          <div className="control">
+            <input 
+              className="input" 
+              placeholder="Téléphone mairie" 
+              value={content.telephone || ''} 
+              onChange={(e) => setContent({ ...content, telephone: e.target.value })} 
+            />
+          </div>
+        </div>
+        <div className="field mb-3">
+          <label className="label">Email</label>
+          <div className="control">
+            <input 
+              className="input" 
+              type="email" 
+              placeholder="Email mairie" 
+              value={content.email || ''} 
+              onChange={(e) => setContent({ ...content, email: e.target.value })} 
+            />
           </div>
         </div>
         <div className="field is-grouped mt-4">
