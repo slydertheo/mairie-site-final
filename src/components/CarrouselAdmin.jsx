@@ -318,7 +318,7 @@ export default function ActualiteAdmin() {
   return (
     <>
       <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
-        <h2 className="title is-4 mb-4 has-text-link">📰 Gestion des actualités</h2>
+        <h2 className="title is-4 mb-4 has-text-link">📰 Gestion du carrousel</h2>
         
         <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
           <h3 className="subtitle is-5 mb-3">

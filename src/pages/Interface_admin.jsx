@@ -5,7 +5,7 @@ import EvenementAdmin from '../components/CalendrierAdmin';
 import ActualiteAdmin from '../components/CarrouselAdmin.jsx';
 import DemarchesEditor from '../components/DemarchesEditor';
 import EcolesEditor from '../components/EcolesEditor';
-import CommercesCrud from '../components/CommercesCrud';
+import CommercesCrud from '../components/CommercesCrudAdmin.jsx';
 import MarchesCrud from '../components/MarchesCrud';
 import IntercommunaliteEditor from '../components/EditeurIntercomunalité.jsx';
 import AssociationsEditor from '../components/AssociationsEditor';
