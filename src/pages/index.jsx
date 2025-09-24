@@ -239,7 +239,7 @@ export default function PageAcceuil() {
         </AnimateOnScroll>
 
         <div className="columns is-variable is-5">
-          {/* Colonne 1 : Mot du Maire + Galerie + Panneau d'affichage */}
+          {/* Colonne 1 : Mot du Maire + Galerie + Panneau d'affichage + Calendrier */}
           <div className="column is-two-thirds">
             <AnimateOnScroll animation="fade-right" delay={100}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
@@ -348,9 +348,23 @@ export default function PageAcceuil() {
                 </div>
               </div>
             </AnimateOnScroll>
+
+            {/* Calendrier déplacé ici */}
+            <AnimateOnScroll animation="fade-up" delay={550} threshold={0.2}>
+              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
+              <div className="box" style={{ background: '#f8fafc', marginBottom: 18 }}>
+                <Calendar
+                  events={events}
+                  onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
+                  currentMonth={currentMonth}
+                  currentYear={currentYear}
+                  onMonthChange={handleMonthChange}
+                />
+              </div>
+            </AnimateOnScroll>
           </div>
 
-          {/* Colonne 2 : Agenda + Infos pratiques + Calendrier + Contact */}
+          {/* Colonne 2 : Agenda + Infos pratiques + Contact */}
           <div className="column is-one-third">
             <AnimateOnScroll animation="fade-left" delay={150}>
               <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
@@ -413,19 +427,6 @@ export default function PageAcceuil() {
               </div>
               <div className="mb-4"><span style={infoIcon}>✉️</span>
                 {content.email}
-              </div>
-            </AnimateOnScroll>
-            
-            <AnimateOnScroll animation="fade-left" delay={350} threshold={0.2}>
-              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
-              <div className="box" style={{ background: '#f8fafc', marginBottom: 18 }}>
-                <Calendar
-                  events={events}
-                  onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
-                  currentMonth={currentMonth}
-                  currentYear={currentYear}
-                  onMonthChange={handleMonthChange}
-                />
               </div>
             </AnimateOnScroll>
             
@@ -818,18 +819,16 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
           </button>
         </div>
       </div>
-      <div style={{ overflowX: 'auto' }}> {/* Ajout pour éviter le dépassement */}
-        <table className="table is-fullwidth is-bordered" style={{ borderRadius: 8, minWidth: '100%' }}>
-          <thead>
-            <tr className="has-background-link has-text-white">
-              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(j => (
-                <th key={j} className="has-text-centered">{j}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </table>
-      </div>
+      <table className="table is-fullwidth is-bordered" style={{ borderRadius: 8 }}>
+        <thead>
+          <tr className="has-background-link has-text-white">
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(j => (
+              <th key={j} className="has-text-centered">{j}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
     </div>
   );
 }
