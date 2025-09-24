@@ -15,12 +15,11 @@ const PAGES = [
 
 // Regroupe les champs par rubrique pour l'affichage
 const FIELD_GROUPS = [
-
   {
     key: 'maire',
     icon: '👨‍💼',
     title: 'Mot du Maire',
-    fields: ['motMaire'],
+    fields: ['motMaire_accroche', 'motMaire', 'motMaire_nom', 'motMaire_titre_signature', 'motMaire_photo'],
   },
   {
     key: 'agenda',
@@ -52,8 +51,11 @@ const FIELDS = [
   { key: 'titre', label: 'Titre principal (bandeau)', type: 'text' },
   { key: 'sousTitre', label: 'Sous-titre (bandeau)', type: 'text' },
   { key: 'titre_color', label: 'Couleur du mot "Friesen"', type: 'color' },
+  { key: 'motMaire_accroche', label: 'Accroche (Chères habitantes...)', type: 'text' },
   { key: 'motMaire', label: 'Mot du Maire', type: 'textarea' },
-  // Réintégrer les champs d'agenda individuels
+  { key: 'motMaire_nom', label: 'Nom du Maire', type: 'text' },
+  { key: 'motMaire_titre_signature', label: 'Titre de signature', type: 'text' },
+  { key: 'motMaire_photo', label: 'Photo du Maire (URL)', type: 'text' },
   { key: 'agenda_titre', label: 'Titre de la section agenda', type: 'text' },
   { key: 'agenda1_title', label: 'Titre événement 1', type: 'text' },
   { key: 'agenda1_date', label: 'Date événement 1', type: 'text' },
@@ -70,7 +72,6 @@ const FIELDS = [
   { key: 'facebook', label: 'Lien Facebook', type: 'text' },
   { key: 'instagram', label: 'Lien Instagram', type: 'text' },
   { key: 'twitter', label: 'Lien Twitter', type: 'text' },
-
 ];
 
 export default function PageAcceuil() {
@@ -90,6 +91,9 @@ export default function PageAcceuil() {
   const [editIndex, setEditIndex] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [msg, setMsg] = useState('');
+
+  // Ajouter un état pour l'aperçu de la photo du maire
+  const [mairePreviewImage, setMairePreviewImage] = useState(null);
 
   // Utilitaires
   const normalizeEvents = (pageContentData) => {
@@ -152,6 +156,20 @@ export default function PageAcceuil() {
     return res.json().catch(() => ({}));
   };
 
+  const saveContent = async (updatedContent) => {
+    try {
+      const res = await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: SELECTED_PAGE, ...updatedContent }),
+      });
+      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
+      toast.success('Contenu sauvegardé');
+    } catch (error) {
+      toast.error('Erreur lors de la sauvegarde');
+    }
+  };
+
   // Charger contenu + events
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +180,7 @@ export default function PageAcceuil() {
         const pageContentData = pageContent?.[0] || {};
         setContent(pageContentData);
         setEvents(normalizeEvents(pageContentData));
+        setMairePreviewImage(pageContentData.motMaire_photo || null); // Initialiser l'aperçu
       })
       .catch(error => console.error('Erreur lors du chargement des données:', error));
     return () => { cancelled = true; };
@@ -179,34 +198,10 @@ export default function PageAcceuil() {
 
   const compressImage = (file, options = {}) => {
     return new Promise((resolve, reject) => {
-      const maxWidth = options.maxWidth || 1200;
-      const maxHeight = options.maxHeight || 1200;
-      const quality = options.quality || 0.7;
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = event => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedBase64 = canvas.toDataURL(file.type, quality);
-          resolve(compressedBase64);
-        };
-        img.onerror = reject;
+        resolve(event.target.result);
       };
       reader.onerror = reject;
     });
@@ -229,6 +224,28 @@ export default function PageAcceuil() {
       setPreviewImage(compressed);
       setForm(prev => ({ ...prev, image: compressed }));
       toast.update(loadingId, { render: 'Image optimisée', type: 'success', isLoading: false, autoClose: 2000 });
+    } catch (err) {
+      toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
+    }
+  };
+
+  const handleMaireImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.includes('image/')) {
+      toast.error('Veuillez sélectionner une image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) { // Augmenter la limite à 10MB pour l'original
+      toast.error('Image trop volumineuse (max 10MB).');
+      return;
+    }
+    const loadingId = toast.loading("Traitement de l'image...");
+    try {
+      const compressed = await compressImage(file, { quality: 0.9 }); // Qualité plus élevée pour l'original
+      setMairePreviewImage(compressed);
+      setContent({ ...content, motMaire_photo: compressed });
+      toast.update(loadingId, { render: 'Image chargée', type: 'success', isLoading: false, autoClose: 2000 });
     } catch (err) {
       toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
     }
@@ -305,43 +322,19 @@ export default function PageAcceuil() {
     const ev = events[idx];
     if (!ev) return;
 
-    const confirmToastId = `confirm-delete-${ev.id || idx}`;
-
-    toast.info(
-      <div>
-        <p>Supprimer "{ev.titre}" ?</p>
-        <div className="buttons mt-3">
-          <button
-            className="button is-danger is-small"
-            onClick={async () => {
-              // Fermer uniquement le toast de confirmation
-              toast.dismiss(confirmToastId);
-
-              const loadingId = toast.loading('Suppression...');
-              const prev = events;
-              const next = events.filter((_, i) => i !== idx);
-              setEvents(next);
-              try {
-                await persistEvents(next);
-                toast.update(loadingId, { render: 'Événement supprimé', type: 'success', isLoading: false, autoClose: 2000 });
-              } catch (e) {
-                setEvents(prev);
-                toast.update(loadingId, { render: 'Erreur lors de la suppression', type: 'error', isLoading: false, autoClose: 3000 });
-              }
-            }}
-          >
-            Confirmer
-          </button>
-          <button
-            className="button is-light is-small"
-            onClick={() => toast.dismiss(confirmToastId)}
-          >
-            Annuler
-          </button>
-        </div>
-      </div>,
-      { toastId: confirmToastId, autoClose: false, closeButton: false, closeOnClick: false, draggable: false }
-    );
+    if (window.confirm(`Supprimer "${ev.titre}" ?`)) {
+      const loadingId = toast.loading('Suppression...');
+      const prev = events;
+      const next = events.filter((_, i) => i !== idx);
+      setEvents(next);
+      try {
+        persistEvents(next);
+        toast.update(loadingId, { render: 'Événement supprimé', type: 'success', isLoading: false, autoClose: 2000 });
+      } catch (e) {
+        setEvents(prev);
+        toast.update(loadingId, { render: 'Erreur lors de la suppression', type: 'error', isLoading: false, autoClose: 3000 });
+      }
+    }
   };
 
   // Contact (inchangé)
@@ -353,6 +346,107 @@ export default function PageAcceuil() {
     <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
       <h2 className="title is-4 mb-4 has-text-link">🗓️ Gestion des événements - Page Accueil</h2>
       
+      {/* Section spéciale pour Mot du Maire */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>👨‍💼</span> Mot du Maire
+        </h3>
+        <div className="columns">
+          {/* Colonne pour la photo */}
+          <div className="column is-narrow">
+            <figure className="image is-128x128" style={{ margin: '0 auto' }}>
+              <img
+                className="is-rounded"
+                src={mairePreviewImage || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=200&q=80"}
+                alt="Maire"
+                style={{ 
+                  objectFit: 'cover', 
+                  border: '3px solid #1277c6',
+                  boxShadow: '0 4px 12px rgba(18, 119, 198, 0.2)',
+                  width: '100%',
+                  height: '100%'
+                }}
+                onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=200&q=80"; }}
+              />
+            </figure>
+            <div className="field mt-2">
+              <div className="file has-name is-fullwidth mb-2">
+                <label className="file-label">
+                  <input className="file-input" type="file" accept="image/*" onChange={handleMaireImageUpload} />
+                  <span className="file-cta">
+                    <span className="file-icon"><i className="fas fa-upload"></i></span>
+                    <span className="file-label">Choisir une image...</span>
+                  </span>
+                  <span className="file-name">
+                    {mairePreviewImage ? 'Image sélectionnée' : 'Aucun fichier sélectionné'}
+                  </span>
+                </label>
+              </div>
+              {mairePreviewImage && (
+                <button 
+                  className="button is-danger is-small" 
+                  onClick={() => { setMairePreviewImage(null); setContent({ ...content, motMaire_photo: null }); }}
+                >
+                  Supprimer l'image
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Colonne pour le texte */}
+          <div className="column">
+            <div className="field mb-3">
+              <div className="control">
+                <input 
+                  className="input" 
+                  placeholder="Accroche (Chères habitantes, chers habitants)" 
+                  value={content.motMaire_accroche || ''} 
+                  onChange={(e) => setContent({ ...content, motMaire_accroche: e.target.value })} 
+                />
+              </div>
+            </div>
+            <div className="field mb-3">
+              <div className="control">
+                <textarea 
+                  className="textarea" 
+                  rows={4} 
+                  placeholder="Mot du Maire" 
+                  value={content.motMaire || ''} 
+                  onChange={(e) => setContent({ ...content, motMaire: e.target.value })} 
+                />
+              </div>
+            </div>
+            <div className="has-text-right mt-4">
+              <div className="field mb-2">
+                <div className="control">
+                  <input 
+                    className="input" 
+                    placeholder="Nom du Maire" 
+                    value={content.motMaire_nom || ''} 
+                    onChange={(e) => setContent({ ...content, motMaire_nom: e.target.value })} 
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <div className="control">
+                  <input 
+                    className="input" 
+                    placeholder="Titre de signature" 
+                    value={content.motMaire_titre_signature || ''} 
+                    onChange={(e) => setContent({ ...content, motMaire_titre_signature: e.target.value })} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="field is-grouped mt-4">
+          <div className="control">
+            <button className="button is-link" onClick={() => saveContent(content)}>Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+
       {/* Section formulaire d'ajout/modification */}
       <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
         <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
