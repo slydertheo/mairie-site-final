@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function ActualiteCarousel({ actualites }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [selectedActualite, setSelectedActualite] = useState(null);
+  const [isImageEnlarged, setIsImageEnlarged] = useState(false); // Nouvel état pour l'agrandissement d'image
   
   // Responsive settings
   const getVisibleItemsCount = () => {
-    // Limiter le nombre d'éléments visibles au nombre total d'actualités
     const baseCount = windowWidth < 768 ? 1 : windowWidth < 1024 ? 2 : 3;
     return Math.min(baseCount, actualites.length);
   };
@@ -16,11 +18,8 @@ export default function ActualiteCarousel({ actualites }) {
   const visibleItems = getVisibleItemsCount();
   const totalItems = actualites.length;
   const maxIndex = Math.max(0, totalItems - visibleItems);
-  
-  // Déterminer si les contrôles de navigation sont nécessaires
   const needsNavigation = totalItems > visibleItems;
   
-  // Window resize listener
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
@@ -34,7 +33,6 @@ export default function ActualiteCarousel({ actualites }) {
     return () => window.removeEventListener('resize', handleResize);
   }, [currentIndex, totalItems]);
   
-  // Rotation automatique uniquement si nécessaire
   useEffect(() => {
     if (!isPaused && needsNavigation && !isAnimating) {
       const timer = setTimeout(() => {
@@ -75,10 +73,39 @@ export default function ActualiteCarousel({ actualites }) {
     setTimeout(() => setIsAnimating(false), 800);
   };
 
-  // Calculer toutes les cartes avec leur position pour l'animation 3D
+  const openModal = (actu) => {
+    setSelectedActualite(actu);
+    document.documentElement.classList.add('is-clipped');
+  };
+
+  const closeModal = () => {
+    setSelectedActualite(null);
+    setIsImageEnlarged(false); // Réinitialiser l'état d'agrandissement
+    document.documentElement.classList.remove('is-clipped');
+  };
+
+  const toggleImageSize = () => {
+    setIsImageEnlarged(!isImageEnlarged);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && selectedActualite) {
+        closeModal();
+      }
+    };
+
+    if (selectedActualite) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.documentElement.classList.remove('is-clipped');
+    };
+  }, [selectedActualite]);
+
   const renderCards = () => {
-    // Adapter la largeur des cartes selon le nombre total d'actualités
-    // Si moins d'actualités que d'emplacements visibles, utiliser toute la largeur disponible
     const itemWidth = totalItems < visibleItems 
       ? 100 / totalItems 
       : 100 / visibleItems;
@@ -87,16 +114,13 @@ export default function ActualiteCarousel({ actualites }) {
     
     return actualites.map((actu, index) => {
       const position = index - currentIndex;
-      
-      // Ajuster la logique de visibilité pour les petits ensembles d'actualités
       const isVisible = totalItems <= visibleItems 
-        ? index < totalItems  // Tous visibles si peu d'éléments
+        ? index < totalItems
         : position >= 0 && position < visibleItems;
       
       const isNext = position >= visibleItems && position < visibleItems + 1;
       const isPrev = position === -1;
       
-      // Calculer la rotation et la position Z pour l'effet 3D
       let rotateY = 0;
       let translateZ = 0;
       let opacity = 0;
@@ -117,9 +141,8 @@ export default function ActualiteCarousel({ actualites }) {
         translateZ = -120;
       }
       
-      // Position adaptée pour les petits ensembles d'actualités
       const leftPosition = totalItems <= visibleItems
-        ? index * itemWidth  // Position fixe si tous visibles
+        ? index * itemWidth
         : position * itemWidth;
       
       return (
@@ -143,7 +166,6 @@ export default function ActualiteCarousel({ actualites }) {
             zIndex: isVisible ? 2 : 1
           }}
         >
-          {/* Reste du code de la carte inchangé */}
           <div className="card" style={{ 
               height: '100%',
               display: 'flex',
@@ -155,27 +177,27 @@ export default function ActualiteCarousel({ actualites }) {
               backfaceVisibility: 'hidden',
               transformStyle: 'preserve-3d',
             }}>
-            {/* ... Reste du contenu de carte inchangé ... */}
             <div 
               className="card-image"
               style={{
                 height: '55%',
-                backgroundImage: `url(${actu.imgSrc})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
                 position: 'relative',
                 overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'transparent',
               }}
             >
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(0deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%)',
-                zIndex: 1
-              }} />
+              <img 
+                src={actu.imgSrc} 
+                alt={actu.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain'
+                }}
+              />
             </div>
             <div className="card-content" style={{ 
               padding: windowWidth < 768 ? '0.75rem' : '1rem', 
@@ -183,10 +205,12 @@ export default function ActualiteCarousel({ actualites }) {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)'
+              background: '#ffffff'
             }}>
               <div>
-                <p className="has-text-link has-text-weight-bold is-size-7 mb-1">{actu.date}</p>
+                <p className="has-text-link has-text-weight-bold is-size-7 mb-1" style={{ 
+                  color: '#1277c6' // Couleur fixe au lieu de la classe Bulma
+                }}>{actu.date}</p>
                 <h3 className={`title ${windowWidth < 768 ? 'is-6' : 'is-5'} mb-2`} style={{ 
                   height: windowWidth < 768 ? '2.4em' : '3em', 
                   overflow: 'hidden',
@@ -194,27 +218,51 @@ export default function ActualiteCarousel({ actualites }) {
                   WebkitLineClamp: '2',
                   WebkitBoxOrient: 'vertical'
                 }}>{actu.title}</h3>
+                {actu.description && (
+                  <p style={{
+                    margin: '0.5rem 0 0 0',
+                    fontSize: '0.875rem',
+                    color: '#6c757d',
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: '2',
+                    WebkitBoxOrient: 'vertical',
+                    lineHeight: '1.4',
+                    whiteSpace: 'pre-line'
+                  }}>
+                    {actu.description}
+                  </p>
+                )}
               </div>
-              <a 
-                href="#" 
-                className="button is-link is-small"
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  openModal(actu);
+                }}
+                className="" // Retiré les classes Bulma
                 style={{ 
                   alignSelf: 'flex-start',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(18, 119, 198, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
+                  display: 'flex !important',
+                  alignItems: 'center !important',
+                  justifyContent: 'center !important',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  background: '#1277c6',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
                 }}
               >
-                Lire la suite
-              </a>
+                <i className="fas fa-eye" style={{ 
+                  color: 'white !important'
+                }}></i>
+                <span style={{
+                  color: 'white !important'
+                }}>Lire la suite</span>
+              </button>
             </div>
           </div>
         </div>
@@ -222,7 +270,6 @@ export default function ActualiteCarousel({ actualites }) {
     });
   };
 
-  // Message alternatif si aucune actualité
   if (totalItems === 0) {
     return (
       <div className="notification is-info">
@@ -231,137 +278,687 @@ export default function ActualiteCarousel({ actualites }) {
     );
   }
 
+  // Composant Modal séparé pour le portal
+  const Modal = () => {
+    if (!selectedActualite) return null;
+
+    return createPortal(
+      <div 
+        className="modal is-active modal-fade-in"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999999,
+          backgroundColor: 'rgba(18, 119, 198, 0.15)',
+          backdropFilter: 'blur(20px)'
+        }}
+      >
+        <div className="modal-background" onClick={closeModal}></div>
+        <div 
+          className="modal-card modal-slide-up" 
+          style={{ 
+            maxWidth: isImageEnlarged ? '98vw' : '90vw',
+            width: isImageEnlarged ? '98vw' : '1000px',
+            maxHeight: isImageEnlarged ? '98vh' : '90vh',
+            height: isImageEnlarged ? '98vh' : 'auto',
+            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            margin: 'auto',
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: '0 25px 80px rgba(18, 119, 198, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}
+        >
+          {/* Header - masqué en plein écran */}
+          {!isImageEnlarged && (
+            <header className="modal-card-head modal-header-slide" style={{
+              background: 'linear-gradient(135deg, #1277c6 0%, #0f5a94 100%)',
+              color: 'white',
+              borderRadius: '20px 20px 0 0',
+              padding: '25px 30px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Effet de brillance animé */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: '-100%',
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                animation: 'shine 3s infinite'
+              }}></div>
+              
+              <p className="modal-card-title has-text-white" style={{
+                fontSize: '1.6rem',
+                fontWeight: 'bold',
+                textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                {selectedActualite.title}
+              </p>
+              <button 
+                className="delete is-large modal-close-hover" 
+                aria-label="close"
+                onClick={closeModal}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s ease',
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              ></button>
+            </header>
+          )}
+          
+          <section className="modal-card-body" style={{ 
+            padding: 0, 
+            overflow: 'auto',
+            height: isImageEnlarged ? '100%' : 'auto',
+            background: isImageEnlarged ? '#f8f9fa' : 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
+          }}>
+            {/* Zone image */}
+            <div 
+              className={`image-container ${isImageEnlarged ? 'image-fullscreen' : 'image-normal'}`}
+              style={{ 
+                height: isImageEnlarged ? '100vh' : '55vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isImageEnlarged ? '#f8f9fa' : '#ffffff',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                overflow: 'hidden'
+              }}
+              onClick={toggleImageSize}
+            >
+              {/* Effet de zoom au survol */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'radial-gradient(circle at center, transparent 60%, rgba(18, 119, 198, 0.1) 100%)',
+                opacity: 0,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: 'none'
+              }} className="hover-gradient"></div>
+
+              <img 
+                src={selectedActualite.imgSrc}
+                alt={selectedActualite.title}
+                className="modal-image"
+                style={{
+                  width: isImageEnlarged ? '95vw' : '90%',
+                  height: isImageEnlarged ? '95vh' : '90%',
+                  objectFit: 'contain',
+                  transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                  borderRadius: isImageEnlarged ? '0' : '12px',
+                  boxShadow: isImageEnlarged ? 'none' : '0 10px 40px rgba(18, 119, 198, 0.2)'
+                }}
+              />
+              
+              {/* Bouton fermer en plein écran - Position corrigée */}
+              {isImageEnlarged && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeModal();
+                  }}
+                  className="fullscreen-close-btn"
+                  style={{
+                    position: 'absolute',
+                    top: '30px',
+                    right: '30px',
+                    background: 'linear-gradient(135deg, rgba(18, 119, 198, 0.9) 0%, rgba(18, 119, 198, 0.8) 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '60px',
+                    height: '60px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    backdropFilter: 'blur(20px)',
+                    zIndex: 1000002,
+                    boxShadow: '0 8px 25px rgba(18, 119, 198, 0.4)'
+                  }}
+                >
+                  ×
+                </button>
+              )}
+              
+              {/* Overlay avec indication - Position et texte corrigés */}
+              {!isImageEnlarged && (
+                <div 
+                  className="expand-indicator"
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: 'linear-gradient(135deg, rgba(18, 119, 198, 0.95) 0%, rgba(18, 119, 198, 0.9) 100%)',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '25px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    opacity: 0.9,
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    backdropFilter: 'blur(15px)',
+                    boxShadow: '0 4px 20px rgba(18, 119, 198, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    zIndex: 1000001
+                  }}
+                >
+                  <i className="fas fa-expand-alt" style={{ fontSize: '16px' }}></i>
+                  <span>Agrandir</span>
+                </div>
+              )}
+
+              {/* Instructions en plein écran - Position corrigée */}
+              {isImageEnlarged && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '30px',
+                    left: '30px',
+                    background: 'rgba(0, 0, 0, 0.8)',
+                    color: 'white',
+                    padding: '15px 20px',
+                    borderRadius: '25px',
+                    fontSize: '14px',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    zIndex: 1000001
+                  }}
+                >
+                  <i className="fas fa-mouse-pointer" style={{ color: '#1277c6' }}></i>
+                  <span>Cliquez pour réduire</span>
+                </div>
+              )}
+
+              {/* Titre en overlay plein écran - Position en bas */}
+              {isImageEnlarged && (
+                <div
+                  className="fullscreen-title"
+                  style={{
+                    position: 'absolute',
+                    bottom: '30px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'linear-gradient(135deg, rgba(18, 119, 198, 0.95) 0%, rgba(18, 119, 198, 0.9) 100%)',
+                    color: 'white',
+                    padding: '20px 35px',
+                    borderRadius: '25px',
+                    maxWidth: '80vw',
+                    textAlign: 'center',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    boxShadow: '0 8px 30px rgba(18, 119, 198, 0.4)',
+                    zIndex: 1000001
+                  }}
+                >
+                  <p style={{ 
+                    margin: 0, 
+                    fontSize: '18px', 
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                  }}>
+                    {selectedActualite.title}
+                  </p>
+                  <p style={{ 
+                    margin: '8px 0 0 0', 
+                    fontSize: '14px', 
+                    opacity: 0.9,
+                    fontWeight: '500'
+                  }}>
+                    📅 {selectedActualite.date}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Contenu textuel - masqué en plein écran */}
+            {!isImageEnlarged && (
+              <div className="content modal-content-slide" style={{ 
+                padding: '35px',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+              }}>
+                <div className="date-badge" style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  marginBottom: '25px',
+                  padding: '15px 25px',
+                  background: 'linear-gradient(135deg, rgba(18, 119, 198, 0.1) 0%, rgba(18, 119, 198, 0.08) 100%)',
+                  borderRadius: '50px',
+                  border: '2px solid rgba(18, 119, 198, 0.2)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <span className="icon" style={{ marginRight: '12px' }}>
+                    <i className="fas fa-calendar-alt" style={{ 
+                      fontSize: '18px',
+                      color: '#1277c6' // Couleur fixe
+                    }}></i>
+                  </span>
+                  <p style={{ 
+                    margin: 0, 
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: '#1277c6' // Couleur fixe au lieu de la classe Bulma
+                  }}>
+                    {selectedActualite.date}
+                  </p>
+                </div>
+                
+                <div className="block description-content">
+                  {selectedActualite.description ? (
+                    <div>
+                      <div 
+                        className="is-size-5 has-text-justified" 
+                        style={{
+                          lineHeight: '1.8',
+                          color: '#2c3e50',
+                          fontWeight: '400'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: selectedActualite.description }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="notification" style={{
+                      background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                      border: '2px solid rgba(18, 119, 198, 0.1)',
+                      borderRadius: '15px',
+                      padding: '25px'
+                    }}>
+                      <p className="is-size-5 has-text-justified" style={{
+                        lineHeight: '1.8',
+                        color: '#2c3e50',
+                        marginBottom: '15px'
+                      }}>
+                        📄 Aucune description disponible pour cette actualité.
+                      </p>
+                      <p style={{ 
+                        color: '#6c757d',
+                        lineHeight: '1.6'
+                      }}>
+                        Ajoutez une description depuis l'administration pour enrichir le contenu de cette actualité.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+          
+          {/* Footer - masqué en plein écran */}
+          {!isImageEnlarged && (
+            <footer className="modal-card-foot modal-footer-slide" style={{
+              background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+              borderTop: '2px solid rgba(18, 119, 198, 0.1)',
+              justifyContent: 'space-between',
+              padding: '25px 35px',
+              borderRadius: '0 0 20px 20px'
+            }}>
+              <button 
+                className="expand-btn" // Retiré les classes Bulma
+                onClick={toggleImageSize}
+                style={{
+                  background: 'linear-gradient(135deg, #1277c6 0%, #0f5a94 100%)',
+                  border: 'none',
+                  borderRadius: '50px',
+                  padding: '0 30px',
+                  height: '45px',
+                  fontWeight: '500',
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  boxShadow: '0 4px 15px rgba(18, 119, 198, 0.3)',
+                  color: 'white !important',
+                  display: 'flex !important',
+                  alignItems: 'center !important',
+                  justifyContent: 'center !important',
+                  gap: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className="fas fa-expand-arrows-alt" style={{ 
+                  color: 'white',
+                  marginRight: '8px'
+                }}></i>
+                <span style={{ 
+                  color: 'white'
+                }}>Voir en grand</span>
+              </button>
+              
+              <button 
+                className="close-btn" // Retiré les classes Bulma
+                onClick={closeModal}
+                style={{
+                  borderRadius: '50px',
+                  padding: '0 30px',
+                  height: '45px',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  border: '2px solid rgba(18, 119, 198, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(10px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  color: '#363636'
+                }}
+              >
+                <i className="fas fa-times" style={{ 
+                  marginRight: '8px'
+                }}></i>
+                <span>Fermer</span>
+              </button>
+            </footer>
+          )}
+        </div>
+      </div>,
+      document.body
+    );
+  };
+
   return (
-    <div 
-      className="carousel-container"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      style={{
-        position: 'relative',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 10px 30px rgba(18, 119, 198, 0.15)',
-        height: windowWidth < 768 ? '450px' : '500px',
-        marginBottom: '2rem',
-        perspective: windowWidth < 768 ? '600px' : '1200px',
-        transformStyle: 'preserve-3d',
-      }}
-    >
-      <div className="carousel-track" style={{
-        position: 'relative',
-        height: '100%',
-        overflow: 'hidden',
-        transformStyle: 'preserve-3d',
-      }}>
-        {renderCards()}
+    <>
+      <div 
+        className="carousel-container"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        style={{
+          position: 'relative',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(18, 119, 198, 0.15)',
+          height: windowWidth < 768 ? '450px' : '500px',
+          marginBottom: '2rem',
+          perspective: windowWidth < 768 ? '600px' : '1200px',
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        <div className="carousel-track" style={{
+          position: 'relative',
+          height: '100%',
+          overflow: 'hidden',
+          transformStyle: 'preserve-3d',
+        }}>
+          {renderCards()}
+        </div>
+        
+        {needsNavigation && (
+          <>
+            <button 
+              onClick={prevSlide} 
+              className="button is-rounded carousel-nav prev"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: windowWidth < 768 ? '5px' : '10px',
+                transform: 'translateY(-50%)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                width: windowWidth < 768 ? '36px' : '44px',
+                height: windowWidth < 768 ? '36px' : '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                padding: 0,
+                boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+              }}
+              aria-label="Précédent"
+            >
+              <i className="fas fa-chevron-left"></i>
+            </button>
+            <button 
+              onClick={nextSlide} 
+              className="button is-rounded carousel-nav next"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: windowWidth < 768 ? '5px' : '10px',
+                transform: 'translateY(-50%)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                width: windowWidth < 768 ? '36px' : '44px',
+                height: windowWidth < 768 ? '36px' : '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                padding: 0,
+                boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+              }}
+              aria-label="Suivant"
+            >
+              <i className="fas fa-chevron-right"></i>
+            </button>
+          </>
+        )}
+        
+        {windowWidth >= 768 && needsNavigation && (
+          <div className="carousel-indicators" style={{
+            position: 'absolute',
+            bottom: '15px',
+            left: '0',
+            right: '0',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '8px',
+            zIndex: 10,
+          }}>
+            {Array.from({ length: maxIndex + 1 }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                style={{
+                  width: index === currentIndex ? '30px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: index === currentIndex ? '#1277c6' : 'rgba(255, 255, 255, 0.7)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  boxShadow: index === currentIndex ? 
+                    '0 2px 5px rgba(18, 119, 198, 0.5)' : 
+                    '0 1px 3px rgba(0,0,0,0.2)',
+                  transform: index === currentIndex ? 'scale(1.05)' : 'scale(1)'
+                }}
+                aria-label={`Aller à l'actualité ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
       
-      {/* Boutons de navigation - affichés uniquement si nécessaires */}
-      {needsNavigation && (
-        <>
-          <button 
-            onClick={prevSlide} 
-            className="button is-rounded carousel-nav prev"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: windowWidth < 768 ? '5px' : '10px',
-              transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
-              width: windowWidth < 768 ? '36px' : '44px',
-              height: windowWidth < 768 ? '36px' : '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              zIndex: 10,
-              padding: 0,
-              boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-              e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-            }}
-            aria-label="Précédent"
-          >
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <button 
-            onClick={nextSlide} 
-            className="button is-rounded carousel-nav next"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              right: windowWidth < 768 ? '5px' : '10px',
-              transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
-              width: windowWidth < 768 ? '36px' : '44px',
-              height: windowWidth < 768 ? '36px' : '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              zIndex: 10,
-              padding: 0,
-              boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.25)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-              e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-            }}
-            aria-label="Suivant"
-          >
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </>
-      )}
+      {/* Modal montée dans le body via Portal */}
+      <Modal />
       
-      {/* Indicateurs avec animation 3D - affichés uniquement si nécessaires */}
-      {windowWidth >= 768 && needsNavigation && (
-        <div className="carousel-indicators" style={{
-          position: 'absolute',
-          bottom: '15px',
-          left: '0',
-          right: '0',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '8px',
-          zIndex: 10,
-        }}>
-          {Array.from({ length: maxIndex + 1 }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              style={{
-                width: index === currentIndex ? '30px' : '8px',
-                height: '8px',
-                borderRadius: '4px',
-                background: index === currentIndex ? '#1277c6' : 'rgba(255, 255, 255, 0.7)',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                boxShadow: index === currentIndex ? 
-                  '0 2px 5px rgba(18, 119, 198, 0.5)' : 
-                  '0 1px 3px rgba(0,0,0,0.2)',
-                transform: index === currentIndex ? 'scale(1.05)' : 'scale(1)'
-              }}
-              aria-label={`Aller à l'actualité ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+      {/* CSS global pour s'assurer que la modal est au-dessus de tout */}
+      <style jsx global>{`
+        /* Animations d'entrée */
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+          }
+          to {
+            opacity: 1;
+            backdrop-filter: blur(20px);
+          }
+        }
+
+        @keyframes modalSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(50px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes shine {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Classes d'animation */
+        .modal-fade-in {
+          animation: modalFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .modal-slide-up {
+          animation: modalSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-header-slide {
+          animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-content-slide {
+          animation: slideInUp 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-footer-slide {
+          animation: slideInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .date-badge {
+          animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .description-content {
+          animation: slideInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Effets au survol */
+        .image-container:hover .hover-gradient {
+          opacity: 1 !important;
+        }
+
+        .image-container:hover .modal-image {
+          transform: scale(1.02);
+        }
+
+        .expand-indicator:hover {
+          transform: scale(1.1) translateY(-2px);
+          box-shadow: 0 8px 30px rgba(18, 119, 198, 0.4);
+        }
+
+        .fullscreen-close-btn:hover {
+          transform: scale(1.1);
+          box-shadow: 0 12px 35px rgba(18, 119, 198, 0.5);
+        }
+
+        .fullscreen-title {
+          animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .expand-btn:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 25px rgba(18, 119, 198, 0.4);
+        }
+
+        .close-btn:hover {
+          transform: translateY(-2px);
+          background: rgba(18, 119, 198, 0.1);
+        }
+
+        .date-badge:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 20px rgba(18, 119, 198, 0.2);
+        }
+
+        /* Transitions d'image */
+        .image-fullscreen {
+          animation: pulse 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Force la modal à être au-dessus de tout */
+        body > .modal.is-active {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 999999 !important;
+        }
+
+        /* Empêcher le scroll */
+        .is-clipped {
+          overflow: hidden !important;
+        }
+      `}</style>
+    </>
   );
 }

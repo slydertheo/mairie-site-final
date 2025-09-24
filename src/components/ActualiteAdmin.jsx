@@ -1,20 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 export default function ActualiteAdmin() {
   const [actualites, setActualites] = useState([]);
-  const [form, setForm] = useState({ imgSrc: '', date: '', title: '' });
+  const [form, setForm] = useState({ imgSrc: '', date: '', title: '', description: '' });
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
-    fetch('/api/actualites')
-      .then(res => res.json())
-      .then(setActualites);
+    fetchActualites();
   }, []);
+
+  const fetchActualites = async () => {
+    try {
+      const response = await fetch('/api/actualites');
+      if (!response.ok) throw new Error('Erreur lors du chargement');
+      const data = await response.json();
+      setActualites(data);
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error('Erreur lors du chargement des actualités');
+    }
+  };
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -165,11 +175,17 @@ export default function ActualiteAdmin() {
           autoClose: 3000
         });
       } else {
-        await fetch('/api/actualites', {
+        const response = await fetch('/api/actualites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form)
         });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
         
         // Remplacer toast de chargement par toast de succès
         toast.update(loadingToastId, { 
@@ -181,8 +197,7 @@ export default function ActualiteAdmin() {
       }
 
       resetForm();
-      const updated = await fetch('/api/actualites').then(res => res.json());
-      setActualites(updated);
+      await fetchActualites();
     } catch (error) {
       console.error("Erreur lors de l'opération:", error);
       
@@ -220,8 +235,7 @@ export default function ActualiteAdmin() {
                   body: JSON.stringify({ id })
                 });
                 
-                const updated = await fetch('/api/actualites').then(res => res.json());
-                setActualites(updated);
+                await fetchActualites();
                 
                 // Remplacer toast de chargement par toast de succès
                 toast.update(loadingToastId, { 
@@ -276,18 +290,14 @@ export default function ActualiteAdmin() {
     setForm({
       title: actu.title || '',
       date: actu.date || '',
-      imgSrc: actu.imgSrc || ''
+      imgSrc: actu.imgSrc || '',
+      description: actu.description || ''
     });
     setPreviewImage(actu.imgSrc || null);
-    
-    // Supprimer cette partie ou la commenter pour éviter le défilement automatique
-    // setTimeout(() => {
-    //   window.scrollTo({ top: 0, behavior: 'smooth' });
-    // }, 100);
   };
 
   const resetForm = () => {
-    setForm({ imgSrc: '', date: '', title: '' });
+    setForm({ imgSrc: '', date: '', title: '', description: '' });
     setPreviewImage(null);
     setEditMode(false);
     setEditId(null);
@@ -344,6 +354,21 @@ export default function ActualiteAdmin() {
                 required 
               />
             </div>
+          </div>
+
+          <div className="field">
+            <label className="label">Description</label>
+            <div className="control">
+              <textarea 
+                className="textarea" 
+                name="description" 
+                value={form.description} 
+                onChange={handleChange}
+                placeholder="Description détaillée de l'actualité..."
+                rows={4}
+              />
+            </div>
+            <p className="help">Cette description sera affichée dans la modal de détail</p>
           </div>
           
           <div className="field">
@@ -430,6 +455,7 @@ export default function ActualiteAdmin() {
             <tr>
               <th>Date</th>
               <th>Titre</th>
+              <th>Description</th>
               <th>Image</th>
               <th>Actions</th>
             </tr>
@@ -439,6 +465,23 @@ export default function ActualiteAdmin() {
               <tr key={actu.id}>
                 <td>{actu.date}</td>
                 <td>{actu.title}</td>
+                <td style={{ maxWidth: '200px' }}>
+                  {actu.description ? (
+                    <div className="is-size-7" style={{ 
+                      maxHeight: '60px', 
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'pre-line'
+                    }}>
+                      {actu.description.length > 100 
+                        ? `${actu.description.substring(0, 100)}...` 
+                        : actu.description
+                      }
+                    </div>
+                  ) : (
+                    <span className="has-text-grey-light is-italic">Aucune description</span>
+                  )}
+                </td>
                 <td>
                   {actu.imgSrc && (
                     <img 
@@ -458,11 +501,11 @@ export default function ActualiteAdmin() {
                     <button 
                       className="button is-info" 
                       onClick={() => {
-                        console.log("Clic sur modifier pour:", actu); // Débogage du clic
+                        console.log("Clic sur modifier pour:", actu);
                         handleEdit(actu);
                       }} 
                       disabled={loading}
-                      type="button" // Ajouter type="button" pour éviter de soumettre un formulaire
+                      type="button"
                     >
                       <span className="icon">
                         <i className="fas fa-edit"></i>

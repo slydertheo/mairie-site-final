@@ -8,27 +8,27 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const rows = db.prepare('SELECT * FROM actualites ORDER BY date DESC').all();
     res.json(rows);
   } else if (req.method === 'POST') {
-    const { imgSrc, date, title, id, action } = req.body;
+    const { imgSrc, date, title, description, id, action } = req.body;
     
     // Si action=update et id existe, c'est une mise à jour
     if (action === 'update' && id) {
       db.prepare(
-        'UPDATE actualites SET imgSrc = ?, date = ?, title = ? WHERE id = ?'
-      ).run(imgSrc, date, title, id);
+        'UPDATE actualites SET imgSrc = ?, date = ?, title = ?, description = ? WHERE id = ?'
+      ).run(imgSrc, date, title, description, id);
       res.json({ success: true, id });
     } else {
       // Sinon c'est une création
       const result = db.prepare(
-        'INSERT INTO actualites (imgSrc, date, title) VALUES (?, ?, ?)'
-      ).run(imgSrc, date, title);
+        'INSERT INTO actualites (imgSrc, date, title, description) VALUES (?, ?, ?, ?)'
+      ).run(imgSrc, date, title, description);
       res.json({ success: true, id: result.lastInsertRowid });
     }
   } else if (req.method === 'PUT') {
     // Support explicite de PUT
-    const { imgSrc, date, title, id } = req.body;
+    const { imgSrc, date, title, description, id } = req.body;
     db.prepare(
-      'UPDATE actualites SET imgSrc = ?, date = ?, title = ? WHERE id = ?'
-    ).run(imgSrc, date, title, id);
+      'UPDATE actualites SET imgSrc = ?, date = ?, title = ?, description = ? WHERE id = ?'
+    ).run(imgSrc, date, title, description, id);
     res.json({ success: true });
   } else if (req.method === 'DELETE') {
     const { id } = req.body;

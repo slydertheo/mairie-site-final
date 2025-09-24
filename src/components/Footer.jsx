@@ -4,9 +4,9 @@ export default function Footer() {
       background: 'linear-gradient(90deg, #0a2540 70%, #1277c6 100%)',
       color: '#fff',
       padding: '32px 0 18px 0',
-      marginTop: 0, // Changer de 48px à 0
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
+      marginTop: 0,
+      borderTopLeftRadius: 0,
+      borderTopRightRadius: 0,
     }}>
       <div style={{
         maxWidth: 1200,
