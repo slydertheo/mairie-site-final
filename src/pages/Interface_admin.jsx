@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import UserCrud from './UserCrud';
 import PageContentEditor from '../components/PageContentEditor';
-import EvenementAdmin from '../components/EvenementAdmin';
-import ActualiteAdmin from '../components/ActualiteAdmin';
+import EvenementAdmin from '../components/CalendrierAdmin';
+import ActualiteAdmin from '../components/CarrouselAdmin.jsx';
 import DemarchesEditor from '../components/DemarchesEditor';
 import EcolesEditor from '../components/EcolesEditor';
 import CommercesCrud from '../components/CommercesCrud';

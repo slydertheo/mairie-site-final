@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 // import 'bulma/css/bulma.min.css'; // Bulma est déjà importé globalement dans _app.tsx
 import QuickBoxEcole from '../components/QuickBoxEcole';
-import ActualiteCarousel from '../components/ActualiteCarousel';
+import ActualiteCarousel from '../components/CarrouselPublic';
 
 // Hook personnalisé pour les animations au défilement
 function useOnScreen(options) {

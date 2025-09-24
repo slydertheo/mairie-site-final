@@ -326,23 +326,66 @@ export default function PageAcceuil() {
     }, 100);
   };
 
-  const handleDelete = (idx) => {
+  const handleDelete = async (idx) => {
     const ev = events[idx];
     if (!ev) return;
 
-    if (window.confirm(`Supprimer "${ev.titre}" ?`)) {
-      const loadingId = toast.loading('Suppression...');
-      const prev = events;
-      const next = events.filter((_, i) => i !== idx);
-      setEvents(next);
-      try {
-        persistEvents(next);
-        toast.update(loadingId, { render: 'Événement supprimé', type: 'success', isLoading: false, autoClose: 2000 });
-      } catch (e) {
-        setEvents(prev);
-        toast.update(loadingId, { render: 'Erreur lors de la suppression', type: 'error', isLoading: false, autoClose: 3000 });
+    // Use toast for confirmation instead of window.confirm
+    toast.info(
+      <div>
+        <p>Voulez-vous vraiment supprimer "{ev.titre}" ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={async () => {
+              toast.dismiss(); // Dismiss the confirmation toast
+
+              setLoading(true); // Prevent multiple clicks
+              const loadingId = toast.loading('Suppression en cours...');
+              const prev = events;
+              const next = events.filter((_, i) => i !== idx);
+              setEvents(next);
+
+              try {
+                await persistEvents(next);
+                toast.update(loadingId, {
+                  render: 'Événement supprimé',
+                  type: 'success',
+                  isLoading: false,
+                  autoClose: 2000
+                });
+              } catch (e) {
+                setEvents(prev); // Revert on error
+                toast.update(loadingId, {
+                  render: 'Erreur lors de la suppression',
+                  type: 'error',
+                  isLoading: false,
+                  autoClose: 3000
+                });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            Confirmer
+          </button>
+          <button
+            className="button is-light is-small"
+            onClick={() => toast.dismiss()} // Just dismiss on cancel
+          >
+            Annuler
+          </button>
+        </div>
+      </div>,
+      {
+        autoClose: false,
+        closeButton: false,
+        closeOnClick: false,
+        draggable: false,
+        pauseOnFocusLoss: false,
+        pauseOnHover: false,
       }
-    }
+    );
   };
 
   // Contact (inchangé)
