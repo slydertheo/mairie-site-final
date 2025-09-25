@@ -31,39 +31,31 @@ function useOnScreen(options) {
 function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration = 800, threshold = 0.1, once = true }) {
   const [ref, isVisible] = useOnScreen({ threshold: threshold, triggerOnce: once });
 
-  // Définition des différentes animations
+  // Enhanced animations with Apple-like subtlety
   const animations = {
     "fade-up": {
-      hidden: { opacity: 0, transform: 'translateY(40px)' },
-      visible: { opacity: 1, transform: 'translateY(0)' }
-    },
-    "fade-down": {
-      hidden: { opacity: 0, transform: 'translateY(-40px)' },
-      visible: { opacity: 1, transform: 'translateY(0)' }
+      hidden: { opacity: 0, transform: 'translateY(50px) scale(0.95)' },
+      visible: { opacity: 1, transform: 'translateY(0) scale(1)' }
     },
     "fade-left": {
-      hidden: { opacity: 0, transform: 'translateX(40px)' },
+      hidden: { opacity: 0, transform: 'translateX(50px)' },
       visible: { opacity: 1, transform: 'translateX(0)' }
     },
     "fade-right": {
-      hidden: { opacity: 0, transform: 'translateX(-40px)' },
+      hidden: { opacity: 0, transform: 'translateX(-50px)' },
       visible: { opacity: 1, transform: 'translateX(0)' }
     },
     "zoom-in": {
-      hidden: { opacity: 0, transform: 'scale(0.9)' },
+      hidden: { opacity: 0, transform: 'scale(0.8)' },
       visible: { opacity: 1, transform: 'scale(1)' }
-    },
-    "zoom-out": {
-      hidden: { opacity: 0, transform: 'scale(1.1)' },
-      visible: { opacity: 1, transform: 'scale(1)' }
-    },
-    "flip-up": {
-      hidden: { opacity: 0, transform: 'rotateX(30deg) translateY(40px)' },
-      visible: { opacity: 1, transform: 'rotateX(0) translateY(0)' }
     },
     "bounce": {
-      hidden: { opacity: 0, transform: 'translateY(40px)' },
-      visible: { opacity: 1, transform: 'translateY(0)', transition: 'opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }
+      hidden: { opacity: 0, transform: 'translateY(50px)' },
+      visible: { opacity: 1, transform: 'translateY(0)', transition: 'opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }
+    },
+    "slide-up": {  // New: Apple-style slide
+      hidden: { opacity: 0, transform: 'translateY(100px)' },
+      visible: { opacity: 1, transform: 'translateY(0)' }
     }
   };
 
@@ -74,10 +66,7 @@ function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration 
       ref={ref}
       style={{
         ...selectedAnimation[isVisible ? 'visible' : 'hidden'],
-        transitionProperty: 'opacity, transform',
-        transitionDuration: `${duration}ms`,
-        transitionDelay: `${delay}ms`,
-        transitionTimingFunction: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+        transition: `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}ms`,
         willChange: 'opacity, transform',
       }}
     >
@@ -198,13 +187,14 @@ export default function PageAcceuil() {
         backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',  // Parallax effect
         borderRadius: '0 0 32px 32px',
         boxShadow: '0 8px 32px #0a254030',
         marginBottom: 32,
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Effet de particules animées */}
+        {/* Enhanced floating particles */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -213,14 +203,21 @@ export default function PageAcceuil() {
           height: '100%',
           opacity: 0.4,
           background: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 800 800\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'400\' cy=\'400\' fill=\'%23ffffff\' r=\'1\'/%3E%3Ccircle cx=\'200\' cy=\'300\' fill=\'%23ffffff\' r=\'1.2\'/%3E%3Ccircle cx=\'600\' cy=\'200\' fill=\'%23ffffff\' r=\'0.8\'/%3E%3Ccircle cx=\'100\' cy=\'500\' fill=\'%23ffffff\' r=\'1.1\'/%3E%3Ccircle cx=\'700\' cy=\'300\' fill=\'%23ffffff\' r=\'0.9\'/%3E%3Ccircle cx=\'300\' cy=\'600\' fill=\'%23ffffff\' r=\'1.2\'/%3E%3Ccircle cx=\'500\' cy=\'100\' fill=\'%23ffffff\' r=\'0.7\'/%3E%3C/svg%3E")',
-          animation: 'floatEffect 60s linear infinite'
+          animation: 'floatEffect 60s linear infinite, fadeIn 2s ease-out'
         }}></div>
         
         <div className="hero-body">
           <div className="container has-text-centered">
-            <AnimateOnScroll animation="zoom-out" duration={1200}>
-              <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
+            <AnimateOnScroll animation="slide-up" duration={1200}>
+              <h1 className="title is-2 has-text-weight-bold" style={{ 
+                color: '#fff', 
+                textShadow: '0 4px 24px #0a2540a0', 
+                letterSpacing: 1,
+                background: 'linear-gradient(45deg, #fff, #ffd700)',  // Gradient text
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8pxrgb(255, 255, 255)' }}>Friesen</span></>}
                 <br />
                 <span style={{ fontSize: 24 }}>Site officiel de la commune</span>
               </h1>
@@ -239,11 +236,11 @@ export default function PageAcceuil() {
         </AnimateOnScroll>
 
         <div className="columns is-variable is-5">
-          {/* Colonne 1 : Mot du Maire + Galerie + Panneau d'affichage + Calendrier */}
+          {/* Colonne 1 : Mot du Maire + Panneau d'affichage + Calendrier */}
           <div className="column is-two-thirds">
             <AnimateOnScroll animation="fade-right" delay={100}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
-              <div className="box p-5" style={{ background: '#f8fafc', borderRadius: 12 }}>
+              <div className="box p-5" style={{ background: '#f8fafc', borderRadius: 12, marginBottom: 24 }}>
                 <div className="columns">
                   {/* Colonne pour la photo */}
                   <div className="column is-narrow">
@@ -286,65 +283,56 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
             
-            {/* Panneau d'affichage avec animation */}
-            <AnimateOnScroll animation="bounce" delay={200} threshold={0.3}>
-              <div
-                className="box"
-                style={{
-                  background: 'repeating-linear-gradient(135deg, #c2a77d 0px, #c2a77d 28px, #b3936b 28px, #b3936b 56px)',
-                  borderRadius: 18,
-                  minHeight: 220,
-                  boxShadow: '0 4px 24px #a97c5020',
-                  position: 'relative',
-                  margin: '32px auto',
-                  maxWidth: 900,
-                  padding: '32px 24px'
-                }}
-              >
-                <h2 className="title is-4 has-text-dark mb-4" style={{ textShadow: '0 2px 8px #fffbe6', textAlign: 'center', letterSpacing: 1 }}>
+            {/* Panneau d'affichage avec animation ajustée */}
+            <AnimateOnScroll animation="fade-up" delay={200} threshold={0.5}>
+              <div className="box" style={{ background: '#f8fafc', borderRadius: 12, marginBottom: 24, padding: '24px' }}>
+                <h2 className="title is-5 has-text-primary mb-4" style={{ textAlign: 'center' }}>
                   🗂️ Panneau d'affichage du village
                 </h2>
-                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {/* Animation séquencée pour les affiches */}
-                  <AnimateOnScroll animation="flip-up" delay={300}>
-                    <div style={{
-                      background: '#fffbe6',
-                      border: '2px dashed #a97c50',
-                      borderRadius: 12,
-                      boxShadow: '0 2px 12px #a97c5030',
-                      padding: '18px 22px',
-                      minWidth: 180,
-                      maxWidth: 220,
-                      marginBottom: 12,
-                      fontWeight: 500,
-                      color: '#a97c50',
-                      fontSize: 16,
-                      position: 'relative'
-                    }}>
-                      <span style={{ fontSize: 22, position: 'absolute', top: 8, right: 12 }}>📌</span>
-                      <div>Fête du village<br /><b>Samedi 21 septembre</b></div>
-                    </div>
-                  </AnimateOnScroll>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <div style={{
+                    background: '#fffbe6',
+                    border: '2px dashed #a97c50',
+                    borderRadius: 12,
+                    boxShadow: '0 2px 12px #a97c5030',
+                    padding: '16px 20px',
+                    minWidth: 160,
+                    maxWidth: 200,
+                    fontWeight: 500,
+                    color: '#a97c50',
+                    fontSize: 14,
+                    position: 'relative',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',  // Modern hover
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+                  >
+                    <span style={{ fontSize: 20, position: 'absolute', top: 8, right: 12 }}>📌</span>
+                    <div>Fête du village<br /><b>Samedi 21 septembre</b></div>
+                  </div>
                   
-                  <AnimateOnScroll animation="flip-up" delay={450}>
-                    <div style={{
-                      background: '#eaf6ff',
-                      border: '2px solid #1277c6',
-                      borderRadius: 12,
-                      boxShadow: '0 2px 12px #1277c630',
-                      padding: '18px 22px',
-                      minWidth: 180,
-                      maxWidth: 220,
-                      marginBottom: 12,
-                      fontWeight: 500,
-                      color: '#1277c6',
-                      fontSize: 16,
-                      position: 'relative'
-                    }}>
-                      <span style={{ fontSize: 22, position: 'absolute', top: 8, right: 12 }}>📌</span>
-                      <div>Marché des producteurs<br /><b>Dimanche 6 octobre</b></div>
-                    </div>
-                  </AnimateOnScroll>
+                  <div style={{
+                    background: '#eaf6ff',
+                    border: '2px solid #1277c6',
+                    borderRadius: 12,
+                    boxShadow: '0 2px 12px #1277c630',
+                    padding: '16px 20px',
+                    minWidth: 160,
+                    maxWidth: 200,
+                    fontWeight: 500,
+                    color: '#1277c6',
+                    fontSize: 14,
+                    position: 'relative',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+                  >
+                    <span style={{ fontSize: 20, position: 'absolute', top: 8, right: 12 }}>📌</span>
+                    <div>Marché des producteurs<br /><b>Dimanche 6 octobre</b></div>
+                  </div>
                 </div>
               </div>
             </AnimateOnScroll>
@@ -352,7 +340,7 @@ export default function PageAcceuil() {
             {/* Calendrier déplacé ici */}
             <AnimateOnScroll animation="fade-up" delay={550} threshold={0.2}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
-              <div className="box" style={{ background: '#f8fafc', marginBottom: 18 }}>
+              <div className="box" style={{ background: '#f8fafc', marginBottom: 24, borderRadius: 12 }}>
                 <Calendar
                   events={events}
                   onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
@@ -364,7 +352,7 @@ export default function PageAcceuil() {
             </AnimateOnScroll>
           </div>
 
-          {/* Colonne 2 : Agenda + Infos pratiques + Contact */}
+          {/* Colonne 2 : Agenda + Infos pratiques + Contact + Liens utiles */}
           <div className="column is-one-third">
             <AnimateOnScroll animation="fade-left" delay={150}>
               <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
@@ -415,24 +403,47 @@ export default function PageAcceuil() {
             
             <AnimateOnScroll animation="fade-left" delay={250}>
               <h2 className="title is-5 has-text-primary mb-2">{content.infos_titre || "Infos pratiques"}</h2>
-              <div className="mb-2"><span style={infoIcon}>🕒</span>
-                <b>{content.horaires_titre || "Horaires d'ouverture"}</b><br />
-                {(content.horaires || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+              <div className="box" style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, marginBottom: 24 }}>
+                <div className="mb-3"><span style={infoIcon}>🕒</span>
+                  <b>{content.horaires_titre || "Horaires d'ouverture"}</b><br />
+                  {(content.horaires || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+                </div>
+                <div className="mb-3"><span style={infoIcon}>📍</span>
+                  {(content.adresse || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+                </div>
+                <div className="mb-3"><span style={infoIcon}>📞</span>
+                  {content.telephone}
+                </div>
+                <div className="mb-3"><span style={infoIcon}>✉️</span>
+                  {content.email}
+                </div>
               </div>
-              <div className="mb-2"><span style={infoIcon}>📍</span>
-                {(content.adresse || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
-              </div>
-              <div className="mb-2"><span style={infoIcon}>📞</span>
-                {content.telephone}
-              </div>
-              <div className="mb-4"><span style={infoIcon}>✉️</span>
-                {content.email}
+            </AnimateOnScroll>
+
+            {/* Nouveau : Liens utiles */}
+            <AnimateOnScroll animation="fade-left" delay={350}>
+              <h2 className="title is-5 has-text-primary mb-2">Liens utiles</h2>
+              <div className="box" style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, marginBottom: 24 }}>
+                <div className="mb-3">
+                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8 }}>
+                    📄 Documents administratifs
+                  </a>
+                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8 }}>
+                    🏛️ Services en ligne
+                  </a>
+                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8 }}>
+                    📅 Réservations salles
+                  </a>
+                  <a href="#" className="is-link" style={{ display: 'block' }}>
+                    📰 Bulletin municipal
+                  </a>
+                </div>
               </div>
             </AnimateOnScroll>
             
             <AnimateOnScroll animation="fade-up" delay={450} threshold={0.2}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.contact_titre || "Contactez la mairie"}</h2>
-              <div className="box" style={{ background: '#f8fafc' }}>
+              <div className="box" style={{ background: '#f8fafc', padding: '16px', borderRadius: 12 }}>
                 {contactSent ? (
                   <div className="notification is-success">Votre message a bien été envoyé !</div>
                 ) : (
@@ -457,7 +468,24 @@ export default function PageAcceuil() {
                     </div>
                     <div className="field is-grouped is-grouped-right">
                       <div className="control">
-                        <button className="button is-link" type="submit">Envoyer</button>
+                        <button className="button is-link" type="submit" style={{
+                          position: 'relative',
+                          overflow: 'hidden',
+                          transition: 'background 0.3s ease'
+                        }}
+                        onClick={(e) => {
+                          const ripple = document.createElement('span');
+                          ripple.style.position = 'absolute';
+                          ripple.style.borderRadius = '50%';
+                          ripple.style.background = 'rgba(255,255,255,0.6)';
+                          ripple.style.transform = 'scale(0)';
+                          ripple.style.animation = 'ripple 0.6s linear';
+                          ripple.style.left = `${e.clientX - e.target.offsetLeft}px`;
+                          ripple.style.top = `${e.clientY - e.target.offsetTop}px`;
+                          e.target.appendChild(ripple);
+                          setTimeout(() => ripple.remove(), 600);
+                        }}
+                        >Envoyer</button>
                       </div>
                     </div>
                   </form>
@@ -467,22 +495,22 @@ export default function PageAcceuil() {
           </div>
         </div>
 
-        <div className="columns mt-6 mb-0"> {/* Changez mb-5 à mb-0 */}
+        <div className="columns mt-6 mb-0">
           {/* Widgets avec animation */}
-          <div className="column is-2">
+          <div className="column is-3">
             <AnimateOnScroll animation="zoom-in" delay={200} threshold={0.2}>
               {/* Widget météo */}
-              <div className="box has-text-centered" style={{ background: '#eaf6ff' }}>
+              <div className="box has-text-centered" style={{ background: '#eaf6ff', padding: '20px', borderRadius: 12 }}>
                 <span style={{ fontSize: 38 }}>🌤️</span>
                 <div className="has-text-link has-text-weight-bold mt-2">{content.meteo}</div>
                 <div style={{ fontSize: 15 }}>{content.meteo_legende}</div>
               </div>
             </AnimateOnScroll>
           </div>
-          <div className="column is-2">
+          <div className="column is-3">
             <AnimateOnScroll animation="zoom-in" delay={300} threshold={0.2}>
               {/* Widget réseaux sociaux */}
-              <div className="box has-text-centered" style={{ background: '#f8fafc' }}>
+              <div className="box has-text-centered" style={{ background: '#f8fafc', padding: '20px', borderRadius: 12 }}>
                 <div className="has-text-link has-text-weight-bold mb-2">{content.reseaux_titre || "Suivez-nous"}</div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                   {content.facebook && (
@@ -502,7 +530,6 @@ export default function PageAcceuil() {
                       onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >
-                      {/* Utilisation d'une div stylisée pour garantir l'affichage */}
                       <div style={{ 
                         width: '28px', 
                         height: '28px', 
@@ -531,7 +558,7 @@ export default function PageAcceuil() {
             
             <AnimateOnScroll animation="zoom-in" delay={400} threshold={0.2}>
               {/* Numéros d'urgence */}
-              <div className="box mt-4" style={{ background: '#fffbe6' }}>
+              <div className="box mt-4" style={{ background: '#fffbe6', padding: '20px', borderRadius: 12 }}>
                 <div className="has-text-danger has-text-weight-bold mb-1">{content.urgences_titre || "Urgences"}</div>
                 <div style={{ fontSize: 15 }}>
                   🚒 Pompiers : <b>{content.urgence_pompiers}</b><br />
@@ -541,7 +568,28 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
           </div>
-          {/* ... autres colonnes ... */}
+          <div className="column is-3">
+            <AnimateOnScroll animation="zoom-in" delay={500} threshold={0.2}>
+              {/* Nouveau widget : Actualités rapides */}
+              <div className="box has-text-centered" style={{ background: '#f0f9ff', padding: '20px', borderRadius: 12 }}>
+                <span style={{ fontSize: 38 }}>📰</span>
+                <div className="has-text-link has-text-weight-bold mt-2">Actualités</div>
+                <div style={{ fontSize: 15 }}>Consultez les dernières nouvelles</div>
+                <a href="#" className="button is-small is-link mt-3">Voir plus</a>
+              </div>
+            </AnimateOnScroll>
+          </div>
+          <div className="column is-3">
+            <AnimateOnScroll animation="zoom-in" delay={600} threshold={0.2}>
+              {/* Nouveau widget : Services */}
+              <div className="box has-text-centered" style={{ background: '#fef3c7', padding: '20px', borderRadius: 12 }}>
+                <span style={{ fontSize: 38 }}>🏛️</span>
+                <div className="has-text-link has-text-weight-bold mt-2">Services</div>
+                <div style={{ fontSize: 15 }}>Accès aux démarches administratives</div>
+                <a href="#" className="button is-small is-link mt-3">Accéder</a>
+              </div>
+            </AnimateOnScroll>
+          </div>
         </div>
       </div>
 
@@ -552,19 +600,44 @@ export default function PageAcceuil() {
           100% { background-position: 100% 100%; }
         }
         
-        @keyframes pulse {
-          0% { transform: scale(1); }
+        @keyframes fadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        
+        @keyframes ripple {
+          to { transform: scale(4); opacity: 0; }
+        }
+        
+        @keyframes bounceIn {
+          0% { transform: scale(0.3); opacity: 0; }
           50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
+          70% { transform: scale(0.9); }
+          100% { transform: scale(1); opacity: 1; }
         }
         
         .highlight-on-scroll {
-          transition: all 0.5s ease;
+          transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
         .highlight-on-scroll:hover {
-          transform: translateY(-5px);
+          transform: translateY(-5px) scale(1.02);
           box-shadow: 0 10px 20px rgba(18, 119, 198, 0.2);
+        }
+        
+        /* Apple-like smooth scrolling */
+        html {
+          scroll-behavior: smooth;
+        }
+        
+        /* Enhanced shadows for depth */
+        .box {
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          transition: box-shadow 0.3s ease;
+        }
+        
+        .box:hover {
+          box-shadow: 0 8px 30px rgba(0,0,0,0.15);
         }
       `}</style>
       
