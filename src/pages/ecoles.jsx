@@ -397,6 +397,7 @@ export default function Ecoles() {
                               type="tel"
                               name="telephone"
                               value={formData.telephone}
+                              onChange={handleChange}
                               required
                             />
                           </div>

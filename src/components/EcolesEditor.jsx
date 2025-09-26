@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -170,17 +170,16 @@ function EcolesCrud() {
     site: '',
     image: ''
   });
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState('');
-  const [dirty, setDirty] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
 
   const persistEcoles = async (list) => {
-    await fetch('/api/pageContent', {
+    const res = await fetch('/api/pageContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page: 'ecoles', ecoles_json: list })
     });
+    if (!res.ok) throw new Error('Failed to persist schools');
   };
 
   const genId = (suffix = '') =>
@@ -189,47 +188,58 @@ function EcolesCrud() {
       : `ecole-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}`);
 
   useEffect(() => {
-    fetch('/api/pageContent?page=ecoles')
-      .then(r => r.json())
-      .then(data => {
+    const load = async () => {
+      try {
+        const response = await fetch('/api/pageContent?page=ecoles');
+        const data = await response.json();
         const obj = data?.[0] || {};
         const arr = Array.isArray(obj.ecoles_json) ? obj.ecoles_json : [];
         const withIds = arr.map((e, idx) => ({ ...e, id: e?.id || genId(`-${idx}`) }));
         setItems(withIds);
+
         if (withIds.some((e, i) => !arr[i]?.id)) {
-          setDirty(true);
-          toast.info('Des corrections ont été faites, pensez à enregistrer');
+          try {
+            await persistEcoles(withIds);
+          } catch {
+            toast.error('Synchronisation automatique des écoles impossible');
+          }
         }
-      })
-      .catch(() => setItems([]));
+      } catch {
+        setItems([]);
+      }
+    };
+
+    load();
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
 
-    // Optionnel: limite de taille (2 Mo)
     if (f.size > 2 * 1024 * 1024) {
       toast.warn('Image trop lourde (> 2 Mo). Utilisez une URL ou compressez l’image.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result?.toString() || '';
-      setPreview(dataUrl);
-      setForm(s => ({ ...s, image: dataUrl }));
-      setDirty(true);
+    const formData = new FormData();
+    formData.append('file', f);
 
-      // Si on édite une école existante, mettre à jour la liste directement
-      if (form.id) {
-        setItems(prev => prev.map(it => it.id === form.id ? ({ ...it, image: dataUrl }) : it));
-        toast.info('Image mise à jour (à enregistrer)');
-      }
-    };
-    reader.readAsDataURL(f);
+    try {
+      toast.info('Envoi du fichier...');
+      const res = await fetch('/api/upload_doc', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Erreur upload');
+      const { fileUrl } = await res.json();
+      setPreview(fileUrl);
+      setForm((s) => ({ ...s, image: fileUrl }));
+      toast.success('Image envoyée !');
+    } catch (err) {
+      toast.error('Erreur lors de l’upload');
+    }
   };
 
   const reset = () => {
@@ -240,39 +250,47 @@ function EcolesCrud() {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.nom.trim()) return;
-    const next = [...items];
-    if (form.id) {
-      const idx = next.findIndex(it => it.id === form.id);
-      if (idx !== -1) next[idx] = { ...next[idx], ...form };
-    } else {
-      next.push({ id: genId(), ...form });
-    }
-    setItems(next);
-    setDirty(true);
-    toast.success(form.id ? 'École modifiée (à enregistrer)' : 'École ajoutée (à enregistrer)');
-    reset();
-  };
 
-  const edit = (it) => { setForm({ ...it }); setPreview(it.image || ''); };
+    const next = form.id
+      ? items.map((it) => (it.id === form.id ? { ...it, ...form } : it))
+      : [...items, { id: genId(), ...form }];
 
-  const delIt = (id, index) => {
-    if (!confirm('Supprimer cette école ?')) return;
-    const next = items.filter((it, i) => (id ? it.id !== id : i !== index));
-    setItems(next);
-    setDirty(true);
-    toast.warn('École supprimée (à enregistrer)');
-  };
-
-  const saveAll = async () => {
-    setSaveLoading(true);
+    setSaving(true);
     try {
-      await persistEcoles(items);
-      setDirty(false);
-      toast.success('Écoles enregistrées');
-    } catch (err) {
-      toast.error('Erreur lors de l’enregistrement des écoles');
+      await persistEcoles(next);
+      setItems(next);
+      toast.success(form.id ? 'École enregistrée' : 'École ajoutée');
+      reset();
+    } catch {
+      toast.error('Erreur lors de l’enregistrement de l’école');
     } finally {
-      setSaveLoading(false);
+      setSaving(false);
+    }
+  };
+
+  const edit = (it) => {
+    setForm({ ...it });
+    setPreview(it.image || '');
+  };
+
+  const delIt = async (id, index) => {
+    if (!confirm('Supprimer cette école ?')) return;
+
+    const current = typeof index === 'number' ? items[index] : null;
+    const next = items.filter((it, i) => (id ? it.id !== id : i !== index));
+
+    setSaving(true);
+    try {
+      await persistEcoles(next);
+      setItems(next);
+      if (form.id && (form.id === id || (current && form.id === current.id))) {
+        reset();
+      }
+      toast.warn('École supprimée');
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -338,7 +356,6 @@ function EcolesCrud() {
                   const url = e.target.value;
                   setForm({ ...form, image: url });
                   setPreview(url);
-                  setDirty(true);
                   if (form.id) {
                     setItems(prev => prev.map(it => it.id === form.id ? ({ ...it, image: url }) : it));
                     toast.info('Image mise à jour (à enregistrer)');
@@ -365,11 +382,17 @@ function EcolesCrud() {
 
         <div className="field is-grouped">
           <div className="control">
-            <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit">
-              {form.id ? 'Enregistrer les modifications' : 'Ajouter'}
+            <button className={`button is-link${saving ? ' is-loading' : ''}`} type="submit" disabled={saving}>
+              {form.id ? 'Enregistrer les modifications' : 'Enregistrer'}
             </button>
           </div>
-          {form.id && <div className="control"><button type="button" className="button" onClick={reset}>Annuler</button></div>}
+          {form.id && (
+            <div className="control">
+              <button type="button" className="button" onClick={reset} disabled={saving}>
+                Annuler
+              </button>
+            </div>
+          )}
         </div>
       </form>
 
@@ -408,8 +431,8 @@ function EcolesCrud() {
               </td>
               <td className="has-text-right">
                 <div className="buttons are-small is-right">
-                  <button className="button is-info" onClick={() => edit(it)}>✏️</button>
-                  <button className="button is-danger" onClick={() => delIt(it.id, index)}>🗑️</button>
+                  <button className="button is-info" onClick={() => edit(it)} disabled={saving}>✏️</button>
+                  <button className="button is-danger" onClick={() => delIt(it.id, index)} disabled={saving}>🗑️</button>
                 </div>
               </td>
             </tr>
@@ -419,18 +442,6 @@ function EcolesCrud() {
           )}
         </tbody>
       </table>
-
-      <div className="is-flex is-justify-content-flex-end mt-3">
-        <button
-          type="button"
-          className={`button is-link ${saveLoading ? 'is-loading' : ''}`}
-          onClick={saveAll}
-          disabled={!dirty || saveLoading}
-          title={dirty ? 'Enregistrer les modifications' : 'Aucune modification en attente'}
-        >
-          Enregistrer les écoles
-        </button>
-      </div>
     </div>
   );
 }
@@ -439,7 +450,9 @@ function EcolesCrud() {
 export default function EcolesEditor() {
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState('idle');
+  const saveTimer = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -452,40 +465,61 @@ export default function EcolesEditor() {
           initial[f.key] = obj[f.key] || '';
         });
         setForm(initial);
+        setStatus('saved');
       })
-      .catch(() => setForm({}))
+      .catch(() => {
+        setForm({});
+        setStatus('error');
+      })
       .finally(() => setLoading(false));
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
   }, []);
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSave = async e => {
-    e.preventDefault();
-    setLoading(true);
+  const persistForm = async (payload) => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    setSaving(true);
+    setStatus('saving');
     try {
       const res = await fetch('/api/pageContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page: 'ecoles',
-          ...form
-        })
+        body: JSON.stringify({ page: 'ecoles', ...payload })
       });
       if (!res.ok) throw new Error('Bad response');
-      setMsg('Modifications enregistrées !');
-      toast.success('Contenu enregistré');
+      setStatus('saved');
     } catch (err) {
+      setStatus('error');
       toast.error('Erreur lors de l’enregistrement du contenu');
     } finally {
-      setLoading(false);
-      setTimeout(() => setMsg(''), 2000);
+      setSaving(false);
     }
+  };
+
+  const queueSave = (payload) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => persistForm(payload), 800);
+  };
+
+  const handleChange = e => {
+    const next = { ...form, [e.target.name]: e.target.value };
+    setForm(next);
+    queueSave(next);
   };
 
   return (
     <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
-      <h2 className="title is-4 mb-4 has-text-link">🗂️ Contenu de la page Écoles</h2>
-      <form onSubmit={handleSave}>
+      <div className="is-flex is-align-items-center is-justify-content-space-between mb-4">
+        <h2 className="title is-4 has-text-link mb-0">🗂️ Contenu de la page Écoles</h2>
+        <span className={`tag ${status === 'saving' ? 'is-info' : status === 'error' ? 'is-danger' : 'is-success'}`}>
+          {status === 'saving' ? 'Sauvegarde…' : status === 'error' ? 'Erreur' : 'Enregistré'}
+        </span>
+      </div>
+      <form onSubmit={(e) => e.preventDefault()}>
         {GROUPS.map(group => (
           <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
             <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -526,7 +560,11 @@ export default function EcolesEditor() {
               Enregistrer
             </button>
           </div>
-          {msg && <div className="notification is-info is-light py-2 px-3 ml-3">{msg}</div>}
+          {status === 'error' && (
+            <div className="notification is-danger is-light py-2 px-3">
+              Dernière sauvegarde en échec (réessaie après modification).
+            </div>
+          )}
         </div>
       </form>
       
