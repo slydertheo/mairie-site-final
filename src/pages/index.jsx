@@ -285,53 +285,209 @@ export default function PageAcceuil() {
             
             {/* Panneau d'affichage avec animation ajustée */}
             <AnimateOnScroll animation="fade-up" delay={200} threshold={0.5}>
-              <div className="box" style={{ background: '#f8fafc', borderRadius: 12, marginBottom: 24, padding: '24px' }}>
-                <h2 className="title is-5 has-text-primary mb-4" style={{ textAlign: 'center' }}>
-                  🗂️ Panneau d'affichage du village
-                </h2>
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div style={{
+                position: 'relative',
+                marginBottom: 36,
+                marginTop: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}>
+                {/* Pieds du panneau */}
+                <div style={{
+                  position: 'absolute',
+                  left: '14%',
+                  bottom: -32,
+                  width: 18,
+                  height: 48,
+                  background: 'linear-gradient(120deg, #bfa16b 60%, #8d6e3c 100%)',
+                  borderRadius: 8,
+                  boxShadow: '0 6px 16px #0002',
+                  zIndex: 0
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  right: '14%',
+                  bottom: -32,
+                  width: 18,
+                  height: 48,
+                  background: 'linear-gradient(120deg, #bfa16b 60%, #8d6e3c 100%)',
+                  borderRadius: 8,
+                  boxShadow: '0 6px 16px #0002',
+                  zIndex: 0
+                }} />
+                {/* Panneau principal */}
+                <div className="box panneau-village" style={{
+                  background: 'repeating-linear-gradient(135deg, #f8fafc 0 40px, #e9e4d7 40px 80px)',
+                  borderRadius: 22,
+                  marginBottom: 0,
+                  padding: '36px 24px 28px 24px',
+                  boxShadow: '0 12px 36px #bfa16b44, 0 2px 8px #0001',
+                  border: '3.5px solid #bfa16b',
+                  borderTop: '10px solid #bfa16b',
+                  borderBottom: '8px solid #bfa16b',
+                  position: 'relative',
+                  zIndex: 1,
+                  minWidth: 320,
+                  maxWidth: 900,
+                  width: '100%'
+                }}>
+                  {/* Vis de fixation */}
                   <div style={{
-                    background: '#fffbe6',
-                    border: '2px dashed #a97c50',
-                    borderRadius: 12,
-                    boxShadow: '0 2px 12px #a97c5030',
-                    padding: '16px 20px',
-                    minWidth: 160,
-                    maxWidth: 200,
-                    fontWeight: 500,
+                    position: 'absolute', top: 10, left: 22, width: 18, height: 18, background: '#d7c08a', borderRadius: '50%',
+                    border: '2px solid #bfa16b', boxShadow: '0 1px 4px #0002'
+                  }} />
+                  <div style={{
+                    position: 'absolute', top: 10, right: 22, width: 18, height: 18, background: '#d7c08a', borderRadius: '50%',
+                    border: '2px solid #bfa16b', boxShadow: '0 1px 4px #0002'
+                  }} />
+                  <h2 className="title is-4 has-text-primary mb-5" style={{
+                    textAlign: 'center',
+                    letterSpacing: 1,
+                    fontWeight: 800,
+                    textShadow: '0 2px 8px #fff, 0 1px 0 #bfa16b',
                     color: '#a97c50',
-                    fontSize: 14,
-                    position: 'relative',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',  // Modern hover
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+                    marginBottom: 32
+                  }}>
+                    🗂️ Panneau d'affichage du village
+                  </h2>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 28,
+                      flexWrap: 'wrap',
+                      justifyContent: 'center'
+                    }}
                   >
-                    <span style={{ fontSize: 20, position: 'absolute', top: 8, right: 12 }}>📌</span>
-                    <div>Fête du village<br /><b>Samedi 21 septembre</b></div>
-                  </div>
-                  
-                  <div style={{
-                    background: '#eaf6ff',
-                    border: '2px solid #1277c6',
-                    borderRadius: 12,
-                    boxShadow: '0 2px 12px #1277c630',
-                    padding: '16px 20px',
-                    minWidth: 160,
-                    maxWidth: 200,
-                    fontWeight: 500,
-                    color: '#1277c6',
-                    fontSize: 14,
-                    position: 'relative',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
-                  >
-                    <span style={{ fontSize: 20, position: 'absolute', top: 8, right: 12 }}>📌</span>
-                    <div>Marché des producteurs<br /><b>Dimanche 6 octobre</b></div>
+                    {[
+                      {
+                        label: "Arrêtés du Maire",
+                        img: "/affichage/arrete.png",
+                        bg: "#fffbe6",
+                        border: "2px dashed #a97c50",
+                        color: "#a97c50",
+                        shadow: "#a97c5030",
+                        date: "Dernier : 12/09/2025"
+                      },
+                      {
+                        label: "Comptes rendus / Publications",
+                        img: "/affichage/compte-rendu.png",
+                        bg: "#eaf6ff",
+                        border: "2px solid #1277c6",
+                        color: "#1277c6",
+                        shadow: "#1277c630",
+                        date: "CM du 10/09/2025"
+                      },
+                      {
+                        label: "Bancs mariages",
+                        img: "/affichage/mariage.png",
+                        bg: "#f0f9ff",
+                        border: "2px solid #1b9bd7",
+                        color: "#1b9bd7",
+                        shadow: "#1b9bd730",
+                        date: "Annonce : 18/09/2025"
+                      },
+                      {
+                        label: "Convocations CM+",
+                        img: "/affichage/convocation.png",
+                        bg: "#fef3c7",
+                        border: "2px solid #eab308",
+                        color: "#eab308",
+                        shadow: "#eab30830",
+                        date: "Prochaine : 22/09/2025"
+                      },
+                      {
+                        label: "Urbanisme / Permis",
+                        img: "/affichage/urbanisme.png",
+                        bg: "#e0ffe6",
+                        border: "2px dashed #22c55e",
+                        color: "#22c55e",
+                        shadow: "#22c55e30",
+                        date: "Dossier en cours"
+                      },
+                      {
+                        label: "Analyses d'eau, divers",
+                        img: "/affichage/eau.png",
+                        bg: "#e0f2fe",
+                        border: "2px solid #0ea5e9",
+                        color: "#0ea5e9",
+                        shadow: "#0ea5e930",
+                        date: "Résultat : 09/2025"
+                      },
+                    ].map((tab, idx) => (
+                      <div
+                        key={tab.label}
+                        className="affiche-card"
+                        style={{
+                          background: tab.bg,
+                          border: tab.border,
+                          borderRadius: 16,
+                          boxShadow: `0 4px 24px ${tab.shadow}`,
+                          padding: '22px 18px 18px 18px',
+                          minWidth: 170,
+                          maxWidth: 220,
+                          fontWeight: 500,
+                          color: tab.color,
+                          fontSize: 15,
+                          position: 'relative',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          transition: 'all 0.25s cubic-bezier(.4,2,.3,1)',
+                          backdropFilter: 'blur(2px)',
+                          borderBottom: `4px solid ${tab.color}33`
+                        }}
+                        tabIndex={0}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-8px) scale(1.04)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+                      >
+                        <span style={{
+                          fontSize: 22,
+                          position: 'absolute',
+                          top: 10,
+                          right: 14,
+                          opacity: 0.7
+                        }}>📌</span>
+                        <img
+                          src={tab.img}
+                          alt={tab.label}
+                          style={{
+                            width: 54,
+                            height: 54,
+                            objectFit: 'contain',
+                            margin: '0 auto 12px auto',
+                            display: 'block',
+                            borderRadius: 12,
+                            background: '#fff',
+                            boxShadow: `0 2px 8px ${tab.shadow}`,
+                            border: `1.5px solid ${tab.color}22`
+                          }}
+                          onError={e => { e.currentTarget.src = "https://via.placeholder.com/54?text=Doc"; }}
+                        />
+                        <div style={{
+                          fontWeight: 700,
+                          fontSize: 16,
+                          marginBottom: 6,
+                          letterSpacing: 0.2
+                        }}>{tab.label}</div>
+                        <div style={{
+                          marginTop: 4,
+                          fontSize: 13,
+                          color: tab.color,
+                          fontWeight: 400,
+                          opacity: 0.85,
+                          background: '#fff',
+                          borderRadius: 8,
+                          padding: '2px 10px',
+                          boxShadow: `0 1px 6px ${tab.shadow}`,
+                          display: 'inline-block'
+                        }}>
+                          {tab.date}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
