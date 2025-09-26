@@ -316,38 +316,54 @@ export default function PageAcceuil() {
                   boxShadow: '0 6px 16px #0002',
                   zIndex: 0
                 }} />
-                {/* Panneau principal */}
+                {/* Panneau principal amélioré */}
                 <div className="box panneau-village" style={{
-                  background: 'repeating-linear-gradient(135deg, #f8fafc 0 40px, #e9e4d7 40px 80px)',
-                  borderRadius: 22,
+                  background: 'repeating-linear-gradient(135deg, #f8fafc 0 40px, #e9e4d7 40px 80px), url("https://www.transparenttextures.com/patterns/wood-pattern.png")',
+                  backgroundBlendMode: 'multiply',
+                  borderRadius: 28,
                   marginBottom: 0,
-                  padding: '36px 24px 28px 24px',
-                  boxShadow: '0 12px 36px #bfa16b44, 0 2px 8px #0001',
-                  border: '3.5px solid #bfa16b',
-                  borderTop: '10px solid #bfa16b',
-                  borderBottom: '8px solid #bfa16b',
+                  padding: '40px 28px 32px 28px',
+                  boxShadow: '0 16px 48px #bfa16b55, 0 4px 16px #0001, 0 1.5px 0 #bfa16b',
+                  border: '4px solid #bfa16b',
+                  borderTop: '12px solid #bfa16b',
+                  borderBottom: '10px solid #bfa16b',
                   position: 'relative',
                   zIndex: 1,
-                  minWidth: 320,
-                  maxWidth: 900,
-                  width: '100%'
+                  minWidth: 340,
+                  maxWidth: 950,
+                  width: '100%',
+                  transition: 'box-shadow 0.3s',
+                  filter: 'drop-shadow(0 2px 8px #bfa16b33)'
                 }}>
-                  {/* Vis de fixation */}
+                  {/* Vis de fixation améliorées */}
                   <div style={{
-                    position: 'absolute', top: 10, left: 22, width: 18, height: 18, background: '#d7c08a', borderRadius: '50%',
-                    border: '2px solid #bfa16b', boxShadow: '0 1px 4px #0002'
-                  }} />
+                    position: 'absolute', top: 12, left: 28, width: 22, height: 22, background: 'radial-gradient(circle at 60% 40%, #e5d3a1 70%, #bfa16b 100%)', borderRadius: '50%',
+                    border: '2.5px solid #bfa16b', boxShadow: '0 2px 6px #0002, 0 0 0 2px #fff8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <div style={{
+                      width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7
+                    }} />
+                  </div>
                   <div style={{
-                    position: 'absolute', top: 10, right: 22, width: 18, height: 18, background: '#d7c08a', borderRadius: '50%',
-                    border: '2px solid #bfa16b', boxShadow: '0 1px 4px #0002'
-                  }} />
+                    position: 'absolute', top: 12, right: 28, width: 22, height: 22, background: 'radial-gradient(circle at 60% 40%, #e5d3a1 70%, #bfa16b 100%)', borderRadius: '50%',
+                    border: '2.5px solid #bfa16b', boxShadow: '0 2px 6px #0002, 0 0 0 2px #fff8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <div style={{
+                      width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7
+                    }} />
+                  </div>
                   <h2 className="title is-4 has-text-primary mb-5" style={{
                     textAlign: 'center',
                     letterSpacing: 1,
                     fontWeight: 800,
                     textShadow: '0 2px 8px #fff, 0 1px 0 #bfa16b',
                     color: '#a97c50',
-                    marginBottom: 32
+                    marginBottom: 32,
+                    textTransform: 'uppercase',
+                    letterSpacing: 2,
+                    fontFamily: 'serif'
                   }}>
                     🗂️ Panneau d'affichage du village
                   </h2>
@@ -419,13 +435,13 @@ export default function PageAcceuil() {
                         key={tab.label}
                         className="affiche-card"
                         style={{
-                          background: tab.bg,
+                          background: `linear-gradient(120deg, #fffbe6 80%, #f8fafc 100%), url("https://www.transparenttextures.com/patterns/paper-fibers.png")`,
                           border: tab.border,
-                          borderRadius: 16,
-                          boxShadow: `0 4px 24px ${tab.shadow}`,
-                          padding: '22px 18px 18px 18px',
-                          minWidth: 170,
-                          maxWidth: 220,
+                          borderRadius: 18,
+                          boxShadow: `0 6px 24px ${tab.shadow}, 0 2px 8px #bfa16b22`,
+                          padding: '26px 18px 18px 18px',
+                          minWidth: 180,
+                          maxWidth: 230,
                           fontWeight: 500,
                           color: tab.color,
                           fontSize: 15,
@@ -437,11 +453,13 @@ export default function PageAcceuil() {
                           alignItems: 'center',
                           transition: 'all 0.25s cubic-bezier(.4,2,.3,1)',
                           backdropFilter: 'blur(2px)',
-                          borderBottom: `4px solid ${tab.color}33`
+                          borderBottom: `5px solid ${tab.color}33`,
+                          transform: `rotate(${(idx % 2 === 0 ? -1 : 1) * (2 + Math.random() * 1.5)}deg)`,
+                          filter: 'drop-shadow(0 2px 4px #bfa16b22)'
                         }}
                         tabIndex={0}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-8px) scale(1.04)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = `rotate(${(idx % 2 === 0 ? -1 : 1) * (2 + Math.random() * 1.5)}deg) scale(1)`}
                       >
                         <span style={{
                           fontSize: 22,
@@ -470,7 +488,8 @@ export default function PageAcceuil() {
                           fontWeight: 700,
                           fontSize: 16,
                           marginBottom: 6,
-                          letterSpacing: 0.2
+                          letterSpacing: 0.2,
+                          fontFamily: 'serif'
                         }}>{tab.label}</div>
                         <div style={{
                           marginTop: 4,
@@ -482,7 +501,8 @@ export default function PageAcceuil() {
                           borderRadius: 8,
                           padding: '2px 10px',
                           boxShadow: `0 1px 6px ${tab.shadow}`,
-                          display: 'inline-block'
+                          display: 'inline-block',
+                          fontFamily: 'monospace'
                         }}>
                           {tab.date}
                         </div>
