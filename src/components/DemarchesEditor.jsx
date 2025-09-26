@@ -43,12 +43,12 @@ export default function DemarchesEditor() {
         
         // Initialiser les démarches rapides
         const rapidesData = [];
-        for (let i = 1; i <= 20; i++) { // Augmenté de 7 à 20
+        for (let i = 1; i <= 20; i++) {
           const labelKey = `demarche_rapide_${i}_label`;
           const urlKey = `demarche_rapide_${i}_url`;
           if (obj[labelKey]) {
             rapidesData.push({
-              id: i,
+              id: i, // juste l'index
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
               isFile: obj[urlKey]?.endsWith('.pdf') || false
@@ -121,7 +121,7 @@ export default function DemarchesEditor() {
     setDemarches(prev => {
       // Trouver le prochain ID disponible
       const existingIds = prev[group].map(d => d.id);
-      let newId = 1;
+      let newId = Date.now() + Math.random();
       
       // Trouver le premier ID non utilisé ou le maximum + 1
       if (existingIds.length > 0) {
@@ -281,43 +281,79 @@ export default function DemarchesEditor() {
     fileInput.click();
   };
 
+  // Ajoute cette fonction utilitaire avant le return
+  const moveDemarche = (group, id, direction) => {
+    setDemarches(prev => {
+      const list = [...prev[group]];
+      const idx = list.findIndex(d => d.id === id);
+      if (idx === -1) return prev;
+
+      let swapWith = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= list.length) return prev;
+
+      // Échange les deux démarches
+      [list[idx], list[swapWith]] = [list[swapWith], list[idx]];
+      return { ...prev, [group]: list };
+    });
+  };
+
   return (
-    <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
-      <h2 className="title is-4 mb-4 has-text-link">🗂️ Contenu de la page Démarches</h2>
+    <div className="box" style={{ borderRadius: 14, background: '#fafdff', border: '1.5px solid #e0e7ef', boxShadow: '0 2px 12px #e0e7ef33' }}>
+      <h2 className="title is-4 mb-4 has-text-link" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 28 }}>🗂️</span> Contenu de la page Démarches
+      </h2>
       <form onSubmit={handleSave}>
         {/* Sections de démarches */}
         {GROUPS.map(group => (
           <div key={group.key} className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
-            {/* En-tête sans bouton d'ajout */}
             <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 22 }}>{group.icon}</span> {group.title}
             </h3>
-            
             {demarches[group.key].length === 0 ? (
               <div>
-                <div className="notification is-light is-info is-size-7 py-2 px-3 mb-3">
+                <div className="notification is-light is-info is-size-7 py-2 px-3 mb-3" style={{ borderRadius: 8 }}>
                   Aucune démarche ajoutée.
                 </div>
               </div>
             ) : (
               <div style={{ paddingRight: '5px' }}>
-                {demarches[group.key].sort((a, b) => a.id - b.id).map((demarche, index) => (
+                {demarches[group.key].map((demarche, index, arr) => (
                   <div 
                     key={demarche.id} 
                     className="box mb-3 pt-3 pb-3" 
-                    style={{ background: '#f9fbfd', borderRadius: 8 }}
+                    style={{ background: '#f9fbfd', borderRadius: 8, border: '1px solid #e0e7ef' }}
                   >
                     <div className="is-flex is-justify-content-space-between mb-2">
                       <span className="tag is-info is-light">Démarche #{index + 1}</span>
-                      <button 
-                        type="button" 
-                        className="delete" 
-                        onClick={() => removeDemarche(group.key, demarche.id)}
-                        disabled={loading}
-                      />
+                      <div>
+                        <button
+                          type="button"
+                          className="button is-small is-white"
+                          title="Monter"
+                          onClick={() => moveDemarche(group.key, demarche.id, 'up')}
+                          disabled={loading || index === 0}
+                          style={{ marginRight: 4 }}
+                        >
+                          <span className="icon is-small">▲</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="button is-small is-white"
+                          title="Descendre"
+                          onClick={() => moveDemarche(group.key, demarche.id, 'down')}
+                          disabled={loading || index === arr.length - 1}
+                          style={{ marginRight: 8 }}
+                        >
+                          <span className="icon is-small">▼</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          className="delete" 
+                          onClick={() => removeDemarche(group.key, demarche.id)}
+                          disabled={loading}
+                        />
+                      </div>
                     </div>
-                    
-                    {/* Reste du contenu de la démarche */}
                     <div className="field mb-3">
                       <label className="label is-small">Texte à afficher</label>
                       <div className="control">
@@ -331,7 +367,6 @@ export default function DemarchesEditor() {
                         />
                       </div>
                     </div>
-                    
                     <div className="field">
                       <label className="label is-small">Type de ressource</label>
                       <div className="control">
@@ -347,7 +382,6 @@ export default function DemarchesEditor() {
                         </div>
                       </div>
                     </div>
-                    
                     <div className="field">
                       {demarche.isFile ? (
                         <div>
@@ -394,14 +428,13 @@ export default function DemarchesEditor() {
                 ))}
               </div>
             )}
-            
-            {/* Bouton d'ajout toujours en bas */}
             <div className="has-text-centered mt-3">
               <button 
                 type="button" 
                 className="button is-info is-light" 
                 onClick={() => addDemarche(group.key)}
                 disabled={loading}
+                style={{ borderRadius: 8 }}
               >
                 <span className="icon">
                   <i className="fas fa-plus"></i>
@@ -411,13 +444,11 @@ export default function DemarchesEditor() {
             </div>
           </div>
         ))}
-        
         {/* PDF Règlement */}
         <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
           <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 22 }}>📑</span> PDF Règlement
           </h3>
-          
           <div className="field mb-3">
             <label className="label is-small">Nom du PDF règlement</label>
             <div className="control">
@@ -431,7 +462,6 @@ export default function DemarchesEditor() {
               />
             </div>
           </div>
-          
           <div className="field">
             <label className="label is-small">Type de ressource</label>
             <div className="control">
@@ -447,7 +477,6 @@ export default function DemarchesEditor() {
               </div>
             </div>
           </div>
-          
           <div className="field">
             {pdfReglement.isFile ? (
               <div>
@@ -491,16 +520,15 @@ export default function DemarchesEditor() {
             )}
           </div>
         </div>
-
         {/* Boutons de sauvegarde */}
         <div className="field is-grouped mt-4">
           <div className="control">
-            <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+            <button className={`button is-link${loading ? ' is-loading' : ''}`} type="submit" disabled={loading} style={{ borderRadius: 8 }}>
               Enregistrer
             </button>
           </div>
           {msg && (
-            <div className={`notification is-light ${msg.includes('Erreur') ? 'is-danger' : 'is-success'} py-2 px-3 ml-3`}>
+            <div className={`notification is-light ${msg.includes('Erreur') ? 'is-danger' : 'is-success'} py-2 px-3 ml-3`} style={{ borderRadius: 8 }}>
               {msg}
             </div>
           )}
