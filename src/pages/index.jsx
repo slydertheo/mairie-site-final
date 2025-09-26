@@ -187,14 +187,14 @@ export default function PageAcceuil() {
         backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',  // Parallax effect
+        backgroundAttachment: 'fixed',
         borderRadius: '0 0 32px 32px',
         boxShadow: '0 8px 32px #0a254030',
         marginBottom: 32,
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Enhanced floating particles */}
+        {/* Particules flottantes */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -205,21 +205,23 @@ export default function PageAcceuil() {
           background: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 800 800\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'400\' cy=\'400\' fill=\'%23ffffff\' r=\'1\'/%3E%3Ccircle cx=\'200\' cy=\'300\' fill=\'%23ffffff\' r=\'1.2\'/%3E%3Ccircle cx=\'600\' cy=\'200\' fill=\'%23ffffff\' r=\'0.8\'/%3E%3Ccircle cx=\'100\' cy=\'500\' fill=\'%23ffffff\' r=\'1.1\'/%3E%3Ccircle cx=\'700\' cy=\'300\' fill=\'%23ffffff\' r=\'0.9\'/%3E%3Ccircle cx=\'300\' cy=\'600\' fill=\'%23ffffff\' r=\'1.2\'/%3E%3Ccircle cx=\'500\' cy=\'100\' fill=\'%23ffffff\' r=\'0.7\'/%3E%3C/svg%3E")',
           animation: 'floatEffect 60s linear infinite, fadeIn 2s ease-out'
         }}></div>
-        
         <div className="hero-body">
           <div className="container has-text-centered">
             <AnimateOnScroll animation="slide-up" duration={1200}>
-              <h1 className="title is-2 has-text-weight-bold" style={{ 
-                color: '#fff', 
-                textShadow: '0 4px 24px #0a2540a0', 
+              <h1 className="title is-2 has-text-weight-bold" style={{
+                color: '#fff',
+                textShadow: '0 4px 24px #0a2540a0',
                 letterSpacing: 1,
-                background: 'linear-gradient(45deg, #fff, #ffd700)',  // Gradient text
+                background: 'linear-gradient(45deg, #fff, #ffd700)',
                 WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
+                WebkitTextFillColor: 'transparent',
+                fontFamily: 'Merriweather, serif',
+                fontSize: 44,
+                marginBottom: 8
               }}>
                 {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8pxrgb(255, 255, 255)' }}>Friesen</span></>}
                 <br />
-                <span style={{ fontSize: 24 }}>Site officiel de la commune</span>
+                <span style={{ fontSize: 24, color: '#fff', textShadow: '0 2px 8px #0a2540a0' }}>Site officiel de la commune</span>
               </h1>
             </AnimateOnScroll>
           </div>
@@ -228,7 +230,12 @@ export default function PageAcceuil() {
 
       <div className="container" style={{ maxWidth: 1200, margin: '0 auto' }}>
         <AnimateOnScroll animation="fade-up">
-          <h2 className="title is-4 has-text-primary mb-5">{content.actualites_titre || "Dernières actualités"}</h2>
+          <h2 className="title is-4 has-text-primary mb-5" style={{
+            fontFamily: 'Merriweather, serif',
+            fontWeight: 800,
+            letterSpacing: 1,
+            color: '#1277c6'
+          }}>{content.actualites_titre || "Dernières actualités"}</h2>
         </AnimateOnScroll>
         
         <AnimateOnScroll animation="zoom-in" threshold={0.2}>
@@ -239,20 +246,27 @@ export default function PageAcceuil() {
           {/* Colonne 1 : Mot du Maire + Panneau d'affichage + Calendrier */}
           <div className="column is-two-thirds">
             <AnimateOnScroll animation="fade-right" delay={100}>
-              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.motMaire_titre || "Mot du Maire"}</h2>
-              <div className="box p-5" style={{ background: '#f8fafc', borderRadius: 12, marginBottom: 24 }}>
-                <div className="columns">
+              <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#a97c50'
+              }}>{content.motMaire_titre || "Mot du Maire"}</h2>
+              <div className="box p-5" style={{
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                borderRadius: 16,
+                marginBottom: 24,
+                boxShadow: '0 6px 24px #1277c610'
+              }}>
+                <div className="columns is-vcentered">
                   {/* Colonne pour la photo */}
                   <div className="column is-narrow">
-                    <figure className="image is-128x128" style={{ margin: '0 auto' }}>
+                    <figure className="image is-128x128" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '4px solid #a97c50', boxShadow: '0 2px 12px #a97c5022' }}>
                       <img
                         className="is-rounded"
                         src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=200&q=80"}
                         alt="Maire"
-                        style={{ 
-                          objectFit: 'cover', 
-                          border: '3px solid #1277c6',
-                          boxShadow: '0 4px 12px rgba(18, 119, 198, 0.2)',
+                        style={{
+                          objectFit: 'cover',
                           width: '100%',
                           height: '100%'
                         }}
@@ -260,30 +274,33 @@ export default function PageAcceuil() {
                       />
                     </figure>
                   </div>
-                  
                   {/* Colonne pour le texte */}
                   <div className="column">
-                    <div className="has-text-link has-text-weight-bold mb-3" style={{ fontSize: '1.1rem' }}>
+                    <div className="has-text-link has-text-weight-bold mb-3" style={{
+                      fontSize: '1.15rem',
+                      fontFamily: 'Merriweather, serif'
+                    }}>
                       {content.motMaire_accroche || "Chères habitantes, chers habitants"}
                     </div>
-                    <div style={{ 
-                      fontSize: 16, 
-                      color: '#444', 
+                    <div style={{
+                      fontSize: 17,
+                      color: '#444',
                       whiteSpace: 'pre-wrap',
-                      lineHeight: '1.6' 
+                      lineHeight: '1.7',
+                      fontFamily: 'Merriweather, serif'
                     }}>
                       {content.motMaire}
                     </div>
                     <div className="has-text-right mt-4">
-                      <div className="has-text-weight-bold">{content.motMaire_nom || "Pierre Durand"}</div>
-                      <div className="is-italic" style={{ fontSize: '0.9rem' }}>{content.motMaire_titre_signature || "Maire de Friesen"}</div>
+                      <div className="has-text-weight-bold" style={{ color: '#a97c50', fontSize: 17 }}>{content.motMaire_nom || "Pierre Durand"}</div>
+                      <div className="is-italic" style={{ fontSize: '0.95rem', color: '#888' }}>{content.motMaire_titre_signature || "Maire de Friesen"}</div>
                     </div>
                   </div>
                 </div>
               </div>
             </AnimateOnScroll>
             
-            {/* Panneau d'affichage avec animation ajustée */}
+            {/* Panneau d'affichage amélioré (voir réponse précédente) */}
             <AnimateOnScroll animation="fade-up" delay={200} threshold={0.5}>
               <div style={{
                 position: 'relative',
@@ -513,10 +530,19 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
 
-            {/* Calendrier déplacé ici */}
+            {/* Calendrier amélioré */}
             <AnimateOnScroll animation="fade-up" delay={550} threshold={0.2}>
-              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.calendrier_titre || "Calendrier"}</h2>
-              <div className="box" style={{ background: '#f8fafc', marginBottom: 24, borderRadius: 12 }}>
+              <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#1277c6'
+              }}>{content.calendrier_titre || "Calendrier"}</h2>
+              <div className="box" style={{
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                marginBottom: 24,
+                borderRadius: 14,
+                boxShadow: '0 4px 16px #1277c610'
+              }}>
                 <Calendar
                   events={events}
                   onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
@@ -531,11 +557,15 @@ export default function PageAcceuil() {
           {/* Colonne 2 : Agenda + Infos pratiques + Contact + Liens utiles */}
           <div className="column is-one-third">
             <AnimateOnScroll animation="fade-left" delay={150}>
-              <h2 className="title is-5 has-text-primary mb-3">{content.agenda_titre || "Agenda des événements"}</h2>
+              <h2 className="title is-5 has-text-primary mb-3" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#1277c6'
+              }}>{content.agenda_titre || "Agenda des événements"}</h2>
               <div className="mb-4">
                 {events.length > 0 ? (
                   events.map((event, index) => (
-                    <AgendaItem 
+                    <AgendaItem
                       key={event.id || index}
                       title={event.titre || event.title}
                       date={event.date}
@@ -546,10 +576,9 @@ export default function PageAcceuil() {
                 ) : (
                   <p className="has-text-grey has-text-centered">Aucun événement à venir</p>
                 )}
-                
-                <a 
-                  href="#" 
-                  className="is-link is-underlined ml-4" 
+                <a
+                  href="#"
+                  className="is-link is-underlined ml-4"
                   style={{ fontWeight: 700, fontSize: 15, display: 'block', marginTop: '12px' }}
                   onClick={(e) => {
                     e.preventDefault();
@@ -559,9 +588,9 @@ export default function PageAcceuil() {
                   {content.agenda_lien_label || "Voir tous les événements"}
                 </a>
                 {content.agenda_link && (
-                  <a 
-                    href={content.agenda_link} 
-                    className="is-link is-underlined ml-3" 
+                  <a
+                    href={content.agenda_link}
+                    className="is-link is-underlined ml-3"
                     style={{ fontWeight: 500, fontSize: 14 }}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -578,8 +607,18 @@ export default function PageAcceuil() {
             </AnimateOnScroll>
             
             <AnimateOnScroll animation="fade-left" delay={250}>
-              <h2 className="title is-5 has-text-primary mb-2">{content.infos_titre || "Infos pratiques"}</h2>
-              <div className="box" style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, marginBottom: 24 }}>
+              <h2 className="title is-5 has-text-primary mb-2" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#1277c6'
+              }}>{content.infos_titre || "Infos pratiques"}</h2>
+              <div className="box" style={{
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                padding: '16px',
+                borderRadius: 14,
+                marginBottom: 24,
+                boxShadow: '0 2px 8px #1277c610'
+              }}>
                 <div className="mb-3"><span style={infoIcon}>🕒</span>
                   <b>{content.horaires_titre || "Horaires d'ouverture"}</b><br />
                   {(content.horaires || "").split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
@@ -596,21 +635,31 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
 
-            {/* Nouveau : Liens utiles */}
+            {/* Liens utiles */}
             <AnimateOnScroll animation="fade-left" delay={350}>
-              <h2 className="title is-5 has-text-primary mb-2">Liens utiles</h2>
-              <div className="box" style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, marginBottom: 24 }}>
+              <h2 className="title is-5 has-text-primary mb-2" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#1277c6'
+              }}>Liens utiles</h2>
+              <div className="box" style={{
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                padding: '16px',
+                borderRadius: 14,
+                marginBottom: 24,
+                boxShadow: '0 2px 8px #1277c610'
+              }}>
                 <div className="mb-3">
-                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8 }}>
+                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
                     📄 Documents administratifs
                   </a>
-                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8 }}>
+                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
                     🏛️ Services en ligne
                   </a>
-                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8 }}>
+                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
                     📅 Réservations salles
                   </a>
-                  <a href="#" className="is-link" style={{ display: 'block' }}>
+                  <a href="#" className="is-link" style={{ display: 'block', fontWeight: 600 }}>
                     📰 Bulletin municipal
                   </a>
                 </div>
@@ -618,8 +667,17 @@ export default function PageAcceuil() {
             </AnimateOnScroll>
             
             <AnimateOnScroll animation="fade-up" delay={450} threshold={0.2}>
-              <h2 className="title is-5 has-text-primary mb-2 mt-5">{content.contact_titre || "Contactez la mairie"}</h2>
-              <div className="box" style={{ background: '#f8fafc', padding: '16px', borderRadius: 12 }}>
+              <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#1277c6'
+              }}>{content.contact_titre || "Contactez la mairie"}</h2>
+              <div className="box" style={{
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                padding: '16px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #1277c610'
+              }}>
                 {contactSent ? (
                   <div className="notification is-success">Votre message a bien été envoyé !</div>
                 ) : (
@@ -668,29 +726,97 @@ export default function PageAcceuil() {
                 )}
               </div>
             </AnimateOnScroll>
+
+            {/* Onglet Municipalité - Présentation des élus */}
+            <AnimateOnScroll animation="fade-up" delay={500} threshold={0.2}>
+              <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
+                fontFamily: 'Merriweather, serif',
+                fontWeight: 700,
+                color: '#a97c50'
+              }}>La Municipalité</h2>
+              <div className="box" style={{
+                background: 'linear-gradient(120deg, #fffbe6 80%, #f8fafc 100%)',
+                padding: '18px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #a97c5010'
+              }}>
+                <div className="columns is-multiline is-mobile">
+                  <div className="column is-half-mobile is-one-third-tablet has-text-centered">
+                    <figure className="image is-96x96" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid #a97c50', boxShadow: '0 2px 8px #a97c5022' }}>
+                      <img
+                        src="https://randomuser.me/api/portraits/men/32.jpg"
+                        alt="Pierre Durand"
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                        onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Elu"; }}
+                      />
+                    </figure>
+                    <div className="has-text-weight-bold mt-2" style={{ color: '#a97c50' }}>Pierre Durand</div>
+                    <div className="is-size-7 has-text-grey">Maire</div>
+                  </div>
+                  <div className="column is-half-mobile is-one-third-tablet has-text-centered">
+                    <figure className="image is-96x96" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid #1277c6', boxShadow: '0 2px 8px #1277c622' }}>
+                      <img
+                        src="https://randomuser.me/api/portraits/women/44.jpg"
+                        alt="Marie Lefevre"
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                        onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Elue"; }}
+                      />
+                    </figure>
+                    <div className="has-text-weight-bold mt-2" style={{ color: '#1277c6' }}>Marie Lefevre</div>
+                    <div className="is-size-7 has-text-grey">Première adjointe</div>
+                  </div>
+                  <div className="column is-half-mobile is-one-third-tablet has-text-centered">
+                    <figure className="image is-96x96" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid #1b9bd7', boxShadow: '0 2px 8px #1b9bd722' }}>
+                      <img
+                        src="https://randomuser.me/api/portraits/men/54.jpg"
+                        alt="Jean Muller"
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                        onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Elu"; }}
+                      />
+                    </figure>
+                    <div className="has-text-weight-bold mt-2" style={{ color: '#1b9bd7' }}>Jean Muller</div>
+                    <div className="is-size-7 has-text-grey">Adjoint</div>
+                  </div>
+                  {/* Ajoute d'autres élus ici si besoin */}
+                </div>
+                <div className="has-text-centered mt-3">
+                  <a href="#" className="is-link" style={{ fontWeight: 600, fontSize: 15 }}>
+                    Voir tous les élus et commissions
+                  </a>
+                </div>
+              </div>
+            </AnimateOnScroll>
           </div>
         </div>
 
+        {/* Widgets améliorés */}
         <div className="columns mt-6 mb-0">
-          {/* Widgets avec animation */}
           <div className="column is-3">
             <AnimateOnScroll animation="zoom-in" delay={200} threshold={0.2}>
-              {/* Widget météo */}
-              <div className="box has-text-centered" style={{ background: '#eaf6ff', padding: '20px', borderRadius: 12 }}>
-                <span style={{ fontSize: 38 }}>🌤️</span>
-                <div className="has-text-link has-text-weight-bold mt-2">{content.meteo}</div>
+              <div className="box has-text-centered" style={{
+                background: 'linear-gradient(120deg, #eaf6ff 80%, #f8fafc 100%)',
+                padding: '24px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #1277c610'
+              }}>
+                <span style={{ fontSize: 40 }}>🌤️</span>
+                <div className="has-text-link has-text-weight-bold mt-2" style={{ fontSize: 18 }}>{content.meteo}</div>
                 <div style={{ fontSize: 15 }}>{content.meteo_legende}</div>
               </div>
             </AnimateOnScroll>
           </div>
           <div className="column is-3">
             <AnimateOnScroll animation="zoom-in" delay={300} threshold={0.2}>
-              {/* Widget réseaux sociaux */}
-              <div className="box has-text-centered" style={{ background: '#f8fafc', padding: '20px', borderRadius: 12 }}>
-                <div className="has-text-link has-text-weight-bold mb-2">{content.reseaux_titre || "Suivez-nous"}</div>
+              <div className="box has-text-centered" style={{
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                padding: '24px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #1277c610'
+              }}>
+                <div className="has-text-link has-text-weight-bold mb-2" style={{ fontSize: 18 }}>{content.reseaux_titre || "Suivez-nous"}</div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                   {content.facebook && (
-                    <a href={content.facebook} target="_blank" rel="noopener noreferrer" 
+                    <a href={content.facebook} target="_blank" rel="noopener noreferrer"
                       style={{ display: 'inline-block', transition: 'transform 0.3s' }}
                       onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.25) rotate(5deg)'}
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0)'}
@@ -701,15 +827,15 @@ export default function PageAcceuil() {
                     </a>
                   )}
                   {content.intramuros && (
-                    <a href={content.intramuros} target="_blank" rel="noopener noreferrer" 
+                    <a href={content.intramuros} target="_blank" rel="noopener noreferrer"
                       style={{ display: 'inline-block', transition: 'transform 0.2s' }}
                       onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >
-                      <div style={{ 
-                        width: '28px', 
-                        height: '28px', 
-                        borderRadius: '50%', 
+                      <div style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
                         backgroundColor: '#1B9BD7',
                         display: 'flex',
                         justifyContent: 'center',
@@ -731,11 +857,14 @@ export default function PageAcceuil() {
                 )}
               </div>
             </AnimateOnScroll>
-            
             <AnimateOnScroll animation="zoom-in" delay={400} threshold={0.2}>
-              {/* Numéros d'urgence */}
-              <div className="box mt-4" style={{ background: '#fffbe6', padding: '20px', borderRadius: 12 }}>
-                <div className="has-text-danger has-text-weight-bold mb-1">{content.urgences_titre || "Urgences"}</div>
+              <div className="box mt-4" style={{
+                background: 'linear-gradient(120deg, #fffbe6 80%, #f8fafc 100%)',
+                padding: '24px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #a97c5010'
+              }}>
+                <div className="has-text-danger has-text-weight-bold mb-1" style={{ fontSize: 18 }}>{content.urgences_titre || "Urgences"}</div>
                 <div style={{ fontSize: 15 }}>
                   🚒 Pompiers : <b>{content.urgence_pompiers}</b><br />
                   🚓 Police : <b>{content.urgence_police}</b><br />
@@ -746,10 +875,14 @@ export default function PageAcceuil() {
           </div>
           <div className="column is-3">
             <AnimateOnScroll animation="zoom-in" delay={500} threshold={0.2}>
-              {/* Nouveau widget : Actualités rapides */}
-              <div className="box has-text-centered" style={{ background: '#f0f9ff', padding: '20px', borderRadius: 12 }}>
-                <span style={{ fontSize: 38 }}>📰</span>
-                <div className="has-text-link has-text-weight-bold mt-2">Actualités</div>
+              <div className="box has-text-centered" style={{
+                background: 'linear-gradient(120deg, #f0f9ff 80%, #f8fafc 100%)',
+                padding: '24px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #1b9bd710'
+              }}>
+                <span style={{ fontSize: 40 }}>📰</span>
+                <div className="has-text-link has-text-weight-bold mt-2" style={{ fontSize: 18 }}>Actualités</div>
                 <div style={{ fontSize: 15 }}>Consultez les dernières nouvelles</div>
                 <a href="#" className="button is-small is-link mt-3">Voir plus</a>
               </div>
@@ -757,10 +890,14 @@ export default function PageAcceuil() {
           </div>
           <div className="column is-3">
             <AnimateOnScroll animation="zoom-in" delay={600} threshold={0.2}>
-              {/* Nouveau widget : Services */}
-              <div className="box has-text-centered" style={{ background: '#fef3c7', padding: '20px', borderRadius: 12 }}>
-                <span style={{ fontSize: 38 }}>🏛️</span>
-                <div className="has-text-link has-text-weight-bold mt-2">Services</div>
+              <div className="box has-text-centered" style={{
+                background: 'linear-gradient(120deg, #fef3c7 80%, #f8fafc 100%)',
+                padding: '24px',
+                borderRadius: 14,
+                boxShadow: '0 2px 8px #eab30810'
+              }}>
+                <span style={{ fontSize: 40 }}>🏛️</span>
+                <div className="has-text-link has-text-weight-bold mt-2" style={{ fontSize: 18 }}>Services</div>
                 <div style={{ fontSize: 15 }}>Accès aux démarches administratives</div>
                 <a href="#" className="button is-small is-link mt-3">Accéder</a>
               </div>
