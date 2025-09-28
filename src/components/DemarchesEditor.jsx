@@ -331,6 +331,72 @@ export default function DemarchesEditor() {
     });
   };
 
+  // Nouvelle fonction pour sauvegarder une section spécifique
+  const handleSaveSection = async (groupKey) => {
+    setLoading(true);
+    const toastId = toast.loading('Sauvegarde en cours...');
+
+    try {
+      // 1. Récupère toutes les données existantes
+      const res = await fetch('/api/pageContent?page=demarches');
+      const data = await res.json();
+      const obj = data[0] || {};
+
+      // 2. Prépare le nouvel objet à envoyer (copie de l'existant)
+      const saveData = { ...obj, page: 'demarches' };
+
+      // 3. Vide la section concernée
+      for (let i = 1; i <= 20; i++) {
+        if (groupKey === 'rapides') {
+          saveData[`demarche_rapide_${i}_label`] = '';
+          saveData[`demarche_rapide_${i}_url`] = '';
+        }
+        if (groupKey === 'urbanisme') {
+          saveData[`urbanisme_${i}_label`] = '';
+          saveData[`urbanisme_${i}_url`] = '';
+        }
+        if (groupKey === 'autres') {
+          saveData[`autre_${i}_label`] = '';
+          saveData[`autre_${i}_url`] = '';
+        }
+      }
+
+      // 4. Remplit la section concernée avec les valeurs actuelles
+      demarches[groupKey].forEach((d, index) => {
+        const i = index + 1;
+        if (groupKey === 'rapides') {
+          saveData[`demarche_rapide_${i}_label`] = d.label;
+          saveData[`demarche_rapide_${i}_url`] = d.url;
+        }
+        if (groupKey === 'urbanisme') {
+          saveData[`urbanisme_${i}_label`] = d.label;
+          saveData[`urbanisme_${i}_url`] = d.url;
+        }
+        if (groupKey === 'autres') {
+          saveData[`autre_${i}_label`] = d.label;
+          saveData[`autre_${i}_url`] = d.url;
+        }
+      });
+
+      // 5. Toujours garder le PDF règlement à jour
+      saveData.pdf_reglement_label = pdfReglement.label;
+      saveData.pdf_reglement_url = pdfReglement.url;
+
+      // 6. Envoie tout à l’API
+      await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+      });
+
+      toast.update(toastId, { render: 'Section enregistrée !', type: 'success', isLoading: false, autoClose: 2000 });
+    } catch (error) {
+      toast.update(toastId, { render: 'Erreur lors de la sauvegarde', type: 'error', isLoading: false, autoClose: 3000 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="box" style={{ borderRadius: 14, background: '#fafdff', border: '1.5px solid #e0e7ef', boxShadow: '0 2px 12px #e0e7ef33' }}>
       <h2 className="title is-4 mb-4 has-text-link" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -464,6 +530,17 @@ export default function DemarchesEditor() {
                 ))}
               </div>
             )}
+            <div className="has-text-centered mt-2">
+              <button
+                type="button"
+                className={`button is-link${loading ? ' is-loading' : ''}`}
+                onClick={() => handleSaveSection(group.key)}
+                disabled={loading}
+                style={{ borderRadius: 8, marginTop: 8 }}
+              >
+                Enregistrer cette section
+              </button>
+            </div>
             <div className="has-text-centered mt-3">
               <button 
                 type="button" 
