@@ -48,7 +48,7 @@ export default function DemarchesEditor() {
           const urlKey = `demarche_rapide_${i}_url`;
           if (obj[labelKey]) {
             rapidesData.push({
-              id: i, // juste l'index
+              id: crypto.randomUUID(),
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
               isFile: obj[urlKey]?.endsWith('.pdf') || false
@@ -119,18 +119,9 @@ export default function DemarchesEditor() {
   // Ajouter une démarche
   const addDemarche = (group) => {
     setDemarches(prev => {
-      // Trouver le prochain ID disponible
-      const existingIds = prev[group].map(d => d.id);
-      let newId = Date.now() + Math.random();
-      
-      // Trouver le premier ID non utilisé ou le maximum + 1
-      if (existingIds.length > 0) {
-        newId = Math.max(...existingIds) + 1;
-      }
-      
       return {
         ...prev,
-        [group]: [...prev[group], { id: newId, label: '', url: '', isFile: false }]
+        [group]: [...prev[group], { id: crypto.randomUUID(), label: '', url: '', isFile: false }]
       };
     });
   };
@@ -293,8 +284,62 @@ export default function DemarchesEditor() {
 
       // Échange les deux démarches
       [list[idx], list[swapWith]] = [list[swapWith], list[idx]];
+      console.log('moveDemarche', group, id, direction, list.map(d => d.label));
       return { ...prev, [group]: list };
     });
+  };
+
+  // Ajoute cette fonction avant le return
+  const handleSaveSection = async (groupKey) => {
+    setLoading(true);
+    setMsg('');
+    // Prépare les données comme dans handleSave, mais ne sauvegarde que la section concernée
+    const saveData = {
+      page: 'demarches',
+      ...headerForm
+    };
+    for (let i = 1; i <= 20; i++) {
+      saveData[`demarche_rapide_${i}_label`] = '';
+      saveData[`demarche_rapide_${i}_url`] = '';
+      saveData[`urbanisme_${i}_label`] = '';
+      saveData[`urbanisme_${i}_url`] = '';
+      saveData[`autre_${i}_label`] = '';
+      saveData[`autre_${i}_url`] = '';
+    }
+    // Remplit uniquement la section concernée
+    demarches[groupKey].forEach((d, index) => {
+      const i = index + 1;
+      if (groupKey === 'rapides') {
+        saveData[`demarche_rapide_${i}_label`] = d.label;
+        saveData[`demarche_rapide_${i}_url`] = d.url;
+      }
+      if (groupKey === 'urbanisme') {
+        saveData[`urbanisme_${i}_label`] = d.label;
+        saveData[`urbanisme_${i}_url`] = d.url;
+      }
+      if (groupKey === 'autres') {
+        saveData[`autre_${i}_label`] = d.label;
+        saveData[`autre_${i}_url`] = d.url;
+      }
+    });
+    // Ajoute le PDF règlement pour ne pas l'effacer
+    saveData.pdf_reglement_label = pdfReglement.label;
+    saveData.pdf_reglement_url = pdfReglement.url;
+
+    try {
+      await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+      });
+      setMsg(`Section "${GROUPS.find(g => g.key === groupKey).title}" enregistrée !`);
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      setMsg('Erreur lors de la sauvegarde');
+      setTimeout(() => setMsg(''), 3000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -440,6 +485,17 @@ export default function DemarchesEditor() {
                   <i className="fas fa-plus"></i>
                 </span>
                 <span>Ajouter une démarche</span>
+              </button>
+            </div>
+            <div className="has-text-centered mt-2">
+              <button
+                type="button"
+                className={`button is-link${loading ? ' is-loading' : ''}`}
+                onClick={() => handleSaveSection(group.key)}
+                disabled={loading}
+                style={{ borderRadius: 8, marginTop: 8 }}
+              >
+                Enregistrer cette section
               </button>
             </div>
           </div>
