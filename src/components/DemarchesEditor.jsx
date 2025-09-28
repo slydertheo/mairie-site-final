@@ -27,6 +27,7 @@ export default function DemarchesEditor() {
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+  const [pendingSave, setPendingSave] = useState(false); // État pour suivre les sauvegardes en attente
 
   // Charger les données existantes
   useEffect(() => {
@@ -137,13 +138,31 @@ export default function DemarchesEditor() {
         <div className="buttons mt-3">
           <button
             className="button is-danger is-small"
-            onClick={() => {
+            onClick={async () => {
               toast.dismiss();
-              setDemarches(prev => ({
-                ...prev,
-                [group]: prev[group].filter(d => d.id !== id)
-              }));
-              toast.success('Démarche supprimée', { autoClose: 1500 });
+              // 1. Supprime du state
+              const newDemarches = {
+                ...demarches,
+                [group]: demarches[group].filter(d => d.id !== id)
+              };
+              setDemarches(newDemarches);
+              // 2. Appelle handleSave avec les nouvelles données
+              setLoading(true);
+              const saveData = prepareDataForSave(newDemarches);
+              const toastId = toast.loading('Sauvegarde en cours...');
+              try {
+                await fetch('/api/pageContent', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(saveData)
+                });
+                toast.update(toastId, { render: 'Démarche supprimée !', type: 'success', isLoading: false, autoClose: 2000 });
+              } catch (error) {
+                toast.update(toastId, { render: 'Erreur lors de la suppression', type: 'error', isLoading: false, autoClose: 3000 });
+                console.error("Erreur de suppression:", error);
+              } finally {
+                setLoading(false);
+              }
             }}
           >
             Confirmer
@@ -186,14 +205,12 @@ export default function DemarchesEditor() {
   };
 
   // Transformer les données pour la sauvegarde
-  const prepareDataForSave = () => {
+  const prepareDataForSave = (demarchesArg = demarches) => {
     const saveData = {
       page: 'demarches',
       ...headerForm
     };
-    
-    // Réinitialiser tous les champs existants pour éviter les doublons
-    for (let i = 1; i <= 20; i++) {  // Augmenté à 20 pour supporter plus d'entrées
+    for (let i = 1; i <= 20; i++) {
       saveData[`demarche_rapide_${i}_label`] = '';
       saveData[`demarche_rapide_${i}_url`] = '';
       saveData[`urbanisme_${i}_label`] = '';
@@ -201,33 +218,24 @@ export default function DemarchesEditor() {
       saveData[`autre_${i}_label`] = '';
       saveData[`autre_${i}_url`] = '';
     }
-    
-    // Démarches rapides - utiliser l'index + 1 pour une numérotation séquentielle
-    demarches.rapides.forEach((d, index) => {
+    demarchesArg.rapides.forEach((d, index) => {
       const i = index + 1;
       saveData[`demarche_rapide_${i}_label`] = d.label;
       saveData[`demarche_rapide_${i}_url`] = d.url;
     });
-    
-    // Démarches urbanisme
-    demarches.urbanisme.forEach((d, index) => {
+    demarchesArg.urbanisme.forEach((d, index) => {
       const i = index + 1;
       saveData[`urbanisme_${i}_label`] = d.label;
       saveData[`urbanisme_${i}_url`] = d.url;
     });
-    
-    // Autres démarches
-    demarches.autres.forEach((d, index) => {
+    demarchesArg.autres.forEach((d, index) => {
       const i = index + 1;
       saveData[`autre_${i}_label`] = d.label;
       saveData[`autre_${i}_url`] = d.url;
     });
-    
-    // PDF règlement
     saveData.pdf_reglement_label = pdfReglement.label;
     saveData.pdf_reglement_url = pdfReglement.url;
-    
-    return saveData; // Assurez-vous que cette ligne est présente
+    return saveData;
   };
 
   // Sauvegarder les données avec toast
