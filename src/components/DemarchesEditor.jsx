@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const HEADER_FIELDS = [
   { key: 'titre', label: 'Titre principal', type: 'text' },
@@ -33,14 +35,14 @@ export default function DemarchesEditor() {
       .then(res => res.json())
       .then(data => {
         const obj = data[0] || {};
-        
+
         // Initialiser l'en-tête
         const headerData = {};
         HEADER_FIELDS.forEach(f => {
           headerData[f.key] = obj[f.key] || '';
         });
         setHeaderForm(headerData);
-        
+
         // Initialiser les démarches rapides
         const rapidesData = [];
         for (let i = 1; i <= 20; i++) {
@@ -55,44 +57,44 @@ export default function DemarchesEditor() {
             });
           }
         }
-        
+
         // Initialiser les démarches urbanisme
         const urbanismeData = [];
-        for (let i = 1; i <= 20; i++) { // Augmenté de 4 à 20
+        for (let i = 1; i <= 20; i++) {
           const labelKey = `urbanisme_${i}_label`;
           const urlKey = `urbanisme_${i}_url`;
           if (obj[labelKey]) {
             urbanismeData.push({
-              id: i,
+              id: crypto.randomUUID(),
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
               isFile: obj[urlKey]?.endsWith('.pdf') || false
             });
           }
         }
-        
+
         // Initialiser autres démarches
         const autresData = [];
-        for (let i = 1; i <= 20; i++) { // Augmenté de 3 à 20
+        for (let i = 1; i <= 20; i++) {
           const labelKey = `autre_${i}_label`;
           const urlKey = `autre_${i}_url`;
           if (obj[labelKey]) {
             autresData.push({
-              id: i,
+              id: crypto.randomUUID(),
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
               isFile: obj[urlKey]?.endsWith('.pdf') || false
             });
           }
         }
-        
+
         // Initialiser le PDF règlement
         setPdfReglement({
           label: obj.pdf_reglement_label || '',
           url: obj.pdf_reglement_url || '',
           isFile: obj.pdf_reglement_url?.endsWith('.pdf') || false
         });
-        
+
         setDemarches({
           rapides: rapidesData,
           urbanisme: urbanismeData,
@@ -128,10 +130,41 @@ export default function DemarchesEditor() {
   
   // Supprimer une démarche
   const removeDemarche = (group, id) => {
-    setDemarches(prev => ({
-      ...prev,
-      [group]: prev[group].filter(d => d.id !== id)
-    }));
+    const demarche = demarches[group].find(d => d.id === id);
+    toast.info(
+      <div>
+        <p>Voulez-vous vraiment supprimer&nbsp;: <b>{demarche?.label || 'cette démarche'}</b> ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={() => {
+              toast.dismiss();
+              setDemarches(prev => ({
+                ...prev,
+                [group]: prev[group].filter(d => d.id !== id)
+              }));
+              toast.success('Démarche supprimée', { autoClose: 1500 });
+            }}
+          >
+            Confirmer
+          </button>
+          <button
+            className="button is-light is-small"
+            onClick={() => toast.dismiss()}
+          >
+            Annuler
+          </button>
+        </div>
+      </div>,
+      {
+        autoClose: false,
+        closeButton: false,
+        closeOnClick: false,
+        draggable: false,
+        pauseOnFocusLoss: false,
+        pauseOnHover: false,
+      }
+    );
   };
   
   // Mettre à jour une démarche
@@ -197,59 +230,60 @@ export default function DemarchesEditor() {
     return saveData; // Assurez-vous que cette ligne est présente
   };
 
-  // Sauvegarder les données
+  // Sauvegarder les données avec toast
   const handleSave = async e => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setLoading(true);
-    
+
     const saveData = prepareDataForSave();
-    
+
+    const toastId = toast.loading('Sauvegarde en cours...');
     try {
       await fetch('/api/pageContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(saveData)
       });
-      setMsg('Modifications enregistrées !');
-      setTimeout(() => setMsg(''), 2000);
+      toast.update(toastId, { render: 'Modifications enregistrées !', type: 'success', isLoading: false, autoClose: 2000 });
+      setMsg('');
     } catch (error) {
-      setMsg('Erreur lors de la sauvegarde');
+      toast.update(toastId, { render: 'Erreur lors de la sauvegarde', type: 'error', isLoading: false, autoClose: 3000 });
+      setMsg('');
       console.error("Erreur de sauvegarde:", error);
-      setTimeout(() => setMsg(''), 3000);
     } finally {
       setLoading(false);
     }
   };
 
-  // Gérer l'upload de fichiers PDF
+  // Gérer l'upload de fichiers PDF avec toast
   const handleFileUpload = async (group, id) => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.pdf';
-    
+
     fileInput.onchange = async (e) => {
       if (!e.target.files || !e.target.files[0]) return;
-      
+
       const file = e.target.files[0];
-      
+
       setLoading(true);
+      const toastId = toast.loading('Téléchargement en cours...');
       try {
-        // Créer une FormData
         const formData = new FormData();
         formData.append('file', file);
-        
+
         const response = await fetch('/api/upload_doc', {
           method: 'POST',
           body: formData,
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`Échec du téléchargement: ${response.status} ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (group === 'reglement') {
           handlePdfReglementChange('url', data.fileUrl);
           handlePdfReglementChange('isFile', true);
@@ -257,18 +291,18 @@ export default function DemarchesEditor() {
           updateDemarche(group, id, 'url', data.fileUrl);
           updateDemarche(group, id, 'isFile', true);
         }
-        
-        setMsg('Fichier téléchargé avec succès!');
-        setTimeout(() => setMsg(''), 2000);
+
+        toast.update(toastId, { render: 'Fichier téléchargé avec succès!', type: 'success', isLoading: false, autoClose: 2000 });
+        setMsg('');
       } catch (error) {
-        setMsg('Erreur lors du téléchargement: ' + error.message);
+        toast.update(toastId, { render: 'Erreur lors du téléchargement: ' + error.message, type: 'error', isLoading: false, autoClose: 3000 });
+        setMsg('');
         console.error('Erreur upload:', error);
-        setTimeout(() => setMsg(''), 3000);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fileInput.click();
   };
 
@@ -287,59 +321,6 @@ export default function DemarchesEditor() {
       console.log('moveDemarche', group, id, direction, list.map(d => d.label));
       return { ...prev, [group]: list };
     });
-  };
-
-  // Ajoute cette fonction avant le return
-  const handleSaveSection = async (groupKey) => {
-    setLoading(true);
-    setMsg('');
-    // Prépare les données comme dans handleSave, mais ne sauvegarde que la section concernée
-    const saveData = {
-      page: 'demarches',
-      ...headerForm
-    };
-    for (let i = 1; i <= 20; i++) {
-      saveData[`demarche_rapide_${i}_label`] = '';
-      saveData[`demarche_rapide_${i}_url`] = '';
-      saveData[`urbanisme_${i}_label`] = '';
-      saveData[`urbanisme_${i}_url`] = '';
-      saveData[`autre_${i}_label`] = '';
-      saveData[`autre_${i}_url`] = '';
-    }
-    // Remplit uniquement la section concernée
-    demarches[groupKey].forEach((d, index) => {
-      const i = index + 1;
-      if (groupKey === 'rapides') {
-        saveData[`demarche_rapide_${i}_label`] = d.label;
-        saveData[`demarche_rapide_${i}_url`] = d.url;
-      }
-      if (groupKey === 'urbanisme') {
-        saveData[`urbanisme_${i}_label`] = d.label;
-        saveData[`urbanisme_${i}_url`] = d.url;
-      }
-      if (groupKey === 'autres') {
-        saveData[`autre_${i}_label`] = d.label;
-        saveData[`autre_${i}_url`] = d.url;
-      }
-    });
-    // Ajoute le PDF règlement pour ne pas l'effacer
-    saveData.pdf_reglement_label = pdfReglement.label;
-    saveData.pdf_reglement_url = pdfReglement.url;
-
-    try {
-      await fetch('/api/pageContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData)
-      });
-      setMsg(`Section "${GROUPS.find(g => g.key === groupKey).title}" enregistrée !`);
-      setTimeout(() => setMsg(''), 2000);
-    } catch (error) {
-      setMsg('Erreur lors de la sauvegarde');
-      setTimeout(() => setMsg(''), 3000);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -393,10 +374,13 @@ export default function DemarchesEditor() {
                         </button>
                         <button 
                           type="button" 
-                          className="delete" 
+                          className="button is-small is-danger"
+                          title="Supprimer"
                           onClick={() => removeDemarche(group.key, demarche.id)}
                           disabled={loading}
-                        />
+                        >
+                          <span role="img" aria-label="Supprimer">🗑️</span>
+                        </button>
                       </div>
                     </div>
                     <div className="field mb-3">
@@ -431,7 +415,7 @@ export default function DemarchesEditor() {
                       {demarche.isFile ? (
                         <div>
                           <label className="label is-small">Fichier PDF</label>
-                          <div className="is-flex">
+                          <div className="is-flex" style={{ alignItems: 'center', gap: 8 }}>
                             <input
                               className="input"
                               type="text"
@@ -444,12 +428,11 @@ export default function DemarchesEditor() {
                             <button
                               type="button"
                               className="button is-info ml-2"
+                              style={{ display: 'flex', alignItems: 'center', gap: 0, borderRadius: 8, paddingLeft: 12, paddingRight: 12 }}
                               onClick={() => handleFileUpload(group.key, demarche.id)}
                               disabled={loading}
                             >
-                              <span className="icon">
-                                <i className="fas fa-upload"></i>
-                              </span>
+                              <span role="img" aria-label="PDF" style={{ fontSize: 18 }}>📄</span>
                             </button>
                           </div>
                         </div>
@@ -485,17 +468,6 @@ export default function DemarchesEditor() {
                   <i className="fas fa-plus"></i>
                 </span>
                 <span>Ajouter une démarche</span>
-              </button>
-            </div>
-            <div className="has-text-centered mt-2">
-              <button
-                type="button"
-                className={`button is-link${loading ? ' is-loading' : ''}`}
-                onClick={() => handleSaveSection(group.key)}
-                disabled={loading}
-                style={{ borderRadius: 8, marginTop: 8 }}
-              >
-                Enregistrer cette section
               </button>
             </div>
           </div>
@@ -537,7 +509,7 @@ export default function DemarchesEditor() {
             {pdfReglement.isFile ? (
               <div>
                 <label className="label is-small">Fichier PDF</label>
-                <div className="is-flex">
+                <div className="is-flex" style={{ alignItems: 'center', gap: 8 }}>
                   <input
                     className="input"
                     type="text"
@@ -550,12 +522,11 @@ export default function DemarchesEditor() {
                   <button
                     type="button"
                     className="button is-info ml-2"
+                    style={{ display: 'flex', alignItems: 'center', gap: 0, borderRadius: 8, paddingLeft: 12, paddingRight: 12 }}
                     onClick={() => handleFileUpload('reglement', null)}
                     disabled={loading}
                   >
-                    <span className="icon">
-                      <i className="fas fa-upload"></i>
-                    </span>
+                    <span role="img" aria-label="PDF" style={{ fontSize: 18 }}>📄</span>
                   </button>
                 </div>
               </div>
@@ -590,6 +561,7 @@ export default function DemarchesEditor() {
           )}
         </div>
       </form>
+      <ToastContainer position="top-right" autoClose={3000} newestOnTop />
     </div>
   );
 }
