@@ -97,6 +97,16 @@ export default function PageAcceuil() {
   // Ajouter un état pour l'aperçu de la photo du maire
   const [mairePreviewImage, setMairePreviewImage] = useState(null);
 
+  // Nouveaux états pour le panneau d'affichage
+  const [panneauItems, setPanneauItems] = useState([]);
+  const [showPanneauModal, setShowPanneauModal] = useState(false);
+  const [selectedActualite, setSelectedActualite] = useState(null);
+  const [panneauForm, setPanneauForm] = useState({
+    categorie: 'arrete',
+    dureeAffichage: 7, // en jours
+    dateDebut: new Date().toISOString().split('T')[0],
+  });
+
   const formRef = useRef(null);
 
   // Utilitaires
@@ -195,6 +205,26 @@ export default function PageAcceuil() {
       .then(res => res.ok ? res.json() : [])
       .then(setActualites)
       .catch(() => {});
+  }, []);
+
+  // Charger les items du panneau
+  useEffect(() => {
+    fetch('/api/pageContent?page=accueil')
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(pageContent => {
+        const pageContentData = pageContent?.[0] || {};
+        if (pageContentData.panneauItems_json) {
+          try {
+            const items = typeof pageContentData.panneauItems_json === 'string'
+              ? JSON.parse(pageContentData.panneauItems_json)
+              : pageContentData.panneauItems_json;
+            setPanneauItems(Array.isArray(items) ? items : []);
+          } catch (e) {
+            console.error('Erreur parsing panneauItems_json:', e);
+          }
+        }
+      })
+      .catch(err => console.error(err));
   }, []);
 
   // Handlers "comme Actualité"
@@ -391,6 +421,131 @@ export default function PageAcceuil() {
   // Contact (inchangé)
   const handleContactChange = (e) => setContact({ ...contact, [e.target.name]: e.target.value });
   const handleContactSubmit = (e) => { e.preventDefault(); setContactSent(true); setContact({ nom: '', email: '', message: '' }); };
+
+  // Ajouter après les états existants (ligne ~75)
+  const CATEGORIES = [
+    { value: 'arrete', label: 'Arrêtés du Maire', icon: '📜', color: '#a97c50' },
+    { value: 'compte-rendu', label: 'Comptes rendus', icon: '📋', color: '#1277c6' },
+    { value: 'mariage', label: 'Bancs mariages', icon: '💒', color: '#1b9bd7' },
+    { value: 'convocation', label: 'Convocations CM+', icon: '📢', color: '#eab308' },
+    { value: 'urbanisme', label: 'Urbanisme / Permis', icon: '🏗️', color: '#22c55e' },
+    { value: 'eau', label: 'Analyses d\'eau, divers', icon: '💧', color: '#0ea5e9' },
+  ];
+
+  // Ajouter après le useEffect existant (ligne ~160)
+  const handleAddToPanneau = async () => {
+    if (!selectedActualite) {
+      toast.error('Veuillez sélectionner une actualité');
+      return;
+    }
+
+    const loadingId = toast.loading('Ajout au panneau...');
+    try {
+      const dateFin = new Date(panneauForm.dateDebut);
+      dateFin.setDate(dateFin.getDate() + parseInt(panneauForm.dureeAffichage));
+
+      const newItem = {
+        id: `panneau-${Date.now()}`,
+        actualiteId: selectedActualite.id,
+        titre: selectedActualite.titre,
+        date: selectedActualite.date,
+        categorie: panneauForm.categorie,
+        dateDebut: panneauForm.dateDebut,
+        dateFin: dateFin.toISOString().split('T')[0],
+        image: selectedActualite.image,
+      };
+
+      const updatedItems = [...panneauItems, newItem];
+      setPanneauItems(updatedItems);
+
+      const res = await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'accueil',
+          panneauItems_json: JSON.stringify(updatedItems)
+        })
+      });
+
+      if (!res.ok) throw new Error('Erreur serveur');
+
+      toast.update(loadingId, { 
+        render: 'Ajouté au panneau', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 2000 
+      });
+
+      setShowPanneauModal(false);
+      setSelectedActualite(null);
+      setPanneauForm({
+        categorie: 'arrete',
+        dureeAffichage: 7,
+        dateDebut: new Date().toISOString().split('T')[0],
+      });
+    } catch (err) {
+      console.error(err);
+      toast.update(loadingId, { 
+        render: 'Erreur lors de l\'ajout', 
+        type: 'error', 
+        isLoading: false, 
+        autoClose: 3000 
+      });
+    }
+  };
+
+  const handleRemoveFromPanneau = async (itemId) => {
+    toast.info(
+      <div>
+        <p>Retirer cet élément du panneau d'affichage ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={async () => {
+              toast.dismiss();
+              const loadingId = toast.loading('Suppression...');
+              const updatedItems = panneauItems.filter(item => item.id !== itemId);
+              setPanneauItems(updatedItems);
+
+              try {
+                await fetch('/api/pageContent', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    page: 'accueil',
+                    panneauItems_json: JSON.stringify(updatedItems)
+                  })
+                });
+                toast.update(loadingId, {
+                  render: 'Élément retiré',
+                  type: 'success',
+                  isLoading: false,
+                  autoClose: 2000
+                });
+              } catch (e) {
+                toast.update(loadingId, {
+                  render: 'Erreur',
+                  type: 'error',
+                  isLoading: false,
+                  autoClose: 3000
+                });
+              }
+            }}
+          >
+            Confirmer
+          </button>
+          <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+            Annuler
+          </button>
+        </div>
+      </div>,
+      {
+        autoClose: false,
+        closeButton: false,
+        closeOnClick: false,
+      }
+    );
+  };
 
   // Rendu adapté au style DemarchesEditor
   return (
@@ -756,6 +911,205 @@ export default function PageAcceuil() {
           </div>
         )}
       </div>
+
+      {/* Section Panneau d'affichage */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>🗂️</span> Panneau d'affichage
+        </h3>
+
+        <button 
+          className="button is-link mb-4" 
+          onClick={() => setShowPanneauModal(true)}
+        >
+          ➕ Ajouter au panneau depuis les actualités
+        </button>
+
+        {panneauItems.length === 0 ? (
+          <div className="notification is-light is-info">
+            Aucun élément sur le panneau d'affichage
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
+            {panneauItems
+              .filter(item => new Date(item.dateFin) >= new Date()) // Filtrer les éléments expirés
+              .map(item => {
+                const cat = CATEGORIES.find(c => c.value === item.categorie);
+                const joursRestants = Math.ceil(
+                  (new Date(item.dateFin) - new Date()) / (1000 * 60 * 60 * 24)
+                );
+                
+                return (
+                  <div 
+                    key={item.id}
+                    className="box"
+                    style={{ 
+                      background: '#f9fbfd', 
+                      borderRadius: 8,
+                      borderLeft: `4px solid ${cat?.color || '#ccc'}`
+                    }}
+                  >
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span 
+                        className="tag is-light" 
+                        style={{ backgroundColor: `${cat?.color}22`, color: cat?.color }}
+                      >
+                        {cat?.icon} {cat?.label}
+                      </span>
+                      <button 
+                        className="delete is-small" 
+                        onClick={() => handleRemoveFromPanneau(item.id)}
+                      />
+                    </div>
+                    
+                    {item.image && (
+                      <figure className="image is-16by9 mb-2">
+                        <img 
+                          src={item.image} 
+                          alt={item.titre}
+                          style={{ objectFit: 'cover', borderRadius: 4 }}
+                          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/300x150?text=Image'; }}
+                        />
+                      </figure>
+                    )}
+                    
+                    <p className="has-text-weight-bold mb-1">{item.titre}</p>
+                    <p className="is-size-7 has-text-grey mb-2">{item.date}</p>
+                    
+                    <div className="is-size-7">
+                      <p>📅 Affiché du {new Date(item.dateDebut).toLocaleDateString()}</p>
+                      <p>⏰ Expire dans <strong>{joursRestants}</strong> jour{joursRestants > 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal d'ajout au panneau */}
+      {showPanneauModal && (
+        <div className="modal is-active">
+          <div className="modal-background" onClick={() => setShowPanneauModal(false)}></div>
+          <div className="modal-card" style={{ maxWidth: 800 }}>
+            <header className="modal-card-head">
+              <p className="modal-card-title">Ajouter au panneau d'affichage</p>
+              <button 
+                className="delete" 
+                onClick={() => setShowPanneauModal(false)}
+              ></button>
+            </header>
+            
+            <section className="modal-card-body">
+              <div className="field">
+                <label className="label">1. Sélectionner une actualité</label>
+                <div className="control">
+                  <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #e0e7ef', borderRadius: 8, padding: 8 }}>
+                    {actualites.map(actu => (
+                      <div
+                        key={actu.id}
+                        className={`box is-clickable mb-2 ${selectedActualite?.id === actu.id ? 'has-background-link-light' : ''}`}
+                        onClick={() => setSelectedActualite(actu)}
+                        style={{ cursor: 'pointer', padding: 12 }}
+                      >
+                        <div className="is-flex" style={{ gap: 12 }}>
+                          {actu.image && (
+                            <figure className="image is-64x64" style={{ flexShrink: 0 }}>
+                              <img 
+                                src={actu.image} 
+                                alt={actu.titre}
+                                style={{ objectFit: 'cover', borderRadius: 4 }}
+                                onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/64?text=Img'; }}
+                              />
+                            </figure>
+                          )}
+                          <div>
+                            <p className="has-text-weight-bold">{actu.titre}</p>
+                            <p className="is-size-7 has-text-grey">{actu.date}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {selectedActualite && (
+                <>
+                  <div className="field mt-4">
+                    <label className="label">2. Choisir une catégorie</label>
+                    <div className="control">
+                      <div className="select is-fullwidth">
+                        <select
+                          value={panneauForm.categorie}
+                          onChange={(e) => setPanneauForm({ ...panneauForm, categorie: e.target.value })}
+                        >
+                          {CATEGORIES.map(cat => (
+                            <option key={cat.value} value={cat.value}>
+                              {cat.icon} {cat.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="columns">
+                    <div className="column">
+                      <div className="field">
+                        <label className="label">3. Date de début</label>
+                        <div className="control">
+                          <input
+                            className="input"
+                            type="date"
+                            value={panneauForm.dateDebut}
+                            onChange={(e) => setPanneauForm({ ...panneauForm, dateDebut: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="column">
+                      <div className="field">
+                        <label className="label">4. Durée d'affichage (jours)</label>
+                        <div className="control">
+                          <input
+                            className="input"
+                            type="number"
+                            min="1"
+                            max="365"
+                            value={panneauForm.dureeAffichage}
+                            onChange={(e) => setPanneauForm({ ...panneauForm, dureeAffichage: e.target.value })}
+                          />
+                        </div>
+                        <p className="help">
+                          Fin d'affichage : {new Date(new Date(panneauForm.dateDebut).getTime() + parseInt(panneauForm.dureeAffichage) * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+
+            <footer className="modal-card-foot" style={{ justifyContent: 'space-between' }}>
+              <button 
+                className="button" 
+                onClick={() => setShowPanneauModal(false)}
+              >
+                Annuler
+              </button>
+              <button 
+                className="button is-link" 
+                onClick={handleAddToPanneau}
+                disabled={!selectedActualite}
+              >
+                Ajouter au panneau
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
 
       <ToastContainer position="top-right" autoClose={3000} newestOnTop />
     </div>

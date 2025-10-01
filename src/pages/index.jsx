@@ -220,8 +220,6 @@ export default function PageAcceuil() {
                 marginBottom: 8
               }}>
                 {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8pxrgb(255, 255, 255)' }}>Friesen</span></>}
-                <br />
-                <span style={{ fontSize: 24, color: '#fff', textShadow: '0 2px 8px #0a2540a0' }}>Site officiel de la commune</span>
               </h1>
             </AnimateOnScroll>
           </div>
@@ -545,7 +543,7 @@ export default function PageAcceuil() {
               }}>
                 <Calendar
                   events={events}
-                  onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }}
+                  onDayClick={evs => { setSelectedDayEvents(evs); setShowModal(true); }} 
                   currentMonth={currentMonth}
                   currentYear={currentYear}
                   onMonthChange={handleMonthChange}
@@ -595,12 +593,6 @@ export default function PageAcceuil() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <span className="icon-text">
-                      <span className="icon is-small">
-                        <i className="fas fa-external-link-alt"></i>
-                      </span>
-                      <span>Site externe</span>
-                    </span>
                   </a>
                 )}
               </div>

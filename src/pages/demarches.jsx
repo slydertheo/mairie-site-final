@@ -67,50 +67,52 @@ export default function Demarches() {
   const demarchesAutres = [];
 
   // Extraire les démarches rapides
-  for (let i = 1; i <= 20; i++) { // Augmenté à 20
+  for (let i = 1; i <= 20; i++) {
     const labelKey = `demarche_rapide_${i}_label`;
     const urlKey = `demarche_rapide_${i}_url`;
+    const iconKey = `demarche_rapide_${i}_icon`;
     if (content[labelKey]) {
       demarchesRapides.push({
         id: i,
         label: content[labelKey],
         url: content[urlKey] || '#',
-        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false
+        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false,
+        icon: content[iconKey] || "📄"
       });
     }
   }
 
   // Extraire les démarches urbanisme
-  for (let i = 1; i <= 20; i++) { // Augmenté à 20
+  for (let i = 1; i <= 20; i++) {
     const labelKey = `urbanisme_${i}_label`;
     const urlKey = `urbanisme_${i}_url`;
+    const iconKey = `urbanisme_${i}_icon`;
     if (content[labelKey]) {
       demarchesUrbanisme.push({
         id: i,
         label: content[labelKey],
         url: content[urlKey] || '#',
-        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false
+        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false,
+        icon: content[iconKey] || "🏡"
       });
     }
   }
 
   // Extraire les autres démarches
-  for (let i = 1; i <= 20; i++) { // Augmenté à 20
+  for (let i = 1; i <= 20; i++) {
     const labelKey = `autre_${i}_label`;
     const urlKey = `autre_${i}_url`;
+    const iconKey = `autre_${i}_icon`;
     if (content[labelKey]) {
       demarchesAutres.push({
         id: i,
         label: content[labelKey],
         url: content[urlKey] || '#',
-        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false
+        isFile: content[urlKey]?.toLowerCase().endsWith('.pdf') || false,
+        icon: content[iconKey] || "🔗"
       });
     }
   }
-
-  // Icônes pour les démarches (associées par index)
-  const rapideIcons = ["📄", "👨‍👩‍👧‍👦", "📝", "🗳️", "🪪", "🎖️", "🤝"];
-  const urbanismeIcons = ["🗺️", "📄", "📝", "📐"];
 
   return (
     <>
@@ -160,11 +162,11 @@ export default function Demarches() {
                     Aucune démarche rapide n'a été configurée.
                   </div>
                 ) : (
-                  demarchesRapides.map((demarche, index) => (
+                  demarchesRapides.map((demarche) => (
                     <QuickBox 
                       key={demarche.id}
-                      icon={rapideIcons[index % rapideIcons.length]} 
-                      label={demarche.label} 
+                      icon={demarche.icon}
+                      label={demarche.label}
                       href={demarche.url}
                       isFile={demarche.isFile}
                     />
@@ -180,11 +182,11 @@ export default function Demarches() {
                     Aucune démarche d'urbanisme n'a été configurée.
                   </div>
                 ) : (
-                  demarchesUrbanisme.map((demarche, index) => (
+                  demarchesUrbanisme.map((demarche) => (
                     <QuickBox 
                       key={demarche.id}
-                      icon={urbanismeIcons[index % urbanismeIcons.length]} 
-                      label={demarche.label} 
+                      icon={demarche.icon}
+                      label={demarche.label}
                       href={demarche.url}
                       isFile={demarche.isFile}
                     />
@@ -202,6 +204,7 @@ export default function Demarches() {
                     <ul style={{ paddingLeft: 18, fontSize: 15 }}>
                       {demarchesAutres.map(demarche => (
                         <li key={demarche.id}>
+                          <span style={{ fontSize: 20, marginRight: 6 }}>{demarche.icon}</span>
                           <a 
                             href={demarche.url} 
                             target="_blank" 

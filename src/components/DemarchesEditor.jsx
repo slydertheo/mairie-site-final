@@ -13,6 +13,13 @@ const GROUPS = [
   { key: 'autres', icon: '🔗', title: 'Autres démarches utiles' },
 ];
 
+// Liste d'emojis disponibles pour chaque groupe
+const EMOJIS = {
+  rapides: ["📄", "👨‍👩‍👧‍👦", "📝", "🗳️", "🪪", "🎖️", "🤝", "⚡", "📬", "📑"],
+  urbanisme: ["🗺️", "📄", "📝", "📐", "🏡", "🏗️", "🏢"],
+  autres: ["🔗", "📎", "📌", "🗂️", "🧾", "📜", "🧩"]
+};
+
 export default function DemarchesEditor() {
   const [headerForm, setHeaderForm] = useState({});
   const [demarches, setDemarches] = useState({
@@ -49,12 +56,14 @@ export default function DemarchesEditor() {
         for (let i = 1; i <= 20; i++) {
           const labelKey = `demarche_rapide_${i}_label`;
           const urlKey = `demarche_rapide_${i}_url`;
+          const iconKey = `demarche_rapide_${i}_icon`;
           if (obj[labelKey]) {
             rapidesData.push({
               id: crypto.randomUUID(),
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
-              isFile: obj[urlKey]?.endsWith('.pdf') || false
+              isFile: obj[urlKey]?.endsWith('.pdf') || false,
+              icon: obj[iconKey] || EMOJIS.rapides[0]
             });
           }
         }
@@ -64,12 +73,14 @@ export default function DemarchesEditor() {
         for (let i = 1; i <= 20; i++) {
           const labelKey = `urbanisme_${i}_label`;
           const urlKey = `urbanisme_${i}_url`;
+          const iconKey = `urbanisme_${i}_icon`;
           if (obj[labelKey]) {
             urbanismeData.push({
               id: crypto.randomUUID(),
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
-              isFile: obj[urlKey]?.endsWith('.pdf') || false
+              isFile: obj[urlKey]?.endsWith('.pdf') || false,
+              icon: obj[iconKey] || EMOJIS.urbanisme[0]
             });
           }
         }
@@ -79,12 +90,14 @@ export default function DemarchesEditor() {
         for (let i = 1; i <= 20; i++) {
           const labelKey = `autre_${i}_label`;
           const urlKey = `autre_${i}_url`;
+          const iconKey = `autre_${i}_icon`;
           if (obj[labelKey]) {
             autresData.push({
               id: crypto.randomUUID(),
               label: obj[labelKey] || '',
               url: obj[urlKey] || '',
-              isFile: obj[urlKey]?.endsWith('.pdf') || false
+              isFile: obj[urlKey]?.endsWith('.pdf') || false,
+              icon: obj[iconKey] || EMOJIS.autres[0]
             });
           }
         }
@@ -121,12 +134,13 @@ export default function DemarchesEditor() {
   
   // Ajouter une démarche
   const addDemarche = (group) => {
-    setDemarches(prev => {
-      return {
-        ...prev,
-        [group]: [...prev[group], { id: crypto.randomUUID(), label: '', url: '', isFile: false }]
-      };
-    });
+    setDemarches(prev => ({
+      ...prev,
+      [group]: [
+        ...prev[group],
+        { id: crypto.randomUUID(), label: '', url: '', isFile: false, icon: EMOJIS[group][0] }
+      ]
+    }));
   };
   
   // Supprimer une démarche
@@ -213,25 +227,31 @@ export default function DemarchesEditor() {
     for (let i = 1; i <= 20; i++) {
       saveData[`demarche_rapide_${i}_label`] = '';
       saveData[`demarche_rapide_${i}_url`] = '';
+      saveData[`demarche_rapide_${i}_icon`] = '';
       saveData[`urbanisme_${i}_label`] = '';
       saveData[`urbanisme_${i}_url`] = '';
+      saveData[`urbanisme_${i}_icon`] = '';
       saveData[`autre_${i}_label`] = '';
       saveData[`autre_${i}_url`] = '';
+      saveData[`autre_${i}_icon`] = '';
     }
     demarchesArg.rapides.forEach((d, index) => {
       const i = index + 1;
       saveData[`demarche_rapide_${i}_label`] = d.label;
       saveData[`demarche_rapide_${i}_url`] = d.url;
+      saveData[`demarche_rapide_${i}_icon`] = d.icon;
     });
     demarchesArg.urbanisme.forEach((d, index) => {
       const i = index + 1;
       saveData[`urbanisme_${i}_label`] = d.label;
       saveData[`urbanisme_${i}_url`] = d.url;
+      saveData[`urbanisme_${i}_icon`] = d.icon;
     });
     demarchesArg.autres.forEach((d, index) => {
       const i = index + 1;
       saveData[`autre_${i}_label`] = d.label;
       saveData[`autre_${i}_url`] = d.url;
+      saveData[`autre_${i}_icon`] = d.icon;
     });
     saveData.pdf_reglement_label = pdfReglement.label;
     saveData.pdf_reglement_url = pdfReglement.url;
@@ -333,31 +353,40 @@ export default function DemarchesEditor() {
 
   // Nouvelle fonction pour sauvegarder une section spécifique
   const handleSaveSection = async (groupKey) => {
+    setMsg('');
+    // Vérifie si la section est vide
+    if (!demarches[groupKey] || demarches[groupKey].length === 0) {
+      setMsg("Erreur : la section est vide, rien à enregistrer.");
+      return;
+    }
     setLoading(true);
-    const toastId = toast.loading('Sauvegarde en cours...');
-
+    const toastId = toast.loading('Sauvegarde en cours...'); // AJOUT ICI
     try {
+      const saveData = prepareDataForSave(demarches);
       // 1. Récupère toutes les données existantes
       const res = await fetch('/api/pageContent?page=demarches');
       const data = await res.json();
       const obj = data[0] || {};
 
       // 2. Prépare le nouvel objet à envoyer (copie de l'existant)
-      const saveData = { ...obj, page: 'demarches' };
+      const newSaveData = { ...obj, page: 'demarches' };
 
       // 3. Vide la section concernée
       for (let i = 1; i <= 20; i++) {
         if (groupKey === 'rapides') {
-          saveData[`demarche_rapide_${i}_label`] = '';
-          saveData[`demarche_rapide_${i}_url`] = '';
+          newSaveData[`demarche_rapide_${i}_label`] = '';
+          newSaveData[`demarche_rapide_${i}_url`] = '';
+          newSaveData[`demarche_rapide_${i}_icon`] = '';
         }
         if (groupKey === 'urbanisme') {
-          saveData[`urbanisme_${i}_label`] = '';
-          saveData[`urbanisme_${i}_url`] = '';
+          newSaveData[`urbanisme_${i}_label`] = '';
+          newSaveData[`urbanisme_${i}_url`] = '';
+          newSaveData[`urbanisme_${i}_icon`] = '';
         }
         if (groupKey === 'autres') {
-          saveData[`autre_${i}_label`] = '';
-          saveData[`autre_${i}_url`] = '';
+          newSaveData[`autre_${i}_label`] = '';
+          newSaveData[`autre_${i}_url`] = '';
+          newSaveData[`autre_${i}_icon`] = '';
         }
       }
 
@@ -365,33 +394,38 @@ export default function DemarchesEditor() {
       demarches[groupKey].forEach((d, index) => {
         const i = index + 1;
         if (groupKey === 'rapides') {
-          saveData[`demarche_rapide_${i}_label`] = d.label;
-          saveData[`demarche_rapide_${i}_url`] = d.url;
+          newSaveData[`demarche_rapide_${i}_label`] = d.label;
+          newSaveData[`demarche_rapide_${i}_url`] = d.url;
+          newSaveData[`demarche_rapide_${i}_icon`] = d.icon; // <-- AJOUTE CETTE LIGNE
         }
         if (groupKey === 'urbanisme') {
-          saveData[`urbanisme_${i}_label`] = d.label;
-          saveData[`urbanisme_${i}_url`] = d.url;
+          newSaveData[`urbanisme_${i}_label`] = d.label;
+          newSaveData[`urbanisme_${i}_url`] = d.url;
+          newSaveData[`urbanisme_${i}_icon`] = d.icon; // <-- AJOUTE CETTE LIGNE
         }
         if (groupKey === 'autres') {
-          saveData[`autre_${i}_label`] = d.label;
-          saveData[`autre_${i}_url`] = d.url;
+          newSaveData[`autre_${i}_label`] = d.label;
+          newSaveData[`autre_${i}_url`] = d.url;
+          newSaveData[`autre_${i}_icon`] = d.icon; // <-- AJOUTE CETTE LIGNE
         }
       });
 
       // 5. Toujours garder le PDF règlement à jour
-      saveData.pdf_reglement_label = pdfReglement.label;
-      saveData.pdf_reglement_url = pdfReglement.url;
+      newSaveData.pdf_reglement_label = pdfReglement.label;
+      newSaveData.pdf_reglement_url = pdfReglement.url;
 
       // 6. Envoie tout à l’API
       await fetch('/api/pageContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData)
+        body: JSON.stringify(newSaveData)
       });
 
       toast.update(toastId, { render: 'Section enregistrée !', type: 'success', isLoading: false, autoClose: 2000 });
+      setMsg("Section enregistrée avec succès !");
     } catch (error) {
       toast.update(toastId, { render: 'Erreur lors de la sauvegarde', type: 'error', isLoading: false, autoClose: 3000 });
+      setMsg("Erreur lors de la sauvegarde.");
     } finally {
       setLoading(false);
     }
@@ -457,11 +491,27 @@ export default function DemarchesEditor() {
                         </button>
                       </div>
                     </div>
+                    <div className="field mb-2">
+                      <label className="label is-small">Emoji</label>
+                      <div className="control">
+                        <div className="select is-fullwidth">
+                          <select
+                            value={demarche.icon}
+                            onChange={e => updateDemarche(group.key, demarche.id, 'icon', e.target.value)}
+                            disabled={loading}
+                          >
+                            {EMOJIS[group.key].map(emoji => (
+                              <option key={emoji} value={emoji}>{emoji}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                     <div className="field mb-3">
                       <label className="label is-small">Texte à afficher</label>
                       <div className="control">
                         <input
-                          className="input"
+                          className={`input${!demarche.label.trim() ? ' is-danger' : ''}`}
                           type="text"
                           value={demarche.label}
                           onChange={(e) => updateDemarche(group.key, demarche.id, 'label', e.target.value)}
@@ -469,6 +519,9 @@ export default function DemarchesEditor() {
                           style={{ background: loading ? "#f5f5f5" : "white" }}
                         />
                       </div>
+                      {!demarche.label.trim() && (
+                        <p className="help is-danger">Ce champ ne doit pas être vide</p>
+                      )}
                     </div>
                     <div className="field">
                       <label className="label is-small">Type de ressource</label>
@@ -640,7 +693,7 @@ export default function DemarchesEditor() {
             </button>
           </div>
           {msg && (
-            <div className={`notification is-light ${msg.includes('Erreur') ? 'is-danger' : 'is-success'} py-2 px-3 ml-3`} style={{ borderRadius: 8 }}>
+            <div className={`notification ${msg.startsWith("Erreur") ? "is-danger" : "is-success"} is-light`}>
               {msg}
             </div>
           )}
