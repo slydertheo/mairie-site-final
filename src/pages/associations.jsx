@@ -209,29 +209,66 @@ export default function Associations() {
             borderRadius: 16, 
             boxShadow: '0 2px 12px #1277c620',
             background: '#f8fafc',
-            marginTop: 50 
+            marginTop: 50
           }}>
             <h2 className="title is-4 has-text-primary mb-4">{content.agenda_titre || "Agenda des événements associatifs"}</h2>
-            <table className="table is-fullwidth">
-              <thead>
-                <tr className="has-background-link-light">
-                  <th>Date</th>
-                  <th>Événement</th>
-                  <th>Association</th>
-                  <th>Lieu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((event, index) => (
-                  <tr key={index}>
-                    <td>{event.date}</td>
-                    <td><strong>{event.titre}</strong></td>
-                    <td>{event.association}</td>
-                    <td>{event.lieu}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            
+            {events.length > 0 ? (
+              <>
+                {/* Version desktop - tableau */}
+                <div className="is-hidden-mobile">
+                  <table className="table is-fullwidth is-striped">
+                    <thead>
+                      <tr className="has-background-link-light">
+                        <th style={{ width: '20%' }}>Date</th>
+                        <th style={{ width: '30%' }}>Événement</th>
+                        <th style={{ width: '25%' }}>Association</th>
+                        <th style={{ width: '25%' }}>Lieu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((event, index) => (
+                        <tr key={index}>
+                          <td>📅 {event.date}</td>
+                          <td><strong>{event.titre}</strong></td>
+                          <td>{event.association}</td>
+                          <td>{event.lieu}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Version mobile - cartes */}
+                <div className="is-hidden-tablet">
+                  {events.map((event, index) => (
+                    <div key={index} className="box mb-3" style={{ 
+                      background: 'white',
+                      borderRadius: 12,
+                      padding: '1rem',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
+                    }}>
+                      <div className="mb-2">
+                        <strong className="has-text-link">{event.titre}</strong>
+                      </div>
+                      <div className="is-size-7 has-text-grey mb-1">
+                        📅 {event.date}
+                      </div>
+                      <div className="is-size-7 has-text-grey mb-1">
+                        👥 {event.association}
+                      </div>
+                      <div className="is-size-7 has-text-grey">
+                        📍 {event.lieu}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="notification is-light has-text-centered">
+                Aucun événement à venir pour le moment
+              </div>
+            )}
           </div>
 
           {/* Informations sur les subventions */}

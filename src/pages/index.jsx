@@ -86,6 +86,11 @@ export default function PageAcceuil() {
   const [actualites, setActualites] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // Ajout pour navigation
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear()); // Ajout pour navigation
+  const [panneauItems, setPanneauItems] = useState([]); // Ajout
+  const [selectedPanneauItem, setSelectedPanneauItem] = useState(null); // Ajout
+  const [showPanneauDetailModal, setShowPanneauDetailModal] = useState(false); // Ajout
+  const [elus, setElus] = useState([]); // Ajouter cet état
+  const [liensUtiles, setLiensUtiles] = useState([]); // AJOUTER cet état
 
   useEffect(() => {
     fetch('/api/pageContent?page=accueil')
@@ -145,6 +150,59 @@ export default function PageAcceuil() {
         }
 
         setEvents(agendaEvents);
+
+        // Charger panneauItems avec toutes les propriétés
+        if (pageContentData.panneauItems_json) {
+          try {
+            const items = typeof pageContentData.panneauItems_json === 'string'
+              ? JSON.parse(pageContentData.panneauItems_json)
+              : pageContentData.panneauItems_json;
+            
+            // S'assurer que tous les champs sont présents
+            const normalizedItems = (Array.isArray(items) ? items : []).map(item => ({
+              id: item.id,
+              titre: item.titre || '',
+              description: item.description || '',
+              image: item.image || '', // Important: s'assurer que l'image est bien récupérée
+              date: item.date || '',
+              lieu: item.lieu || '',
+              categorie: item.categorie || 'arrete',
+              dateDebut: item.dateDebut || '',
+              dateFin: item.dateFin || '',
+              dureeAffichage: item.dureeAffichage || 7
+            }));
+            
+            setPanneauItems(normalizedItems);
+            console.log('PanneauItems chargés:', normalizedItems); // Debug
+          } catch (e) {
+            console.error('Erreur parsing panneauItems_json:', e);
+            setPanneauItems([]);
+          }
+        }
+
+        // Charger les élus - AJOUTER APRÈS panneauItems
+        if (pageContentData.elus_json) {
+          try {
+            const elusData = typeof pageContentData.elus_json === 'string'
+              ? JSON.parse(pageContentData.elus_json)
+              : pageContentData.elus_json;
+            setElus(Array.isArray(elusData) ? elusData : []);
+          } catch (e) {
+            console.error('Erreur parsing elus_json:', e);
+          }
+        }
+
+        // Charger les liens utiles - AJOUTER ICI
+        if (pageContentData.liensUtiles_json) {
+          try {
+            const liensData = typeof pageContentData.liensUtiles_json === 'string'
+              ? JSON.parse(pageContentData.liensUtiles_json)
+              : pageContentData.liensUtiles_json;
+            setLiensUtiles(Array.isArray(liensData) ? liensData : []);
+          } catch (e) {
+            console.error('Erreur parsing liensUtiles_json:', e);
+          }
+        }
       })
       .catch(error => {
         console.error('Erreur lors du chargement des données:', error);
@@ -180,8 +238,18 @@ export default function PageAcceuil() {
     setCurrentYear(newYear);
   };
 
+  // Définir les catégories
+  const CATEGORIES = {
+    'arrete': { label: "Arrêtés du Maire", icon: '📜', bg: "#fffbe6", border: "2px dashed #a97c50", color: "#a97c50", shadow: "#a97c5030" },
+    'compte-rendu': { label: "Comptes rendus", icon: '📋', bg: "#eaf6ff", border: "2px solid #1277c6", color: "#1277c6", shadow: "#1277c630" },
+    'mariage': { label: "Bancs mariages", icon: '💒', bg: "#f0f9ff", border: "2px solid #1b9bd7", color: "#1b9bd7", shadow: "#1b9bd730" },
+    'convocation': { label: "Convocations CM+", icon: '📢', bg: "#fef3c7", border: "2px solid #eab308", color: "#eab308", shadow: "#eab30830" },
+    'urbanisme': { label: "Urbanisme / Permis", icon: '🏗️', bg: "#e0ffe6", border: "2px dashed #22c55e", color: "#22c55e", shadow: "#22c55e30" },
+    'eau': { label: "Analyses d'eau, divers", icon: '💧', bg: "#e0f2fe", border: "2px solid #0ea5e9", color: "#0ea5e9", shadow: "#0ea5e930" },
+  };
+
   return (
-    <div className="has-background-light" style={{ minHeight: '100vh' }}>
+    <div className="has-background-light" style={{ minHeight: '100vh', overflowX: 'hidden' }}>
       {/* Bandeau image + titre avec animation avancée */}
       <section className="hero is-primary is-medium" style={{
         backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
@@ -226,7 +294,7 @@ export default function PageAcceuil() {
         </div>
       </section>
 
-      <div className="container" style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 10px' }}>
         <AnimateOnScroll animation="fade-up">
           <h2 className="title is-4 has-text-primary mb-5" style={{
             fontFamily: 'Merriweather, serif',
@@ -240,9 +308,9 @@ export default function PageAcceuil() {
           <ActualiteCarousel actualites={actualites} />
         </AnimateOnScroll>
 
-        <div className="columns is-variable is-5">
+        <div className="columns is-variable is-5" style={{ margin: '0 -0.75rem' }}>
           {/* Colonne 1 : Mot du Maire + Panneau d'affichage + Calendrier */}
-          <div className="column is-two-thirds">
+          <div className="column is-two-thirds" style={{ padding: '0 0.75rem' }}>
             <AnimateOnScroll animation="fade-right" delay={100}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
                 fontFamily: 'Merriweather, serif',
@@ -298,7 +366,7 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
             
-            {/* Panneau d'affichage amélioré (voir réponse précédente) */}
+            {/* Panneau d'affichage - REMPLACER la section existante */}
             <AnimateOnScroll animation="fade-up" delay={200} threshold={0.5}>
               <div style={{
                 position: 'relative',
@@ -331,7 +399,8 @@ export default function PageAcceuil() {
                   boxShadow: '0 6px 16px #0002',
                   zIndex: 0
                 }} />
-                {/* Panneau principal amélioré */}
+                
+                {/* Panneau principal */}
                 <div className="box panneau-village" style={{
                   background: 'repeating-linear-gradient(135deg, #f8fafc 0 40px, #e9e4d7 40px 80px), url("https://www.transparenttextures.com/patterns/wood-pattern.png")',
                   backgroundBlendMode: 'multiply',
@@ -350,25 +419,22 @@ export default function PageAcceuil() {
                   transition: 'box-shadow 0.3s',
                   filter: 'drop-shadow(0 2px 8px #bfa16b33)'
                 }}>
-                  {/* Vis de fixation améliorées */}
+                  {/* Vis de fixation */}
                   <div style={{
                     position: 'absolute', top: 12, left: 28, width: 22, height: 22, background: 'radial-gradient(circle at 60% 40%, #e5d3a1 70%, #bfa16b 100%)', borderRadius: '50%',
                     border: '2.5px solid #bfa16b', boxShadow: '0 2px 6px #0002, 0 0 0 2px #fff8',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    <div style={{
-                      width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7
-                    }} />
+                    <div style={{ width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7 }} />
                   </div>
                   <div style={{
                     position: 'absolute', top: 12, right: 28, width: 22, height: 22, background: 'radial-gradient(circle at 60% 40%, #e5d3a1 70%, #bfa16b 100%)', borderRadius: '50%',
                     border: '2.5px solid #bfa16b', boxShadow: '0 2px 6px #0002, 0 0 0 2px #fff8',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    <div style={{
-                      width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7
-                    }} />
+                    <div style={{ width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7 }} />
                   </div>
+                  
                   <h2 className="title is-4 has-text-primary mb-5" style={{
                     textAlign: 'center',
                     letterSpacing: 1,
@@ -382,147 +448,136 @@ export default function PageAcceuil() {
                   }}>
                     🗂️ Panneau d'affichage du village
                   </h2>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 28,
-                      flexWrap: 'wrap',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {[
-                      {
-                        label: "Arrêtés du Maire",
-                        img: "/affichage/arrete.png",
-                        bg: "#fffbe6",
-                        border: "2px dashed #a97c50",
-                        color: "#a97c50",
-                        shadow: "#a97c5030",
-                        date: "Dernier : 12/09/2025"
-                      },
-                      {
-                        label: "Comptes rendus / Publications",
-                        img: "/affichage/compte-rendu.png",
-                        bg: "#eaf6ff",
-                        border: "2px solid #1277c6",
-                        color: "#1277c6",
-                        shadow: "#1277c630",
-                        date: "CM du 10/09/2025"
-                      },
-                      {
-                        label: "Bancs mariages",
-                        img: "/affichage/mariage.png",
-                        bg: "#f0f9ff",
-                        border: "2px solid #1b9bd7",
-                        color: "#1b9bd7",
-                        shadow: "#1b9bd730",
-                        date: "Annonce : 18/09/2025"
-                      },
-                      {
-                        label: "Convocations CM+",
-                        img: "/affichage/convocation.png",
-                        bg: "#fef3c7",
-                        border: "2px solid #eab308",
-                        color: "#eab308",
-                        shadow: "#eab30830",
-                        date: "Prochaine : 22/09/2025"
-                      },
-                      {
-                        label: "Urbanisme / Permis",
-                        img: "/affichage/urbanisme.png",
-                        bg: "#e0ffe6",
-                        border: "2px dashed #22c55e",
-                        color: "#22c55e",
-                        shadow: "#22c55e30",
-                        date: "Dossier en cours"
-                      },
-                      {
-                        label: "Analyses d'eau, divers",
-                        img: "/affichage/eau.png",
-                        bg: "#e0f2fe",
-                        border: "2px solid #0ea5e9",
-                        color: "#0ea5e9",
-                        shadow: "#0ea5e930",
-                        date: "Résultat : 09/2025"
-                      },
-                    ].map((tab, idx) => (
-                      <div
-                        key={tab.label}
-                        className="affiche-card"
-                        style={{
-                          background: `linear-gradient(120deg, #fffbe6 80%, #f8fafc 100%), url("https://www.transparenttextures.com/patterns/paper-fibers.png")`,
-                          border: tab.border,
-                          borderRadius: 18,
-                          boxShadow: `0 6px 24px ${tab.shadow}, 0 2px 8px #bfa16b22`,
-                          padding: '26px 18px 18px 18px',
-                          minWidth: 180,
-                          maxWidth: 230,
-                          fontWeight: 500,
-                          color: tab.color,
-                          fontSize: 15,
-                          position: 'relative',
-                          cursor: 'pointer',
-                          textAlign: 'center',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          transition: 'all 0.25s cubic-bezier(.4,2,.3,1)',
-                          backdropFilter: 'blur(2px)',
-                          borderBottom: `5px solid ${tab.color}33`,
-                          transform: `rotate(${(idx % 2 === 0 ? -1 : 1) * (2 + Math.random() * 1.5)}deg)`,
-                          filter: 'drop-shadow(0 2px 4px #bfa16b22)'
-                        }}
-                        tabIndex={0}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = `rotate(${(idx % 2 === 0 ? -1 : 1) * (2 + Math.random() * 1.5)}deg) scale(1)`}
-                      >
-                        <span style={{
-                          fontSize: 22,
-                          position: 'absolute',
-                          top: 10,
-                          right: 14,
-                          opacity: 0.7
-                        }}>📌</span>
-                        <img
-                          src={tab.img}
-                          alt={tab.label}
-                          style={{
-                            width: 54,
-                            height: 54,
-                            objectFit: 'contain',
-                            margin: '0 auto 12px auto',
-                            display: 'block',
-                            borderRadius: 12,
-                            background: '#fff',
-                            boxShadow: `0 2px 8px ${tab.shadow}`,
-                            border: `1.5px solid ${tab.color}22`
-                          }}
-                          onError={e => { e.currentTarget.src = "https://via.placeholder.com/54?text=Doc"; }}
-                        />
-                        <div style={{
-                          fontWeight: 700,
-                          fontSize: 16,
-                          marginBottom: 6,
-                          letterSpacing: 0.2,
-                          fontFamily: 'serif'
-                        }}>{tab.label}</div>
-                        <div style={{
-                          marginTop: 4,
-                          fontSize: 13,
-                          color: tab.color,
-                          fontWeight: 400,
-                          opacity: 0.85,
-                          background: '#fff',
-                          borderRadius: 8,
-                          padding: '2px 10px',
-                          boxShadow: `0 1px 6px ${tab.shadow}`,
-                          display: 'inline-block',
-                          fontFamily: 'monospace'
-                        }}>
-                          {tab.date}
+                  
+                  <div style={{
+                    display: 'flex',
+                    gap: 28,
+                    flexWrap: 'wrap',
+                    justifyContent: 'center'
+                  }}>
+                    {panneauItems
+                      .filter(item => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const dateDebut = new Date(item.dateDebut);
+                        const dateFin = new Date(item.dateFin);
+                        dateDebut.setHours(0, 0, 0, 0);
+                        dateFin.setHours(0, 0, 0, 0);
+                        return dateDebut <= today && dateFin >= today;
+                      })
+                      .map((item, idx) => {
+                        const cat = CATEGORIES[item.categorie] || CATEGORIES['arrete'];
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className="affiche-card"
+                            style={{
+                              background: `linear-gradient(120deg, ${cat.bg} 80%, #f8fafc 100%), url("https://www.transparenttextures.com/patterns/paper-fibers.png")`,
+                              border: cat.border,
+                              borderRadius: 18,
+                              boxShadow: `0 6px 24px ${cat.shadow}, 0 2px 8px #bfa16b22`,
+                              padding: '26px 18px 18px 18px',
+                              minWidth: 180,
+                              maxWidth: 230,
+                              fontWeight: 500,
+                              color: cat.color,
+                              fontSize: 15,
+                              position: 'relative',
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              transition: 'all 0.25s cubic-bezier(.4,2,.3,1)',
+                              backdropFilter: 'blur(2px)',
+                              borderBottom: `5px solid ${cat.color}33`,
+                              transform: `rotate(${(idx % 2 === 0 ? -1 : 1) * (2 + Math.random() * 1.5)}deg)`,
+                              filter: 'drop-shadow(0 2px 4px #bfa16b22)'
+                            }}
+                            tabIndex={0}
+                            onClick={() => {
+                              setSelectedPanneauItem(item);
+                              setShowPanneauDetailModal(true);
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-10px) scale(1.05) rotate(0deg)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = `rotate(${(idx % 2 === 0 ? -1 : 1) * (2 + Math.random() * 1.5)}deg) scale(1)`}
+                          >
+                            <span style={{
+                              fontSize: 22,
+                              position: 'absolute',
+                              top: 10,
+                              right: 14,
+                              opacity: 0.7
+                            }}>📌</span>
+                            
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={item.titre}
+                                style={{
+                                  width: 54,
+                                  height: 54,
+                                  objectFit: 'cover',
+                                  margin: '0 auto 12px auto',
+                                  display: 'block',
+                                  borderRadius: 12,
+                                  background: '#fff',
+                                  boxShadow: `0 2px 8px ${cat.shadow}`,
+                                  border: `1.5px solid ${cat.color}22`
+                                }}
+                                onError={e => { e.currentTarget.src = "https://via.placeholder.com/54?text=Doc"; }}
+                              />
+                            )}
+                            
+                            <div style={{
+                              fontWeight: 700,
+                              fontSize: 16,
+                              marginBottom: 6,
+                              letterSpacing: 0.2,
+                              fontFamily: 'serif'
+                            }}>{cat.label}</div>
+                            
+                            <div style={{
+                              fontWeight: 600,
+                              fontSize: 14,
+                              marginBottom: 8,
+                              color: '#333'
+                            }}>{item.titre}</div>
+                            
+                            <div style={{
+                              marginTop: 4,
+                              fontSize: 13,
+                              color: cat.color,
+                              fontWeight: 400,
+                              opacity: 0.85,
+                              background: '#fff',
+                              borderRadius: 8,
+                              padding: '2px 10px',
+                              boxShadow: `0 1px 6px ${cat.shadow}`,
+                              display: 'inline-block',
+                              fontFamily: 'monospace'
+                            }}>
+                              {new Date(item.dateDebut).toLocaleDateString('fr-FR')}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {panneauItems.filter(item => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const dateDebut = new Date(item.dateDebut);
+                        const dateFin = new Date(item.dateFin);
+                        dateDebut.setHours(0, 0, 0, 0);
+                        dateFin.setHours(0, 0, 0, 0);
+                        return dateDebut <= today && dateFin >= today;
+                      }).length === 0 && (
+                        <div className="has-text-centered" style={{ padding: '40px 20px', color: '#888' }}>
+                          <span style={{ fontSize: 48, opacity: 0.3 }}>📋</span>
+                          <p style={{ marginTop: 12, fontSize: 16 }}>Aucun document actuellement affiché</p>
                         </div>
-                      </div>
-                    ))}
+                      )}
                   </div>
                 </div>
               </div>
@@ -539,7 +594,8 @@ export default function PageAcceuil() {
                 background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
                 marginBottom: 24,
                 borderRadius: 14,
-                boxShadow: '0 4px 16px #1277c610'
+                boxShadow: '0 4px 16px #1277c610',
+                overflow: 'hidden'
               }}>
                 <Calendar
                   events={events}
@@ -553,7 +609,7 @@ export default function PageAcceuil() {
           </div>
 
           {/* Colonne 2 : Agenda + Infos pratiques + Contact + Liens utiles */}
-          <div className="column is-one-third">
+          <div className="column is-one-third" style={{ padding: '0 0.75rem' }}>
             <AnimateOnScroll animation="fade-left" delay={150}>
               <h2 className="title is-5 has-text-primary mb-3" style={{
                 fontFamily: 'Merriweather, serif',
@@ -627,7 +683,7 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
 
-            {/* Liens utiles */}
+            {/* Liens utiles - REMPLACER LA SECTION EXISTANTE */}
             <AnimateOnScroll animation="fade-left" delay={350}>
               <h2 className="title is-5 has-text-primary mb-2" style={{
                 fontFamily: 'Merriweather, serif',
@@ -636,25 +692,81 @@ export default function PageAcceuil() {
               }}>Liens utiles</h2>
               <div className="box" style={{
                 background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
-                padding: '16px',
+                padding: '18px',
                 borderRadius: 14,
                 marginBottom: 24,
                 boxShadow: '0 2px 8px #1277c610'
               }}>
-                <div className="mb-3">
-                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
-                    📄 Documents administratifs
-                  </a>
-                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
-                    🏛️ Services en ligne
-                  </a>
-                  <a href="#" className="is-link" style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
-                    📅 Réservations salles
-                  </a>
-                  <a href="#" className="is-link" style={{ display: 'block', fontWeight: 600 }}>
-                    📰 Bulletin municipal
-                  </a>
-                </div>
+                {liensUtiles.length === 0 ? (
+                  <div className="notification is-light has-text-centered">
+                    <p className="is-size-7">Aucun lien disponible pour le moment</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {liensUtiles
+                      .sort((a, b) => a.ordre - b.ordre)
+                      .map((lien, idx) => (
+                        <a
+                          key={lien.id || idx}
+                          href={lien.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="is-link"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '10px 12px',
+                            background: 'white',
+                            borderRadius: 10,
+                            border: '1px solid #e0e7ef',
+                            transition: 'all 0.3s ease',
+                            textDecoration: 'none',
+                            fontWeight: 600,
+                            color: '#1277c6',
+                            fontSize: 15
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#f0f7ff';
+                            e.currentTarget.style.transform = 'translateX(5px)';
+                            e.currentTarget.style.borderColor = '#1277c6';
+                            e.currentTarget.style.boxShadow = '0 2px 8px #1277c620';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.transform = 'translateX(0)';
+                            e.currentTarget.style.borderColor = '#e0e7ef';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        >
+                          <span style={{
+                            fontSize: 22,
+                            width: 36,
+                            height: 36,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                            borderRadius: '50%',
+                            flexShrink: 0,
+                            boxShadow: '0 2px 6px #1277c630'
+                          }}>
+                            {lien.icone || '📄'}
+                          </span>
+                          <span style={{ flex: 1 }}>
+                            {lien.titre}
+                          </span>
+                          <span style={{
+                            fontSize: 14,
+                            opacity: 0.6,
+                            transition: 'opacity 0.3s ease'
+                          }}>
+                            →
+                          </span>
+                        </a>
+                      ))}
+                  </div>
+                )}
               </div>
             </AnimateOnScroll>
             
@@ -666,60 +778,238 @@ export default function PageAcceuil() {
               }}>{content.contact_titre || "Contactez la mairie"}</h2>
               <div className="box" style={{
                 background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
-                padding: '16px',
+                padding: '20px',
                 borderRadius: 14,
+                marginBottom: 24,
                 boxShadow: '0 2px 8px #1277c610'
               }}>
-                {contactSent ? (
-                  <div className="notification is-success">Votre message a bien été envoyé !</div>
-                ) : (
-                  <form onSubmit={handleContactSubmit}>
-                    <div className="field">
-                      <label className="label">Nom</label>
-                      <div className="control">
-                        <input className="input" type="text" name="nom" value={contact.nom} onChange={handleContactChange} required />
+                {/* En-tête avec icône */}
+                <div className="has-text-centered mb-4">
+                  <span style={{ fontSize: 42 }}>✉️</span>
+                  <p className="has-text-grey mt-2" style={{ 
+                    fontSize: 15,
+                    lineHeight: 1.5
+                  }}>
+                    Nous sommes à votre écoute !<br />
+                    Choisissez votre moyen de contact
+                  </p>
+                </div>
+
+                {/* Boutons de contact */}
+                <div className="buttons is-centered mb-4" style={{ gap: 12 }}>
+                  <a
+                    href={`mailto:${content.email || 'mairie@friesen.fr'}?subject=Contact depuis le site web`}
+                    className="button is-link"
+                    style={{
+                      borderRadius: 10,
+                      fontWeight: 600,
+                      fontSize: 15,
+                      padding: '10px 20px',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      boxShadow: '0 2px 8px #1277c620'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px #1277c640';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px #1277c620';
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>📧</span>
+                    <span>Envoyer un email</span>
+                  </a>
+
+                  <a
+                    href={`tel:${(content.telephone || '').replace(/\s/g, '')}`}
+                    className="button is-info is-light"
+                    style={{
+                      borderRadius: 10,
+                      fontWeight: 600,
+                      fontSize: 15,
+                      padding: '10px 20px',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      border: '2px solid #1b9bd7',
+                      background: 'white'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#1b9bd7';
+                      e.currentTarget.style.color = 'white';
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.color = '#1b9bd7';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>📞</span>
+                    <span>Appeler</span>
+                  </a>
+                </div>
+
+                {/* Informations de contact en cartes */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* Email */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 14px',
+                    background: 'white',
+                    borderRadius: 10,
+                    border: '1px solid #e0e7ef',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 1px 4px #1277c610'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.transform = 'translateX(5px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                  >
+                    <span style={{ 
+                      fontSize: 20,
+                      width: 38,
+                      height: 38,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px #1277c630'
+                    }}>📧</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="is-size-7 has-text-grey mb-1" style={{ fontWeight: 500 }}>
+                        Email
+                      </div>
+                      <a 
+                        href={`mailto:${content.email || 'mairie@friesen.fr'}`}
+                        className="has-text-link has-text-weight-semibold"
+                        style={{ fontSize: 14 }}
+                      >
+                        {content.email || 'mairie@friesen.fr'}
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Téléphone */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 14px',
+                    background: 'white',
+                    borderRadius: 10,
+                    border: '1px solid #e0e7ef',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 1px 4px #1277c610'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.transform = 'translateX(5px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                  >
+                    <span style={{ 
+                      fontSize: 20,
+                      width: 38,
+                      height: 38,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px #1277c630'
+                    }}>📞</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="is-size-7 has-text-grey mb-1" style={{ fontWeight: 500 }}>
+                        Téléphone
+                      </div>
+                      <a 
+                        href={`tel:${(content.telephone || '').replace(/\s/g, '')}`}
+                        className="has-text-link has-text-weight-semibold"
+                        style={{ fontSize: 14 }}
+                      >
+                        {content.telephone || '03 XX XX XX XX'}
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Horaires */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '12px 14px',
+                    background: 'white',
+                    borderRadius: 10,
+                    border: '1px solid #e0e7ef',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 1px 4px #1277c610'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.transform = 'translateX(5px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                  >
+                    <span style={{ 
+                      fontSize: 20,
+                      width: 38,
+                      height: 38,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px #1277c630'
+                    }}>🕒</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="is-size-7 has-text-grey mb-1" style={{ fontWeight: 500 }}>
+                        Horaires d'ouverture
+                      </div>
+                      <div className="has-text-weight-semibold" style={{ fontSize: 13, lineHeight: 1.4, color: '#333' }}>
+                        {(content.horaires || "Lundi-Vendredi : 9h-12h / 14h-17h").split('\n').map((line, i) => (
+                          <div key={i}>{line}</div>
+                        ))}
                       </div>
                     </div>
-                    <div className="field">
-                      <label className="label">Email</label>
-                      <div className="control">
-                        <input className="input" type="email" name="email" value={contact.email} onChange={handleContactChange} required />
-                      </div>
-                    </div>
-                    <div className="field">
-                      <label className="label">Message</label>
-                      <div className="control">
-                        <textarea className="textarea" name="message" value={contact.message} onChange={handleContactChange} required />
-                      </div>
-                    </div>
-                    <div className="field is-grouped is-grouped-right">
-                      <div className="control">
-                        <button className="button is-link" type="submit" style={{
-                          position: 'relative',
-                          overflow: 'hidden',
-                          transition: 'background 0.3s ease'
-                        }}
-                        onClick={(e) => {
-                          const ripple = document.createElement('span');
-                          ripple.style.position = 'absolute';
-                          ripple.style.borderRadius = '50%';
-                          ripple.style.background = 'rgba(255,255,255,0.6)';
-                          ripple.style.transform = 'scale(0)';
-                          ripple.style.animation = 'ripple 0.6s linear';
-                          ripple.style.left = `${e.clientX - e.target.offsetLeft}px`;
-                          ripple.style.top = `${e.clientY - e.target.offsetTop}px`;
-                          e.target.appendChild(ripple);
-                          setTimeout(() => ripple.remove(), 600);
-                        }}
-                        >Envoyer</button>
-                      </div>
-                    </div>
-                  </form>
-                )}
+                  </div>
+                </div>
+
+                {/* Message d'encouragement */}
+                <div className="has-text-centered mt-4">
+                  <p className="has-text-grey" style={{
+                    fontSize: 13,
+                    fontStyle: 'italic'
+                  }}>
+                    💬 Nous vous répondrons dans les plus brefs délais
+                  </p>
+                </div>
               </div>
             </AnimateOnScroll>
 
-            {/* Onglet Municipalité - Présentation des élus */}
+            {/* Onglet Municipalité - REMPLACER LA SECTION EXISTANTE */}
             <AnimateOnScroll animation="fade-up" delay={500} threshold={0.2}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
                 fontFamily: 'Merriweather, serif',
@@ -732,48 +1022,87 @@ export default function PageAcceuil() {
                 borderRadius: 14,
                 boxShadow: '0 2px 8px #a97c5010'
               }}>
-                <div className="columns is-multiline is-mobile">
-                  <div className="column is-half-mobile is-one-third-tablet has-text-centered">
-                    <figure className="image is-96x96" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid #a97c50', boxShadow: '0 2px 8px #a97c5022' }}>
-                      <img
-                        src="https://randomuser.me/api/portraits/men/32.jpg"
-                        alt="Pierre Durand"
-                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                        onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Elu"; }}
-                      />
-                    </figure>
-                    <div className="has-text-weight-bold mt-2" style={{ color: '#a97c50' }}>Pierre Durand</div>
-                    <div className="is-size-7 has-text-grey">Maire</div>
+                {elus.length === 0 ? (
+                  <div className="notification is-light has-text-centered">
+                    <p>Aucun élu à afficher pour le moment</p>
                   </div>
-                  <div className="column is-half-mobile is-one-third-tablet has-text-centered">
-                    <figure className="image is-96x96" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid #1277c6', boxShadow: '0 2px 8px #1277c622' }}>
-                      <img
-                        src="https://randomuser.me/api/portraits/women/44.jpg"
-                        alt="Marie Lefevre"
-                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                        onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Elue"; }}
-                      />
-                    </figure>
-                    <div className="has-text-weight-bold mt-2" style={{ color: '#1277c6' }}>Marie Lefevre</div>
-                    <div className="is-size-7 has-text-grey">Première adjointe</div>
+                ) : (
+                  <div className="columns is-multiline is-mobile">
+                    {elus.map((elu, idx) => {
+                      // Couleurs alternées pour les bordures
+                      const colors = ['#a97c50', '#1277c6', '#1b9bd7', '#22c55e', '#eab308', '#ef4444'];
+                      const color = colors[idx % colors.length];
+                      
+                      return (
+                        <div key={elu.id} className="column is-half-mobile is-one-third-tablet has-text-centered">
+                          <figure className="image is-96x96" style={{
+                            margin: '0 auto',
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            border: `3px solid ${color}`,
+                            boxShadow: `0 2px 8px ${color}22`,
+                            transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                            e.currentTarget.style.boxShadow = `0 4px 16px ${color}44`;
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                            e.currentTarget.style.boxShadow = `0 2px 8px ${color}22`;
+                          }}
+                          >
+                            <img
+                              src={elu.photo || 'https://via.placeholder.com/96?text=Photo'}
+                              alt={`${elu.prenom} ${elu.nom}`}
+                              style={{
+                                objectFit: 'cover',
+                                width: '100%',
+                                height: '100%'
+                              }}
+                              onError={e => {
+                                e.currentTarget.src = "https://via.placeholder.com/96?text=Elu";
+                              }}
+                            />
+                          </figure>
+                          <div className="has-text-weight-bold mt-2" style={{ 
+                            color,
+                            fontSize: 16,
+                            fontFamily: 'Merriweather, serif'
+                          }}>
+                            {elu.prenom} {elu.nom}
+                          </div>
+                          <div className="is-size-7 has-text-grey" style={{ fontStyle: 'italic' }}>
+                            {elu.fonction}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="column is-half-mobile is-one-third-tablet has-text-centered">
-                    <figure className="image is-96x96" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid #1b9bd7', boxShadow: '0 2px 8px #1b9bd722' }}>
-                      <img
-                        src="https://randomuser.me/api/portraits/men/54.jpg"
-                        alt="Jean Muller"
-                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                        onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Elu"; }}
-                      />
-                    </figure>
-                    <div className="has-text-weight-bold mt-2" style={{ color: '#1b9bd7' }}>Jean Muller</div>
-                    <div className="is-size-7 has-text-grey">Adjoint</div>
-                  </div>
-                  {/* Ajoute d'autres élus ici si besoin */}
-                </div>
+                )}
                 <div className="has-text-centered mt-3">
-                  <a href="#" className="is-link" style={{ fontWeight: 600, fontSize: 15 }}>
+                  <a href="/municipalite" className="is-link" style={{ 
+                    fontWeight: 600, 
+                    fontSize: 15,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: '#a97c5010',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#a97c5020';
+                    e.currentTarget.style.transform = 'translateX(5px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#a97c5010';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                  >
                     Voir tous les élus et commissions
+                    <span style={{ fontSize: 12 }}>→</span>
                   </a>
                 </div>
               </div>
@@ -944,6 +1273,29 @@ export default function PageAcceuil() {
         .box:hover {
           box-shadow: 0 8px 30px rgba(0,0,0,0.15);
         }
+
+        /* Fix pour mobile - empêcher le débordement horizontal */
+        @media screen and (max-width: 768px) {
+          body {
+            overflow-x: hidden;
+          }
+          
+          .container {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+            max-width: 100% !important;
+          }
+          
+          .columns {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+          }
+          
+          .column {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+          }
+        }
       `}</style>
       
       {/* Modal existant */}
@@ -1035,6 +1387,201 @@ export default function PageAcceuil() {
           </div>
         </div>
       )}
+
+      {/* Modal détail panneau d'affichage - AVEC IMAGE AMÉLIORÉE */}
+      {showPanneauDetailModal && selectedPanneauItem && (
+        <div className="modal is-active">
+          <div className="modal-background" onClick={() => setShowPanneauDetailModal(false)}></div>
+          <div className="modal-card" style={{ maxWidth: "700px", width: "90%" }}>
+            <header className="modal-card-head" style={{ 
+              background: CATEGORIES[selectedPanneauDetailModal.categorie]?.bg || '#fffbe6',
+              borderBottom: `3px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'}`
+            }}>
+              <p className="modal-card-title" style={{ 
+                color: CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}>
+                <span style={{ fontSize: 24 }}>
+                  {CATEGORIES[selectedPanneauDetailModal.categorie]?.icon || '📄'}
+                </span>
+                {CATEGORIES[selectedPanneauDetailModal.categorie]?.label || 'Document'}
+              </p>
+              <button 
+                className="delete" 
+                aria-label="close" 
+                onClick={() => setShowPanneauDetailModal(false)}
+              ></button>
+            </header>
+            <section className="modal-card-body">
+              {/* IMAGE EN GRAND - AMÉLIORATION */}
+              {selectedPanneauDetailModal.image && selectedPanneauDetailModal.image.trim() !== '' ? (
+                <figure className="image mb-4" style={{ 
+                  maxHeight: '500px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  background: '#f8fafc',
+                  borderRadius: 12,
+                  padding: 20,
+                  border: `3px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color}44`,
+                  boxShadow: `0 4px 16px ${CATEGORIES[selectedPanneauDetailModal.categorie]?.shadow}`
+                }}>
+                  <img 
+                    src={selectedPanneauDetailModal.image} 
+                    alt={selectedPanneauDetailModal.titre}
+                    style={{ 
+                      maxHeight: '460px',
+                      maxWidth: '100%',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => window.open(selectedPanneauDetailModal.image, '_blank')}
+                    onError={e => { 
+                      console.error('Erreur chargement image:', selectedPanneauDetailModal.image);
+                      e.currentTarget.src = "https://via.placeholder.com/400x300?text=Document+non+disponible"; 
+                    }}
+                  />
+                </figure>
+              ) : (
+                <div className="notification is-light" style={{ 
+                  textAlign: 'center',
+                  padding: '40px',
+                  background: '#f8fafc',
+                  borderRadius: 12,
+                  border: '2px dashed #ddd'
+                }}>
+                  <span style={{ fontSize: 48, opacity: 0.3 }}>📄</span>
+                  <p style={{ marginTop: 12, color: '#888' }}>Aucune image associée à ce document</p>
+                </div>
+              )}
+              
+              <div className="content">
+                <h3 className="title is-4 mb-3" style={{ 
+                  color: CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'
+                }}>
+                  {selectedPanneauDetailModal.titre}
+                </h3>
+                
+                <div className="mb-4" style={{ 
+                  display: 'flex', 
+                  gap: 20, 
+                  flexWrap: 'wrap',
+                  padding: '12px',
+                  background: '#f8fafc',
+                  borderRadius: 8
+                }}>
+                  <div>
+                    <strong style={{ color: '#666' }}>📅 Date de publication :</strong>
+                    <br />
+                    <span style={{ fontSize: 15 }}>
+                      {new Date(selectedPanneauDetailModal.dateDebut).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  
+                  {selectedPanneauDetailModal.date && (
+                    <div>
+                      <strong style={{ color: '#666' }}>📆 Date du document :</strong>
+                      <br />
+                      <span style={{ fontSize: 15 }}>
+                        {new Date(selectedPanneauDetailModal.date).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {selectedPanneauDetailModal.lieu && (
+                    <div>
+                      <strong style={{ color: '#666' }}>📍 Lieu :</strong>
+                      <br />
+                      <span style={{ fontSize: 15 }}>{selectedPanneauDetailModal.lieu}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {selectedPanneauDetailModal.description && (
+                  <div style={{ 
+                    padding: '16px',
+                    background: '#fff',
+                    border: `1px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color}22`,
+                    borderRadius: 8,
+                    lineHeight: '1.8',
+                    fontSize: 16
+                  }}>
+                    <strong style={{ 
+                      display: 'block', 
+                      marginBottom: 12,
+                      color: CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'
+                    }}>
+                      Description :
+                    </strong>
+                    <div style={{ whiteSpace: 'pre-wrap' }}>
+                      {selectedPanneauDetailModal.description}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="notification is-light mt-4" style={{ 
+                  borderLeft: `4px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'}`,
+                  background: CATEGORIES[selectedPanneauDetailModal.categorie]?.bg || '#fffbe6'
+                }}>
+                  <p className="is-size-7">
+                    <strong>ℹ️ Affichage valable du :</strong><br />
+                    {new Date(selectedPanneauDetailModal.dateDebut).toLocaleDateString('fr-FR')} 
+                    {' au '}
+                    {new Date(selectedPanneauDetailModal.dateFin).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+              </div>
+            </section>
+            <footer className="modal-card-foot" style={{ justifyContent: 'space-between' }}>
+              <button 
+                className="button" 
+                onClick={() => setShowPanneauDetailModal(false)}
+              >
+                Fermer
+              </button>
+              {selectedPanneauDetailModal.image && selectedPanneauDetailModal.image.trim() !== '' && (
+                <>
+                  <a 
+                    href={selectedPanneauDetailModal.image} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="button is-link is-light"
+                  >
+                    <span className="icon">
+                      <i className="fas fa-external-link-alt"></i>
+                    </span>
+                    <span>Ouvrir dans un nouvel onglet</span>
+                  </a>
+                  <a 
+                    href={selectedPanneauDetailModal.image} 
+                    download
+                    className="button is-success"
+                  >
+                    <span className="icon">
+                      <i className="fas fa-download"></i>
+                    </span>
+                    <span>Télécharger</span>
+                  </a>
+                </>
+              )}
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1093,7 +1640,7 @@ function AgendaItem({ title, date, image, lieu }) {
   );
 }
 
-// Petit composant calendrier simple
+// Petit composant calendrier simple - VERSION RESPONSIVE
 function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange }) {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay() || 7; // Lundi = 1
@@ -1127,18 +1674,23 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
           className={`has-text-centered ${dayEvents.length ? 'has-background-info-light' : ''}`}
           style={{
             cursor: dayEvents.length ? 'pointer' : 'default',
-            padding: '8px',
+            padding: '4px',
             border: '1px solid #e0e7ef',
-            borderRadius: 4
+            borderRadius: 4,
+            fontSize: '0.85rem'
           }}
           onClick={() => dayEvents.length && onDayClick(dayEvents)}
         >
-          <div className="has-text-weight-bold">{dayNum}</div>
-          {dayEvents.map(ev => (
-            <div key={ev.id} className="is-size-7 has-text-link" style={{ marginTop: 2 }}>
-              {ev.titre}
-            </div>
-          ))}
+          <div className="has-text-weight-bold" style={{ fontSize: '0.9rem' }}>{dayNum}</div>
+          {dayEvents.length > 0 && (
+            <div style={{ 
+              width: 6, 
+              height: 6, 
+              borderRadius: '50%', 
+              background: '#1277c6', 
+              margin: '2px auto 0' 
+            }}></div>
+          )}
         </td>
       );
       dayNum++;
@@ -1158,18 +1710,23 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
             className={`has-text-centered ${dayEvents.length ? 'has-background-info-light' : ''}`}
             style={{
               cursor: dayEvents.length ? 'pointer' : 'default',
-              padding: '8px',
+              padding: '4px',
               border: '1px solid #e0e7ef',
-              borderRadius: 4
+              borderRadius: 4,
+              fontSize: '0.85rem'
             }}
             onClick={() => dayEvents.length && onDayClick(dayEvents)}
           >
-            <div className="has-text-weight-bold">{dayNum}</div>
-            {dayEvents.map(ev => (
-              <div key={ev.id} className="is-size-7 has-text-link" style={{ marginTop: 2 }}>
-                {ev.titre}
-              </div>
-            ))}
+            <div className="has-text-weight-bold" style={{ fontSize: '0.9rem' }}>{dayNum}</div>
+            {dayEvents.length > 0 && (
+              <div style={{ 
+                width: 6, 
+                height: 6, 
+                borderRadius: '50%', 
+                background: '#1277c6', 
+                margin: '2px auto 0' 
+              }}></div>
+            )}
           </td>
         );
         dayNum++;
@@ -1181,32 +1738,67 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
   }
 
   return (
-    <div className="box" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
-      <div className="level mb-4">
-        <div className="level-left">
-          <button className="button is-small" onClick={() => onMonthChange(-1)}>
+    <div style={{ 
+      borderRadius: 12, 
+      border: '1.5px solid #e0e7ef', 
+      background: '#fff',
+      padding: '12px',
+      overflow: 'hidden',
+      width: '100%'
+    }}>
+      <div className="level mb-3" style={{ flexWrap: 'wrap', margin: '0 -0.5rem' }}>
+        <div className="level-left" style={{ padding: '0 0.5rem' }}>
+          <button 
+            className="button is-small" 
+            onClick={() => onMonthChange(-1)}
+            style={{ minWidth: 'auto' }}
+          >
             ←
           </button>
         </div>
-        <div className="level-item">
-          <h3 className="title is-5 has-text-link">{monthNames[currentMonth]} {currentYear}</h3>
+        <div className="level-item" style={{ padding: '0 0.5rem' }}>
+          <h3 className="title is-6 has-text-link" style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '0.9rem' }}>
+            {monthNames[currentMonth]} {currentYear}
+          </h3>
         </div>
-        <div className="level-right">
-          <button className="button is-small" onClick={() => onMonthChange(1)}>
+        <div className="level-right" style={{ padding: '0 0.5rem' }}>
+          <button 
+            className="button is-small" 
+            onClick={() => onMonthChange(1)}
+            style={{ minWidth: 'auto' }}
+          >
             →
           </button>
         </div>
       </div>
-      <table className="table is-fullwidth is-bordered" style={{ borderRadius: 8 }}>
-        <thead>
-          <tr className="has-background-link has-text-white">
-            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(j => (
-              <th key={j} className="has-text-centered">{j}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
+      <div style={{ 
+        overflowX: 'auto', 
+        WebkitOverflowScrolling: 'touch',
+        margin: '0 -12px',
+        padding: '0 12px'
+      }}>
+        <table className="table is-fullwidth is-bordered" style={{ 
+          borderRadius: 8,
+          minWidth: '280px',
+          fontSize: '0.85rem',
+          width: '100%'
+        }}>
+          <thead>
+            <tr className="has-background-link has-text-white">
+              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(j => (
+                <th key={j} className="has-text-centered" style={{ 
+                  padding: '6px 2px',
+                  fontSize: '0.7rem',
+                  fontWeight: 600
+                }}>
+                  {j}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
     </div>
   );
 }

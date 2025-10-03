@@ -107,6 +107,30 @@ export default function PageAcceuil() {
     dateDebut: new Date().toISOString().split('T')[0],
   });
 
+  // Nouveaux états pour la municipalité
+  const [elus, setElus] = useState([]);
+  const [eluForm, setEluForm] = useState({
+    nom: '',
+    prenom: '',
+    fonction: '',
+    photo: '',
+    ordre: 0
+  });
+  const [editEluMode, setEditEluMode] = useState(false);
+  const [editEluIndex, setEditEluIndex] = useState(null);
+  const [previewEluImage, setPreviewEluImage] = useState(null);
+
+  // Nouveaux états pour les liens utiles
+  const [liensUtiles, setLiensUtiles] = useState([]);
+  const [lienForm, setLienForm] = useState({
+    titre: '',
+    url: '',
+    icone: '📄',
+    ordre: 0
+  });
+  const [editLienMode, setEditLienMode] = useState(false);
+  const [editLienIndex, setEditLienIndex] = useState(null);
+
   const formRef = useRef(null);
 
   // Utilitaires
@@ -221,6 +245,40 @@ export default function PageAcceuil() {
             setPanneauItems(Array.isArray(items) ? items : []);
           } catch (e) {
             console.error('Erreur parsing panneauItems_json:', e);
+          }
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  // Charger les élus
+  useEffect(() => {
+    fetch('/api/pageContent?page=accueil')
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(pageContent => {
+        const pageContentData = pageContent?.[0] || {};
+        
+        // Charger les élus
+        if (pageContentData.elus_json) {
+          try {
+            const elusData = typeof pageContentData.elus_json === 'string'
+              ? JSON.parse(pageContentData.elus_json)
+              : pageContentData.elus_json;
+            setElus(Array.isArray(elusData) ? elusData : []);
+          } catch (e) {
+            console.error('Erreur parsing elus_json:', e);
+          }
+        }
+        
+        // Charger les liens utiles
+        if (pageContentData.liensUtiles_json) {
+          try {
+            const liensData = typeof pageContentData.liensUtiles_json === 'string'
+              ? JSON.parse(pageContentData.liensUtiles_json)
+              : pageContentData.liensUtiles_json;
+            setLiensUtiles(Array.isArray(liensData) ? liensData : []);
+          } catch (e) {
+            console.error('Erreur parsing liensUtiles_json:', e);
           }
         }
       })
@@ -444,16 +502,25 @@ export default function PageAcceuil() {
       const dateFin = new Date(panneauForm.dateDebut);
       dateFin.setDate(dateFin.getDate() + parseInt(panneauForm.dureeAffichage));
 
+      // Trouver l'actualité complète depuis la liste des actualités
+      const actualiteComplete = actualites.find(a => a.id === selectedActualite.id) || selectedActualite;
+
+      console.log('Actualité sélectionnée:', actualiteComplete); // Debug
+      console.log('Image de l\'actualité:', actualiteComplete.imgSrc || actualiteComplete.image); // Debug
+
       const newItem = {
         id: `panneau-${Date.now()}`,
-        actualiteId: selectedActualite.id,
-        titre: selectedActualite.titre,
-        date: selectedActualite.date,
+        actualiteId: actualiteComplete.id,
+        titre: actualiteComplete.title || actualiteComplete.titre || '', // Gérer les deux noms
+        date: actualiteComplete.date || '',
+        description: actualiteComplete.description || '',
         categorie: panneauForm.categorie,
         dateDebut: panneauForm.dateDebut,
         dateFin: dateFin.toISOString().split('T')[0],
-        image: selectedActualite.image,
+        image: actualiteComplete.imgSrc || actualiteComplete.image || '', // Récupérer imgSrc OU image
       };
+
+      console.log('Item à ajouter au panneau:', newItem); // Debug
 
       const updatedItems = [...panneauItems, newItem];
       setPanneauItems(updatedItems);
@@ -544,6 +611,285 @@ export default function PageAcceuil() {
         closeButton: false,
         closeOnClick: false,
       }
+    );
+  };
+
+  // Handlers pour les élus - AJOUTER APRÈS handleRemoveFromPanneau (ligne ~597)
+  const handleEluChange = e => setEluForm({ ...eluForm, [e.target.name]: e.target.value });
+
+  const handleEluImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.includes('image/')) {
+      toast.error('Veuillez sélectionner une image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop volumineuse (max 5MB).');
+      return;
+    }
+    const loadingId = toast.loading("Traitement de l'image...");
+    try {
+      const compressed = await compressImage(file, { maxWidth: 400, maxHeight: 400, quality: 0.8 });
+      setPreviewEluImage(compressed);
+      setEluForm(prev => ({ ...prev, photo: compressed }));
+      toast.update(loadingId, { render: 'Image optimisée', type: 'success', isLoading: false, autoClose: 2000 });
+    } catch (err) {
+      toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
+    }
+  };
+
+  const resetEluForm = () => {
+    setEluForm({ nom: '', prenom: '', fonction: '', photo: '', ordre: 0 });
+    setPreviewEluImage(null);
+    setEditEluMode(false);
+    setEditEluIndex(null);
+  };
+
+  const handleEluSubmit = async (e) => {
+    e.preventDefault();
+    if (!eluForm.nom.trim() || !eluForm.prenom.trim() || !eluForm.fonction.trim()) {
+      toast.error('Nom, prénom et fonction sont obligatoires.');
+      return;
+    }
+
+    setLoading(true);
+    const toastId = toast.loading(editEluMode ? 'Modification en cours...' : 'Ajout en cours...');
+    try {
+      const next = [...elus];
+      if (editEluMode && editEluIndex != null) {
+        const id = next[editEluIndex]?.id;
+        next[editEluIndex] = { id: id || `elu-${Date.now()}`, ...eluForm };
+      } else {
+        next.push({ id: `elu-${Date.now()}`, ...eluForm });
+      }
+      
+      // Trier par ordre
+      next.sort((a, b) => a.ordre - b.ordre);
+      setElus(next);
+
+      const res = await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'accueil',
+          elus_json: JSON.stringify(next)
+        })
+      });
+
+      if (!res.ok) throw new Error('Erreur serveur');
+
+      toast.update(toastId, { 
+        render: editEluMode ? 'Élu modifié' : 'Élu ajouté', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 2000 
+      });
+      resetEluForm();
+    } catch (err) {
+      console.error(err);
+      toast.update(toastId, { 
+        render: 'Erreur lors de la sauvegarde', 
+        type: 'error', 
+        isLoading: false, 
+        autoClose: 3000 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditElu = (idx) => {
+    const elu = elus[idx];
+    if (!elu) return;
+    setEditEluMode(true);
+    setEditEluIndex(idx);
+    setEluForm({
+      nom: elu.nom || '',
+      prenom: elu.prenom || '',
+      fonction: elu.fonction || '',
+      photo: elu.photo || '',
+      ordre: elu.ordre || 0
+    });
+    setPreviewEluImage(elu.photo || null);
+  };
+
+  const handleDeleteElu = async (idx) => {
+    const elu = elus[idx];
+    if (!elu) return;
+
+    toast.info(
+      <div>
+        <p>Supprimer {elu.prenom} {elu.nom} ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={async () => {
+              toast.dismiss();
+              const loadingId = toast.loading('Suppression...');
+              const next = elus.filter((_, i) => i !== idx);
+              setElus(next);
+
+              try {
+                await fetch('/api/pageContent', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    page: 'accueil',
+                    elus_json: JSON.stringify(next)
+                  })
+                });
+                toast.update(loadingId, {
+                  render: 'Élu supprimé',
+                  type: 'success',
+                  isLoading: false,
+                  autoClose: 2000
+                });
+              } catch (e) {
+                toast.update(loadingId, {
+                  render: 'Erreur',
+                  type: 'error',
+                  isLoading: false,
+                  autoClose: 3000
+                });
+              }
+            }}
+          >
+            Confirmer
+          </button>
+          <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+            Annuler
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeButton: false, closeOnClick: false }
+    );
+  };
+
+  // Handlers pour les liens utiles - AJOUTER APRÈS handleDeleteElu (ligne ~680)
+  const handleLienChange = e => setLienForm({ ...lienForm, [e.target.name]: e.target.value });
+
+  const resetLienForm = () => {
+    setLienForm({ titre: '', url: '', icone: '📄', ordre: 0 });
+    setEditLienMode(false);
+    setEditLienIndex(null);
+  };
+
+  const handleLienSubmit = async (e) => {
+    e.preventDefault();
+    if (!lienForm.titre.trim() || !lienForm.url.trim()) {
+      toast.error('Titre et URL sont obligatoires.');
+      return;
+    }
+
+    setLoading(true);
+    const toastId = toast.loading(editLienMode ? 'Modification en cours...' : 'Ajout en cours...');
+    try {
+      const next = [...liensUtiles];
+      if (editLienMode && editLienIndex != null) {
+        const id = next[editLienIndex]?.id;
+        next[editLienIndex] = { id: id || `lien-${Date.now()}`, ...lienForm };
+      } else {
+        next.push({ id: `lien-${Date.now()}`, ...lienForm });
+      }
+      
+      // Trier par ordre
+      next.sort((a, b) => a.ordre - b.ordre);
+      setLiensUtiles(next);
+
+      const res = await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'accueil',
+          liensUtiles_json: JSON.stringify(next)
+        })
+      });
+
+      if (!res.ok) throw new Error('Erreur serveur');
+
+      toast.update(toastId, { 
+        render: editLienMode ? 'Lien modifié' : 'Lien ajouté', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 2000 
+      });
+      resetLienForm();
+    } catch (err) {
+      console.error(err);
+      toast.update(toastId, { 
+        render: 'Erreur lors de la sauvegarde', 
+        type: 'error', 
+        isLoading: false, 
+        autoClose: 3000 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditLien = (idx) => {
+    const lien = liensUtiles[idx];
+    if (!lien) return;
+    setEditLienMode(true);
+    setEditLienIndex(idx);
+    setLienForm({
+      titre: lien.titre || '',
+      url: lien.url || '',
+      icone: lien.icone || '📄',
+      ordre: lien.ordre || 0
+    });
+  };
+
+  const handleDeleteLien = async (idx) => {
+    const lien = liensUtiles[idx];
+    if (!lien) return;
+
+    toast.info(
+      <div>
+        <p>Supprimer le lien "{lien.titre}" ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={async () => {
+              toast.dismiss();
+              const loadingId = toast.loading('Suppression...');
+              const next = liensUtiles.filter((_, i) => i !== idx);
+              setLiensUtiles(next);
+
+              try {
+                await fetch('/api/pageContent', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    page: 'accueil',
+                    liensUtiles_json: JSON.stringify(next)
+                  })
+                });
+                toast.update(loadingId, {
+                  render: 'Lien supprimé',
+                  type: 'success',
+                  isLoading: false,
+                  autoClose: 2000
+                });
+              } catch (e) {
+                toast.update(loadingId, {
+                  render: 'Erreur',
+                  type: 'error',
+                  isLoading: false,
+                  autoClose: 3000
+                });
+              }
+            }}
+          >
+            Confirmer
+          </button>
+          <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+            Annuler
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeButton: false, closeOnClick: false }
     );
   };
 
@@ -931,58 +1277,82 @@ export default function PageAcceuil() {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
-            {panneauItems
-              .filter(item => new Date(item.dateFin) >= new Date()) // Filtrer les éléments expirés
-              .map(item => {
-                const cat = CATEGORIES.find(c => c.value === item.categorie);
-                const joursRestants = Math.ceil(
-                  (new Date(item.dateFin) - new Date()) / (1000 * 60 * 60 * 24)
-                );
-                
-                return (
-                  <div 
-                    key={item.id}
-                    className="box"
-                    style={{ 
-                      background: '#f9fbfd', 
-                      borderRadius: 8,
-                      borderLeft: `4px solid ${cat?.color || '#ccc'}`
-                    }}
-                  >
-                    <div className="is-flex is-justify-content-space-between mb-2">
-                      <span 
-                        className="tag is-light" 
-                        style={{ backgroundColor: `${cat?.color}22`, color: cat?.color }}
-                      >
-                        {cat?.icon} {cat?.label}
-                      </span>
-                      <button 
-                        className="delete is-small" 
-                        onClick={() => handleRemoveFromPanneau(item.id)}
-                      />
-                    </div>
-                    
-                    {item.image && (
-                      <figure className="image is-16by9 mb-2">
-                        <img 
-                          src={item.image} 
-                          alt={item.titre}
-                          style={{ objectFit: 'cover', borderRadius: 4 }}
-                          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/300x150?text=Image'; }}
-                        />
-                      </figure>
-                    )}
-                    
-                    <p className="has-text-weight-bold mb-1">{item.titre}</p>
-                    <p className="is-size-7 has-text-grey mb-2">{item.date}</p>
-                    
-                    <div className="is-size-7">
-                      <p>📅 Affiché du {new Date(item.dateDebut).toLocaleDateString()}</p>
-                      <p>⏰ Expire dans <strong>{joursRestants}</strong> jour{joursRestants > 1 ? 's' : ''}</p>
-                    </div>
+            {panneauItems.map(item => {
+              const cat = CATEGORIES.find(c => c.value === item.categorie);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const dateDebut = new Date(item.dateDebut);
+              const dateFin = new Date(item.dateFin);
+              dateDebut.setHours(0, 0, 0, 0);
+              dateFin.setHours(0, 0, 0, 0);
+              
+              const isActive = dateDebut <= today && dateFin >= today;
+              const isPending = dateDebut > today;
+              const isExpired = dateFin < today;
+              
+              const joursRestants = Math.ceil((dateFin - today) / (1000 * 60 * 60 * 24));
+              const joursAvantDebut = Math.ceil((dateDebut - today) / (1000 * 60 * 60 * 24));
+              
+              let statusTag = null;
+              if (isPending) {
+                statusTag = <span className="tag is-warning is-light">Programmé dans {joursAvantDebut} jour{joursAvantDebut > 1 ? 's' : ''}</span>;
+              } else if (isExpired) {
+                statusTag = <span className="tag is-danger is-light">Expiré</span>;
+              } else if (isActive) {
+                statusTag = <span className="tag is-success is-light">Actif</span>;
+              }
+              
+              return (
+                <div 
+                  key={item.id}
+                  className="box"
+                  style={{ 
+                    background: isExpired ? '#fafafa' : '#f9fbfd', 
+                    borderRadius: 8,
+                    borderLeft: `4px solid ${cat?.color || '#ccc'}`,
+                    opacity: isExpired ? 0.6 : 1
+                  }}
+                >
+                  <div className="is-flex is-justify-content-space-between mb-2">
+                    <span 
+                      className="tag is-light" 
+                      style={{ backgroundColor: `${cat?.color}22`, color: cat?.color }}
+                    >
+                      {cat?.icon} {cat?.label}
+                    </span>
+                    <button 
+                      className="delete is-small" 
+                      onClick={() => handleRemoveFromPanneau(item.id)}
+                    />
                   </div>
-                );
-              })}
+                  
+                  <div className="mb-2">
+                    {statusTag}
+                  </div>
+                  
+                  {item.image && (
+                    <figure className="image is-16by9 mb-2">
+                      <img 
+                        src={item.image} 
+                        alt={item.titre}
+                        style={{ objectFit: 'cover', borderRadius: 4 }}
+                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/300x150?text=Image'; }}
+                      />
+                    </figure>
+                  )}
+                  
+                  <p className="has-text-weight-bold mb-1">{item.titre}</p>
+                  <p className="is-size-7 has-text-grey mb-2">{item.date}</p>
+                  
+                  <div className="is-size-7">
+                    <p>📅 Du {new Date(item.dateDebut).toLocaleDateString()} au {new Date(item.dateFin).toLocaleDateString()}</p>
+                    {isActive && <p>⏰ Expire dans <strong>{joursRestants}</strong> jour{joursRestants > 1 ? 's' : ''}</p>}
+                    {isPending && <p>⏳ Débute dans <strong>{joursAvantDebut}</strong> jour{joursAvantDebut > 1 ? 's' : ''}</p>}
+                    {isExpired && <p className="has-text-danger">❌ Expiré depuis {Math.abs(joursRestants)} jour{Math.abs(joursRestants) > 1 ? 's' : ''}</p>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1013,18 +1383,18 @@ export default function PageAcceuil() {
                         style={{ cursor: 'pointer', padding: 12 }}
                       >
                         <div className="is-flex" style={{ gap: 12 }}>
-                          {actu.image && (
+                          {(actu.imgSrc || actu.image) && (
                             <figure className="image is-64x64" style={{ flexShrink: 0 }}>
                               <img 
-                                src={actu.image} 
-                                alt={actu.titre}
+                                src={actu.imgSrc || actu.image} 
+                                alt={actu.title || actu.titre}
                                 style={{ objectFit: 'cover', borderRadius: 4 }}
                                 onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/64?text=Img'; }}
                               />
                             </figure>
                           )}
                           <div>
-                            <p className="has-text-weight-bold">{actu.titre}</p>
+                            <p className="has-text-weight-bold">{actu.title || actu.titre}</p>
                             <p className="is-size-7 has-text-grey">{actu.date}</p>
                           </div>
                         </div>
@@ -1110,6 +1480,493 @@ export default function PageAcceuil() {
           </div>
         </div>
       )}
+
+      {/* Section La Municipalité - AJOUTER APRÈS LA SECTION PANNEAU D'AFFICHAGE */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>👥</span> Gestion de la Municipalité
+        </h3>
+
+        {/* Formulaire d'ajout/modification d'un élu */}
+        <form onSubmit={handleEluSubmit} className="box mb-4" style={{ background: '#f9fbfd', borderRadius: 8 }}>
+          <h4 className="subtitle is-6 mb-3">
+            {editEluMode ? '✏️ Modifier un élu' : '➕ Ajouter un élu'}
+          </h4>
+
+          <div className="columns">
+            <div className="column is-8">
+              <div className="columns">
+                <div className="column">
+                  <div className="field">
+                    <label className="label is-small">Prénom *</label>
+                    <div className="control">
+                      <input
+                        className="input"
+                        name="prenom"
+                        value={eluForm.prenom}
+                        onChange={handleEluChange}
+                        placeholder="Ex: Jean"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="column">
+                  <div className="field">
+                    <label className="label is-small">Nom *</label>
+                    <div className="control">
+                      <input
+                        className="input"
+                        name="nom"
+                        value={eluForm.nom}
+                        onChange={handleEluChange}
+                        placeholder="Ex: Dupont"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="field mb-3">
+                <label className="label is-small">Fonction *</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select
+                      name="fonction"
+                      value={eluForm.fonction}
+                      onChange={handleEluChange}
+                      required
+                      disabled={loading}
+                    >
+                      <option value="">Sélectionner une fonction</option>
+                      <option value="Maire">Maire</option>
+                      <option value="Première adjointe">Première adjointe</option>
+                      <option value="Premier adjoint">Premier adjoint</option>
+                      <option value="Adjoint">Adjoint</option>
+                      <option value="Adjointe">Adjointe</option>
+                      <option value="Conseiller municipal">Conseiller municipal</option>
+                      <option value="Conseillère municipale">Conseillère municipale</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="field">
+                <label className="label is-small">Ordre d'affichage</label>
+                <div className="control">
+                  <input
+                    className="input"
+                    type="number"
+                    name="ordre"
+                    value={eluForm.ordre}
+                    onChange={handleEluChange}
+                    placeholder="0"
+                    disabled={loading}
+                    style={{ maxWidth: 100 }}
+                  />
+                </div>
+                <p className="help">Plus le nombre est petit, plus l'élu apparaîtra en premier</p>
+              </div>
+            </div>
+
+            <div className="column is-4">
+              <label className="label is-small">Photo de l'élu</label>
+              
+              {previewEluImage && (
+                <figure className="image is-128x128 mb-2" style={{ margin: '0 auto' }}>
+                  <img
+                    src={previewEluImage}
+                    alt="Aperçu"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '50%',
+                      border: '3px solid #1277c6'
+                    }}
+                  />
+                </figure>
+              )}
+
+              <div className="file has-name is-fullwidth mb-2">
+                <label className="file-label">
+                  <input
+                    className="file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEluImageUpload}
+                    disabled={loading}
+                  />
+                  <span className="file-cta">
+                    <span className="file-icon"><i className="fas fa-upload"></i></span>
+                    <span className="file-label">Choisir...</span>
+                  </span>
+                  <span className="file-name">
+                    {previewEluImage ? 'Image sélectionnée' : 'Aucune image'}
+                  </span>
+                </label>
+              </div>
+
+              <div className="control">
+                <input
+                  className="input"
+                  name="photo"
+                  value={eluForm.photo}
+                  onChange={(e) => {
+                    handleEluChange(e);
+                    setPreviewEluImage(e.target.value || null);
+                  }}
+                  placeholder="Ou entrez l'URL d'une photo"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="field is-grouped mt-4">
+            <div className="control">
+              <button
+                className={`button is-link${loading ? ' is-loading' : ''}`}
+                type="submit"
+                disabled={loading}
+              >
+                {editEluMode ? 'Enregistrer' : 'Ajouter'}
+              </button>
+            </div>
+            {editEluMode && (
+              <div className="control">
+                <button
+                  type="button"
+                  className="button is-light"
+                  onClick={resetEluForm}
+                  disabled={loading}
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+
+        {/* Liste des élus */}
+        <div>
+          <h4 className="subtitle is-6 mb-3">📋 Élus actuels ({elus.length})</h4>
+
+          {elus.length === 0 ? (
+            <div className="notification is-light is-info">
+              Aucun élu ajouté. Utilisez le formulaire ci-dessus pour en ajouter.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+              {elus.map((elu, idx) => (
+                <div
+                  key={elu.id}
+                  className="box"
+                  style={{
+                    background: '#f9fbfd',
+                    borderRadius: 8,
+                    padding: 16,
+                    textAlign: 'center',
+                    position: 'relative'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    display: 'flex',
+                    gap: 4
+                  }}>
+                    <button
+                      className="button is-small is-info"
+                      onClick={() => handleEditElu(idx)}
+                      disabled={loading}
+                      title="Modifier"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="button is-small is-danger"
+                      onClick={() => handleDeleteElu(idx)}
+                      disabled={loading}
+                      title="Supprimer"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+
+                  <span
+                    className="tag is-light mb-2"
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      left: 8,
+                      fontSize: 11
+                    }}
+                  >
+                    #{elu.ordre}
+                  </span>
+
+                  <figure className="image is-96x96" style={{ margin: '0 auto 12px auto' }}>
+                    <img
+                      src={elu.photo || 'https://via.placeholder.com/96?text=Photo'}
+                      alt={`${elu.prenom} ${elu.nom}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        borderRadius: '50%',
+                        border: '3px solid #1277c6'
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/96?text=Photo';
+                      }}
+                    />
+                  </figure>
+
+                  <div className="has-text-weight-bold" style={{ fontSize: 15, color: '#333' }}>
+                    {elu.prenom} {elu.nom}
+                  </div>
+                  <div
+                    className="is-size-7 has-text-grey mt-1"
+                    style={{ fontStyle: 'italic' }}
+                  >
+                    {elu.fonction}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Section Liens utiles - AJOUTER APRÈS LA SECTION MUNICIPALITÉ */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>🔗</span> Gestion des Liens utiles
+        </h3>
+
+        {/* Formulaire d'ajout/modification d'un lien */}
+        <form onSubmit={handleLienSubmit} className="box mb-4" style={{ background: '#f9fbfd', borderRadius: 8 }}>
+          <h4 className="subtitle is-6 mb-3">
+            {editLienMode ? '✏️ Modifier un lien' : '➕ Ajouter un lien'}
+          </h4>
+
+          <div className="columns">
+            <div className="column is-8">
+              <div className="field mb-3">
+                <label className="label is-small">Titre *</label>
+                <div className="control">
+                  <input
+                    className="input"
+                    name="titre"
+                    value={lienForm.titre}
+                    onChange={handleLienChange}
+                    placeholder="Ex: Documents administratifs"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="field mb-3">
+                <label className="label is-small">URL *</label>
+                <div className="control">
+                  <input
+                    className="input"
+                    type="url"
+                    name="url"
+                    value={lienForm.url}
+                    onChange={handleLienChange}
+                    placeholder="https://exemple.com"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <p className="help">L'URL complète avec https://</p>
+              </div>
+            </div>
+
+            <div className="column is-4">
+              <div className="field mb-3">
+                <label className="label is-small">Icône</label>
+                <div className="control">
+                  <div className="select is-fullwidth">
+                    <select
+                      name="icone"
+                      value={lienForm.icone}
+                      onChange={handleLienChange}
+                      disabled={loading}
+                    >
+                      <option value="📄">📄 Document</option>
+                      <option value="🏛️">🏛️ Services</option>
+                      <option value="📅">📅 Agenda</option>
+                      <option value="📰">📰 Actualités</option>
+                      <option value="💳">💳 Paiement</option>
+                      <option value="🏢">🏢 Bâtiments</option>
+                      <option value="📞">📞 Contact</option>
+                      <option value="🌐">🌐 Site web</option>
+                      <option value="📧">📧 Email</option>
+                      <option value="🗺️">🗺️ Plan</option>
+                      <option value="📚">📚 Bibliothèque</option>
+                      <option value="⚽">⚽ Sport</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="field">
+                <label className="label is-small">Ordre d'affichage</label>
+                <div className="control">
+                  <input
+                    className="input"
+                    type="number"
+                    name="ordre"
+                    value={lienForm.ordre}
+                    onChange={handleLienChange}
+                    placeholder="0"
+                    disabled={loading}
+                  />
+                </div>
+                <p className="help">Plus petit = plus haut</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Aperçu du lien */}
+          {lienForm.titre && lienForm.url && (
+            <div className="notification is-light is-info mt-3">
+              <p className="is-size-7 has-text-weight-bold mb-2">📋 Aperçu :</p>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                background: 'white',
+                borderRadius: 8,
+                border: '1px solid #1277c6'
+              }}>
+                <span style={{ fontSize: 20 }}>{lienForm.icone}</span>
+                <span style={{ fontWeight: 600, color: '#1277c6' }}>{lienForm.titre}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="field is-grouped mt-4">
+            <div className="control">
+              <button
+                className={`button is-link${loading ? ' is-loading' : ''}`}
+                type="submit"
+                disabled={loading}
+              >
+                {editLienMode ? 'Enregistrer' : 'Ajouter'}
+              </button>
+            </div>
+            {editLienMode && (
+              <div className="control">
+                <button
+                  type="button"
+                  className="button is-light"
+                  onClick={resetLienForm}
+                  disabled={loading}
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+
+        {/* Liste des liens */}
+        <div>
+          <h4 className="subtitle is-6 mb-3">📋 Liens actuels ({liensUtiles.length})</h4>
+
+          {liensUtiles.length === 0 ? (
+            <div className="notification is-light is-info">
+              Aucun lien ajouté. Utilisez le formulaire ci-dessus pour en ajouter.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {liensUtiles.map((lien, idx) => (
+                <div
+                  key={lien.id}
+                  className="box"
+                  style={{
+                    background: '#f9fbfd',
+                    borderRadius: 8,
+                    padding: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    borderLeft: '4px solid #1277c6'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                    <span style={{
+                      fontSize: 24,
+                      width: 40,
+                      height: 40,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'white',
+                      borderRadius: '50%',
+                      border: '2px solid #1277c6'
+                    }}>
+                      {lien.icone}
+                    </span>
+                    
+                    <div style={{ flex: 1 }}>
+                      <div className="has-text-weight-bold" style={{ color: '#333', fontSize: 15 }}>
+                        {lien.titre}
+                      </div>
+                      <a 
+                        href={lien.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="has-text-link is-size-7"
+                        style={{ wordBreak: 'break-all' }}
+                      >
+                        {lien.url}
+                      </a>
+                    </div>
+
+                    <span
+                      className="tag is-light"
+                      style={{ fontSize: 11 }}
+                    >
+                      Ordre: {lien.ordre}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    <button
+                      className="button is-small is-info"
+                      onClick={() => handleEditLien(idx)}
+                      disabled={loading}
+                      title="Modifier"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="button is-small is-danger"
+                      onClick={() => handleDeleteLien(idx)}
+                      disabled={loading}
+                      title="Supprimer"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <ToastContainer position="top-right" autoClose={3000} newestOnTop />
     </div>
