@@ -110,6 +110,10 @@ export default function Ecoles() {
   const [content, setContent] = useState({});
   const [vacances, setVacances] = useState([]);
   const [ecoles, setEcoles] = useState([]);
+  const [services, setServices] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetch('/api/pageContent?page=ecoles')
@@ -118,13 +122,28 @@ export default function Ecoles() {
         const obj = data?.[0] || {};
         setContent(obj);
         setEcoles(Array.isArray(obj.ecoles_json) ? obj.ecoles_json : []);
+        setVacances(Array.isArray(obj.vacances_json) ? obj.vacances_json : []);
+        setServices(Array.isArray(obj.services_json) ? obj.services_json : []);
+        
+        // Charger les documents depuis documents_json ou migrer depuis les anciens champs
+        let docs = Array.isArray(obj.documents_json) ? obj.documents_json : [];
+        if (docs.length === 0) {
+          // Migration des anciens champs pour l'affichage
+          const legacy = [];
+          for (let i = 1; i <= 4; i++) {
+            if (obj[`doc_${i}_label`] && obj[`doc_${i}_url`]) {
+              legacy.push({
+                id: `doc-${i}`,
+                label: obj[`doc_${i}_label`],
+                url: obj[`doc_${i}_url`],
+                emoji: '📄'
+              });
+            }
+          }
+          docs = legacy;
+        }
+        setDocuments(docs);
       });
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/vacances')
-      .then(res => res.json())
-      .then(setVacances);
   }, []);
 
   const handleChange = (e) => {
@@ -155,6 +174,16 @@ export default function Ecoles() {
     setTimeout(() => {
       setFormSubmitted(false);
     }, 5000);
+  };
+
+  const openServiceModal = (service) => {
+    setSelectedService(service);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedService(null);
   };
 
   return (
@@ -337,7 +366,18 @@ export default function Ecoles() {
                       boxShadow: '0 2px 8px rgba(62, 142, 208, 0.1)'
                     }}>
                       <p className="has-text-weight-bold mb-2">📢 Information transport scolaire</p>
-                      <p>{content.info_transport || "Un service de ramassage scolaire est disponible."}</p>
+                      <p className="mb-3">{content.info_transport || "Un service de ramassage scolaire est disponible."}</p>
+                      {content.transport_fluo68_pdf && (
+                        <a 
+                          href={content.transport_fluo68_pdf} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="button is-info is-light"
+                          style={{ borderRadius: 10, fontWeight: 600 }}
+                        >
+                          📄 Inscription Fluo 68 (PDF)
+                        </a>
+                      )}
                     </div>
                   </AnimateOnScroll>
                 </div>
@@ -380,7 +420,7 @@ export default function Ecoles() {
                     )}
                   </div>
 
-                  {vacances.length > 0 ? (
+                  {vacances && vacances.length > 0 ? (
                     <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                       <table className="table is-fullwidth is-striped" style={{ 
                         borderRadius: 10, 
@@ -396,7 +436,7 @@ export default function Ecoles() {
                         </thead>
                         <tbody>
                           {vacances.map((v, idx) => (
-                            <tr key={v.id} style={{ transition: 'background 0.2s ease' }} className="table-row-hover">
+                            <tr key={v.id || idx} style={{ transition: 'background 0.2s ease' }} className="table-row-hover">
                               <td style={{ fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'left', paddingLeft: 12 }}>{v.titre}</td>
                               <td style={{ whiteSpace: 'nowrap', textAlign: 'left' }}>{v.debut}</td>
                               <td style={{ whiteSpace: 'nowrap', textAlign: 'left' }}>{v.fin}</td>
@@ -406,7 +446,16 @@ export default function Ecoles() {
                       </table>
                     </div>
                   ) : content.calendrier ? (
-                    <div dangerouslySetInnerHTML={{ __html: content.calendrier }} />
+                    <div 
+                      className="content"
+                      dangerouslySetInnerHTML={{ __html: content.calendrier }} 
+                      style={{
+                        background: 'white',
+                        padding: '1rem',
+                        borderRadius: 8,
+                        border: '1px solid #ffecd2'
+                      }}
+                    />
                   ) : (
                     <p className="has-text-grey">Aucun calendrier renseigné pour le moment.</p>
                   )}
@@ -430,12 +479,17 @@ export default function Ecoles() {
                     <span style={{ fontSize: 28 }}>📚</span>
                     Documents utiles
                   </h2>
+                  
+                  {documents.length === 0 && (
+                    <p className="has-text-grey">Aucun document disponible pour le moment.</p>
+                  )}
+
                   <ul style={{ paddingLeft: 0, listStyle: 'none' }}>
-                    {[1,2,3,4].map(i => (
-                      content[`doc_${i}_label`] && content[`doc_${i}_url`] ? (
-                        <li key={i} style={{ marginBottom: 12 }}>
+                    {documents.map((doc, index) => (
+                      <AnimateOnScroll key={doc.id || index} animation="fade-up" delay={index * 50}>
+                        <li style={{ marginBottom: 12 }}>
                           <a 
-                            href={content[`doc_${i}_url`]} 
+                            href={doc.url} 
                             className="has-text-link document-link" 
                             target="_blank" 
                             rel="noopener noreferrer"
@@ -452,21 +506,20 @@ export default function Ecoles() {
                               fontWeight: 600
                             }}
                           >
-                            <span style={{ fontSize: 20 }}>📄</span>
-                            {content[`doc_${i}_label`]}
+                            <span style={{ fontSize: 20 }}>{doc.emoji || '📄'}</span>
+                            {doc.label}
                             <span style={{ marginLeft: 'auto', opacity: 0.5 }}>→</span>
                           </a>
                         </li>
-                      ) : null
+                      </AnimateOnScroll>
                     ))}
                   </ul>
                 </div>
               </AnimateOnScroll>
             </div>
 
-            {/* Colonne 2 : Services périscolaires et Formulaire */}
+            {/* Colonne 2 : Services périscolaires */}
             <div className="column is-half">
-              {/* Services périscolaires */}
               <AnimateOnScroll animation="fade-left" delay={100}>
                 <div className="box animated-box" style={{ 
                   background: 'linear-gradient(135deg, #ffffff 0%, #f0fff8 100%)', 
@@ -480,57 +533,46 @@ export default function Ecoles() {
                     alignItems: 'center',
                     gap: 10
                   }}>
-                    <span style={{ fontSize: 32 }}>🎨</span>
-                    Services périscolaires
+                    <span style={{ fontSize: 32 }}>
+                      {content.services_section_emoji || '🎨'}
+                    </span>
+                    {content.services_section_titre || 'Services périscolaires'}
                   </h2>
                   
-                  {[
-                    {
-                      img: "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=200&q=80",
-                      title: "Cantine scolaire",
-                      emoji: "🍽️",
-                      horaires: content.cantine_horaires || "Lundi, mardi, jeudi, vendredi : 12h - 14h",
-                      info: content.cantine_info || "Repas préparés par notre traiteur local avec produits frais",
-                      btnLabel: content.cantine_menu_label || "Voir les menus de la semaine",
-                      btnUrl: content.cantine_menu_url || "#"
-                    },
-                    {
-                      img: "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=200&q=80",
-                      title: "Garderie périscolaire",
-                      emoji: "🏡",
-                      horaires: content.garderie_horaires || "Matin : 7h30 - 8h30",
-                      info: content.garderie_info || "Soir : 16h30 - 18h30\nActivités encadrées et aide aux devoirs"
-                    },
-                    {
-                      img: "https://images.unsplash.com/photo-1560421683-6856ea585c78?auto=format&fit=crop&w=200&q=80",
-                      title: "Activités extrascolaires",
-                      emoji: "⚽",
-                      info: content.activites_info || "Mercredi après-midi : 14h - 17h\nActivités sportives, artistiques et culturelles",
-                      btnLabel: content.activites_programme_label || "Programme des activités",
-                      btnUrl: content.activites_programme_url || "#"
-                    }
-                  ].map((service, index) => (
-                    <AnimateOnScroll key={index} animation="fade-up" delay={index * 100}>
-                      <div className="media mb-4 service-card" style={{
-                        padding: 16,
-                        borderRadius: 12,
-                        background: 'white',
-                        border: '2px solid #e8fff4',
-                        transition: 'all 0.3s ease'
-                      }}>
-                        <figure className="media-left">
-                          <p className="image is-64x64">
-                            <img 
-                              src={service.img}
-                              alt={service.title}
-                              style={{ 
-                                objectFit: 'cover', 
-                                borderRadius: 10,
-                                boxShadow: '0 4px 12px rgba(72, 199, 116, 0.15)'
-                              }}
-                            />
-                          </p>
-                        </figure>
+                  {services.length === 0 && (
+                    <p className="has-text-grey">Aucun service renseigné pour le moment.</p>
+                  )}
+
+                  {services.map((service, index) => (
+                    <AnimateOnScroll key={service.id || index} animation="fade-up" delay={index * 100}>
+                      <div 
+                        className="media mb-4 service-card" 
+                        style={{
+                          padding: 16,
+                          borderRadius: 12,
+                          background: 'white',
+                          border: '2px solid #e8fff4',
+                          transition: 'all 0.3s ease',
+                          cursor: service.btnUrl ? 'pointer' : 'default'
+                        }}
+                        onClick={() => service.btnUrl && openServiceModal(service)}
+                      >
+                        {service.image && (
+                          <figure className="media-left">
+                            <p className="image is-64x64">
+                              <img 
+                                src={service.image}
+                                alt={service.titre}
+                                style={{ 
+                                  objectFit: 'cover', 
+                                  borderRadius: 10,
+                                  boxShadow: '0 4px 12px rgba(72, 199, 116, 0.15)'
+                                }}
+                                onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/64?text=S'; }}
+                              />
+                            </p>
+                          </figure>
+                        )}
                         <div className="media-content">
                           <h3 className="subtitle is-5 has-text-link mb-1" style={{ 
                             fontWeight: 700,
@@ -538,24 +580,33 @@ export default function Ecoles() {
                             alignItems: 'center',
                             gap: 6
                           }}>
-                            <span style={{ fontSize: 20 }}>{service.emoji}</span>
-                            {service.title}
+                            {service.emoji && <span style={{ fontSize: 20 }}>{service.emoji}</span>}
+                            {service.titre}
                           </h3>
                           {service.horaires && (
                             <p className="has-text-grey mb-2" style={{ fontSize: 14 }}>
                               {service.horaires}
                             </p>
                           )}
-                          <p className="has-text-grey" style={{ fontSize: 14, whiteSpace: 'pre-line' }}>
-                            {service.info}
-                          </p>
+                          {service.description && (
+                            <p className="has-text-grey" style={{ fontSize: 14, whiteSpace: 'pre-line' }}>
+                              {service.description}
+                            </p>
+                          )}
                           {service.btnLabel && service.btnUrl && (
-                            <a href={service.btnUrl} className="button is-small is-success is-light mt-2" style={{
-                              borderRadius: 8,
-                              fontWeight: 600
-                            }}>
-                              {service.btnLabel}
-                            </a>
+                            <button 
+                              className="button is-small is-success is-light mt-2" 
+                              style={{
+                                borderRadius: 8,
+                                fontWeight: 600
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openServiceModal(service);
+                              }}
+                            >
+                              {service.btnLabel} →
+                            </button>
                           )}
                         </div>
                       </div>
@@ -838,6 +889,120 @@ export default function Ecoles() {
         </div>
       </section>
 
+      {/* Modal pour afficher le PDF ou lien externe */}
+      {showModal && selectedService && (
+        <div 
+          className={`modal ${showModal ? 'is-active' : ''}`}
+          onClick={closeModal}
+          style={{
+            zIndex: 9999
+          }}
+        >
+          <div className="modal-background"></div>
+          <div 
+            className="modal-card" 
+            style={{ 
+              maxWidth: '90vw', 
+              width: '900px',
+              maxHeight: '90vh'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="modal-card-head" style={{ 
+              background: 'linear-gradient(135deg, #48c774 0%, #3ab66a 100%)',
+              color: 'white'
+            }}>
+              <p className="modal-card-title has-text-white" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}>
+                {selectedService.emoji && <span style={{ fontSize: 24 }}>{selectedService.emoji}</span>}
+                {selectedService.titre}
+              </p>
+              <button 
+                className="delete" 
+                aria-label="close" 
+                onClick={closeModal}
+                style={{
+                  background: 'white',
+                  opacity: 0.9
+                }}
+              ></button>
+            </header>
+            <section className="modal-card-body" style={{ 
+              padding: 0,
+              overflow: 'hidden'
+            }}>
+              {selectedService.btnUrl.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={selectedService.btnUrl}
+                  style={{
+                    width: '100%',
+                    height: '70vh',
+                    border: 'none'
+                  }}
+                  title={selectedService.titre}
+                />
+              ) : (
+                <div style={{ 
+                  padding: '2rem',
+                  textAlign: 'center'
+                }}>
+                  <p className="mb-4">Ce lien va s'ouvrir dans un nouvel onglet :</p>
+                  <a 
+                    href={selectedService.btnUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="button is-success is-large"
+                    style={{
+                      borderRadius: 10,
+                      fontWeight: 600
+                    }}
+                  >
+                    🔗 {selectedService.btnLabel || 'Ouvrir le lien'}
+                  </a>
+                  <p className="mt-4 has-text-grey is-size-7">
+                    {selectedService.btnUrl}
+                  </p>
+                </div>
+              )}
+            </section>
+            <footer className="modal-card-foot" style={{
+              justifyContent: 'space-between',
+              background: '#f9fbfd'
+            }}>
+              {selectedService.description && (
+                <div style={{ flex: 1, marginRight: '1rem' }}>
+                  <p className="is-size-7 has-text-grey">
+                    {selectedService.description}
+                  </p>
+                </div>
+              )}
+              <div className="buttons">
+                {selectedService.btnUrl.toLowerCase().endsWith('.pdf') && (
+                  <a 
+                    href={selectedService.btnUrl} 
+                    download 
+                    className="button is-success is-light"
+                    style={{ borderRadius: 8 }}
+                  >
+                    📥 Télécharger
+                  </a>
+                )}
+                <button 
+                  className="button is-light" 
+                  onClick={closeModal}
+                  style={{ borderRadius: 8 }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
+
       {/* CSS pour les animations */}
       <style jsx global>{`
         @keyframes float {
@@ -910,6 +1075,29 @@ export default function Ecoles() {
 
         .document-link:hover span:last-child {
           opacity: 1 !important;
+        }
+
+        .modal.is-active {
+          display: flex;
+        }
+
+        .modal-background {
+          background-color: rgba(10, 10, 10, 0.7);
+        }
+
+        .modal-card {
+          animation: modalSlideDown 0.3s ease;
+        }
+
+        @keyframes modalSlideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         @media screen and (max-width: 768px) {
@@ -1088,6 +1276,15 @@ export default function Ecoles() {
 
           .media-content p {
             font-size: 0.875rem !important;
+          }
+
+          .modal-card {
+            width: 95vw !important;
+            max-height: 85vh !important;
+          }
+
+          .modal-card-body iframe {
+            height: 60vh !important;
           }
         }
 
