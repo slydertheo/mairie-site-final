@@ -1,6 +1,94 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
+
+// Hook personnalisé pour les animations au défilement
+function useOnScreen(options) {
+  const ref = useRef();
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        if (options?.triggerOnce) {
+          observer.disconnect();
+        }
+      } else if (!options?.triggerOnce) {
+        setIsVisible(false);
+      }
+    }, {
+      threshold: options?.threshold || 0.1,
+      rootMargin: options?.rootMargin || '0px'
+    });
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [ref, options]);
+
+  return [ref, isVisible];
+}
+
+// Composant d'animation
+function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration = 800, threshold = 0.1, once = true }) {
+  // Utiliser un threshold plus faible sur mobile
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const adjustedThreshold = isMobile ? 0.01 : threshold;
+  const [ref, isVisible] = useOnScreen({ threshold: adjustedThreshold, triggerOnce: once });
+
+  const animations = {
+    "fade-up": {
+      hidden: { opacity: 0, transform: 'translateY(50px) scale(0.95)' },
+      visible: { opacity: 1, transform: 'translateY(0) scale(1)' }
+    },
+    "fade-left": {
+      hidden: { opacity: 0, transform: 'translateX(50px)' },
+      visible: { opacity: 1, transform: 'translateX(0)' }
+    },
+    "fade-right": {
+      hidden: { opacity: 0, transform: 'translateX(-50px)' },
+      visible: { opacity: 1, transform: 'translateX(0)' }
+    },
+    "zoom-in": {
+      hidden: { opacity: 0, transform: 'scale(0.8)' },
+      visible: { opacity: 1, transform: 'scale(1)' }
+    },
+    "slide-up": {
+      hidden: { opacity: 0, transform: 'translateY(100px)' },
+      visible: { opacity: 1, transform: 'translateY(0)' }
+    }
+  };
+
+  const selectedAnimation = animations[animation] || animations["fade-up"];
+  
+  return (
+    <div
+      ref={ref}
+      style={{
+        ...selectedAnimation[isVisible ? 'visible' : 'hidden'],
+        transition: `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}ms`,
+        willChange: 'opacity, transform',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Ecoles() {
   const [formData, setFormData] = useState({
@@ -71,9 +159,9 @@ export default function Ecoles() {
 
   return (
     <>
-      {/* En-tête hero */}
+      {/* En-tête hero avec animation */}
       <section
-        className="hero is-primary is-medium"
+        className="hero is-primary is-medium hero-animated"
         style={{
           backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
           backgroundSize: 'cover',
@@ -81,13 +169,44 @@ export default function Ecoles() {
           borderRadius: '0 0 32px 32px',
           boxShadow: '0 8px 32px #0a254030',
           marginBottom: 0,
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
-        <div className="hero-body">
+        {/* Effet de particules animées */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px',
+          animation: 'float 20s linear infinite',
+          opacity: 0.3
+        }}></div>
+
+        <div className="hero-body" style={{ position: 'relative', zIndex: 1 }}>
           <div className="container has-text-centered">
-            <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
-            </h1>
+            <AnimateOnScroll animation="fade-up" duration={1000}>
+              <h1 className="title is-2 has-text-weight-bold" style={{ 
+                color: '#fff', 
+                textShadow: '0 4px 24px #0a2540a0', 
+                letterSpacing: 1,
+                marginBottom: 20
+              }}>
+                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
+              </h1>
+            </AnimateOnScroll>
+            <AnimateOnScroll animation="zoom-in" delay={400}>
+              <div style={{
+                width: 80,
+                height: 4,
+                background: 'linear-gradient(90deg, transparent, #ffd700, transparent)',
+                margin: '20px auto',
+                borderRadius: 2
+              }}></div>
+            </AnimateOnScroll>
           </div>
         </div>
       </section>
@@ -96,432 +215,943 @@ export default function Ecoles() {
       <section
         className="section"
         style={{
-          background: '#fafdff',
+          background: 'linear-gradient(180deg, #fafdff 0%, #f0f7ff 100%)',
           minHeight: '100vh',
           marginTop: 0,
+          position: 'relative'
         }}
       >
-        <div className="container" style={{ maxWidth: 1100 }}>
-          <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
-            {content.titre || "Écoles et Services Périscolaires"}
-          </h1>
+        {/* Motif de fond décoratif */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(18, 119, 198, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(72, 199, 116, 0.03) 0%, transparent 50%)',
+          pointerEvents: 'none'
+        }}></div>
 
-          <div className="columns is-variable is-5">
-            {/* Colonne 1 : Écoles dynamiques au format “avant” */}
+        <div className="container" style={{ maxWidth: 1100, position: 'relative', zIndex: 1 }}>
+          <AnimateOnScroll animation="fade-up" duration={800}>
+            <h1 className="title is-3 has-text-link mb-6" style={{ 
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontWeight: 800,
+              letterSpacing: 0.5
+            }}>
+              {content.titre || "Écoles et Services Périscolaires"}
+            </h1>
+          </AnimateOnScroll>
+
+          <div className="columns is-variable is-6">
+            {/* Colonne 1 : Écoles, Calendrier, Documents */}
             <div className="column is-half">
-              <div className="box" style={{ background: '#f8fafc', borderRadius: 16 }}>
-                <h2 className="title is-4 has-text-primary mb-4">Nos écoles</h2>
+              {/* Nos écoles */}
+              <AnimateOnScroll animation="fade-right" delay={100}>
+                <div className="box animated-box" style={{ 
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)', 
+                  borderRadius: 16,
+                  border: '2px solid #e0e7ef',
+                  boxShadow: '0 4px 16px rgba(18, 119, 198, 0.08)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <h2 className="title is-4 has-text-primary mb-4" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 32 }}>🏫</span>
+                    Nos écoles
+                  </h2>
 
-                {ecoles.length === 0 && (
-                  <p className="has-text-grey">Aucune école renseignée pour le moment.</p>
-                )}
+                  {ecoles.length === 0 && (
+                    <p className="has-text-grey">Aucune école renseignée pour le moment.</p>
+                  )}
 
-                {ecoles.map((e) => (
-                  <div className="media mb-5" key={e.id}>
-                    <figure className="media-left">
-                      <p className="image is-96x96">
-                        <img
-                          src={e.image || 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=200&q=80'}
-                          alt={e.nom}
-                          style={{ objectFit: 'cover', borderRadius: 8 }}
-                          onError={(ev) => { ev.currentTarget.src = 'https://via.placeholder.com/96?text=Logo'; }}
-                        />
-                      </p>
-                    </figure>
-                    <div className="media-content">
-                      <h3 className="subtitle is-5 has-text-link mb-2">{e.nom || 'Nom de l’école'}</h3>
-                      {e.partenaire ? (
-                        <p style={{ fontStyle: 'italic', fontSize: 15 }} className="mb-2">{e.partenaire}</p>
-                      ) : null}
-                      {e.adresse && (
-                        <p className="has-text-grey mb-2">
-                          <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {e.adresse}
-                        </p>
-                      )}
-                      {e.tel && (
-                        <p className="has-text-grey mb-2">
-                          <span style={{ fontSize: 16, marginRight: 8 }}>📞</span> {e.tel}
-                        </p>
-                      )}
-                      {e.email && (
-                        <p className="has-text-grey">
-                          <span style={{ fontSize: 16, marginRight: 8 }}>✉️</span> {e.email}
-                        </p>
-                      )}
-                      {e.site && (
-                        <p className="mt-1">
-                          <a className="has-text-link is-underlined" href={e.site} target="_blank" rel="noopener noreferrer">🌐 Site web</a>
-                        </p>
-                      )}
+                  {ecoles.map((e, index) => (
+                    <AnimateOnScroll key={e.id} animation="fade-up" delay={index * 100}>
+                      <div className="media mb-5 school-card" style={{
+                        padding: 16,
+                        borderRadius: 12,
+                        background: 'linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%)',
+                        border: '2px solid #e8f4ff',
+                        transition: 'all 0.3s ease'
+                      }}>
+                        <figure className="media-left">
+                          <p className="image is-96x96" style={{ position: 'relative' }}>
+                            <img
+                              src={e.image || 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=200&q=80'}
+                              alt={e.nom}
+                              style={{ 
+                                objectFit: 'cover', 
+                                borderRadius: 12,
+                                boxShadow: '0 4px 12px rgba(18, 119, 198, 0.15)'
+                              }}
+                              onError={(ev) => { ev.currentTarget.src = 'https://via.placeholder.com/96?text=Logo'; }}
+                            />
+                          </p>
+                        </figure>
+                        <div className="media-content">
+                          <h3 className="subtitle is-5 has-text-link mb-2" style={{ fontWeight: 700 }}>{e.nom || 'Nom de l\'école'}</h3>
+                          {e.partenaire && (
+                            <p style={{ fontStyle: 'italic', fontSize: 15, color: '#48c774' }} className="mb-2">{e.partenaire}</p>
+                          )}
+                          {e.adresse && (
+                            <p className="has-text-grey mb-2">
+                              <span style={{ fontSize: 18, marginRight: 8 }}>📍</span> {e.adresse}
+                            </p>
+                          )}
+                          {e.tel && (
+                            <p className="has-text-grey mb-2">
+                              <span style={{ fontSize: 18, marginRight: 8 }}>📞</span> {e.tel}
+                            </p>
+                          )}
+                          {e.email && (
+                            <p className="has-text-grey">
+                              <span style={{ fontSize: 18, marginRight: 8 }}>✉️</span> {e.email}
+                            </p>
+                          )}
+                          {e.site && (
+                            <p className="mt-2">
+                              <a className="button is-small is-link is-light" href={e.site} target="_blank" rel="noopener noreferrer" style={{
+                                borderRadius: 8,
+                                fontWeight: 600
+                              }}>
+                                🌐 Site web
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </AnimateOnScroll>
+                  ))}
+
+                  <AnimateOnScroll animation="zoom-in" delay={300}>
+                    <div className="notification is-info is-light mt-5" style={{
+                      borderRadius: 12,
+                      border: '2px solid #3e8ed0',
+                      boxShadow: '0 2px 8px rgba(62, 142, 208, 0.1)'
+                    }}>
+                      <p className="has-text-weight-bold mb-2">📢 Information transport scolaire</p>
+                      <p>{content.info_transport || "Un service de ramassage scolaire est disponible."}</p>
                     </div>
-                  </div>
-                ))}
-
-                <div className="notification is-info is-light mt-5">
-                  <p className="has-text-weight-bold mb-2">📢 Information transport scolaire</p>
-                  <p>{content.info_transport || "Un service de ramassage scolaire est disponible."}</p>
+                  </AnimateOnScroll>
                 </div>
-              </div>
+              </AnimateOnScroll>
 
               {/* Calendrier scolaire */}
-              <div className="box mt-5" style={{ background: '#f8fafc', borderRadius: 16 }}>
-                <h2 className="title is-5 has-text-primary mb-3">Calendrier scolaire 2024-2025</h2>
-                {content.calendrier_pdf_url && (
-                  <a href={content.calendrier_pdf_url} target="_blank" rel="noopener noreferrer" className="button is-link is-light mb-2">
-                    📄 Télécharger le calendrier scolaire (PDF/Image)
-                  </a>
-                )}
-                {content.calendrier_url && (
-                  <a href={content.calendrier_url} target="_blank" rel="noopener noreferrer" className="button is-link is-light mb-2">
-                    🌐 Voir le calendrier officiel
-                  </a>
-                )}
-                {vacances.length > 0 ? (
-                  <table className="table is-fullwidth is-striped">
-                    <thead>
-                      <tr>
-                        <th>Vacances</th>
-                        <th>Début</th>
-                        <th>Fin</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vacances.map(v => (
-                        <tr key={v.id}>
-                          <td>{v.titre}</td>
-                          <td>{v.debut}</td>
-                          <td>{v.fin}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : content.calendrier ? (
-                  <div dangerouslySetInnerHTML={{ __html: content.calendrier }} />
-                ) : (
-                  <p className="has-text-grey">Aucun calendrier renseigné pour le moment.</p>
-                )}
-              </div>
+              <AnimateOnScroll animation="fade-right" delay={200}>
+                <div className="box animated-box mt-5" style={{ 
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fff8f0 100%)', 
+                  borderRadius: 16,
+                  border: '2px solid #ffecd2',
+                  boxShadow: '0 4px 16px rgba(255, 152, 0, 0.08)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <h2 className="title is-5 has-text-primary mb-3" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 28 }}>📅</span>
+                    Calendrier scolaire 2024-2025
+                  </h2>
+                  
+                  <div className="buttons mb-3">
+                    {content.calendrier_pdf_url && (
+                      <a href={content.calendrier_pdf_url} target="_blank" rel="noopener noreferrer" className="button is-link is-light" style={{
+                        borderRadius: 10,
+                        fontWeight: 600
+                      }}>
+                        📄 Télécharger le calendrier (PDF)
+                      </a>
+                    )}
+                    {content.calendrier_url && (
+                      <a href={content.calendrier_url} target="_blank" rel="noopener noreferrer" className="button is-link is-light" style={{
+                        borderRadius: 10,
+                        fontWeight: 600
+                      }}>
+                        🌐 Calendrier officiel
+                      </a>
+                    )}
+                  </div>
+
+                  {vacances.length > 0 ? (
+                    <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <table className="table is-fullwidth is-striped" style={{ 
+                        borderRadius: 10, 
+                        overflow: 'hidden',
+                        minWidth: 400
+                      }}>
+                        <thead>
+                          <tr style={{ background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)', color: 'white' }}>
+                            <th style={{ color: 'white', whiteSpace: 'nowrap', textAlign: 'left', paddingLeft: 12 }}>Vacances</th>
+                            <th style={{ color: 'white', whiteSpace: 'nowrap', textAlign: 'left' }}>Début</th>
+                            <th style={{ color: 'white', whiteSpace: 'nowrap', textAlign: 'left' }}>Fin</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {vacances.map((v, idx) => (
+                            <tr key={v.id} style={{ transition: 'background 0.2s ease' }} className="table-row-hover">
+                              <td style={{ fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'left', paddingLeft: 12 }}>{v.titre}</td>
+                              <td style={{ whiteSpace: 'nowrap', textAlign: 'left' }}>{v.debut}</td>
+                              <td style={{ whiteSpace: 'nowrap', textAlign: 'left' }}>{v.fin}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : content.calendrier ? (
+                    <div dangerouslySetInnerHTML={{ __html: content.calendrier }} />
+                  ) : (
+                    <p className="has-text-grey">Aucun calendrier renseigné pour le moment.</p>
+                  )}
+                </div>
+              </AnimateOnScroll>
+
+              {/* Documents utiles */}
+              <AnimateOnScroll animation="fade-right" delay={300}>
+                <div className="box animated-box mt-5" style={{ 
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fff8f0 100%)', 
+                  borderRadius: 16,
+                  border: '2px solid #ffecd2',
+                  boxShadow: '0 4px 16px rgba(255, 152, 0, 0.08)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <h2 className="title is-5 has-text-primary mb-3" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 28 }}>📚</span>
+                    Documents utiles
+                  </h2>
+                  <ul style={{ paddingLeft: 0, listStyle: 'none' }}>
+                    {[1,2,3,4].map(i => (
+                      content[`doc_${i}_label`] && content[`doc_${i}_url`] ? (
+                        <li key={i} style={{ marginBottom: 12 }}>
+                          <a 
+                            href={content[`doc_${i}_url`]} 
+                            className="has-text-link document-link" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '10px 14px',
+                              background: 'white',
+                              borderRadius: 10,
+                              border: '2px solid #ffecd2',
+                              transition: 'all 0.3s ease',
+                              textDecoration: 'none',
+                              fontWeight: 600
+                            }}
+                          >
+                            <span style={{ fontSize: 20 }}>📄</span>
+                            {content[`doc_${i}_label`]}
+                            <span style={{ marginLeft: 'auto', opacity: 0.5 }}>→</span>
+                          </a>
+                        </li>
+                      ) : null
+                    ))}
+                  </ul>
+                </div>
+              </AnimateOnScroll>
             </div>
 
-            {/* Colonne 2 : Périscolaire et formulaire */}
+            {/* Colonne 2 : Services périscolaires et Formulaire */}
             <div className="column is-half">
-              <div className="box" style={{ background: '#f8fafc', borderRadius: 16 }}>
-                <h2 className="title is-4 has-text-primary mb-4">Services périscolaires</h2>
-                
-                <div className="media mb-4">
-                  <figure className="media-left">
-                    <p className="image is-64x64">
-                      <img 
-                        src="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=200&q=80" 
-                        alt="Cantine"
-                        style={{ objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    </p>
-                  </figure>
-                  <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-1">Cantine scolaire</h3>
-                    <p className="has-text-grey">
-                      {content.cantine_horaires || "Lundi, mardi, jeudi, vendredi : 12h - 14h"}<br/>
-                      {content.cantine_info || "Repas préparés par notre traiteur local avec produits frais"}
-                    </p>
-                    <a href={content.cantine_menu_url || "#"} className="button is-small is-link is-light mt-2">
-                      {content.cantine_menu_label || "Voir les menus de la semaine"}
-                    </a>
-                  </div>
+              {/* Services périscolaires */}
+              <AnimateOnScroll animation="fade-left" delay={100}>
+                <div className="box animated-box" style={{ 
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f0fff8 100%)', 
+                  borderRadius: 16,
+                  border: '2px solid #d2ffe8',
+                  boxShadow: '0 4px 16px rgba(72, 199, 116, 0.08)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <h2 className="title is-4 has-text-primary mb-4" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 32 }}>🎨</span>
+                    Services périscolaires
+                  </h2>
+                  
+                  {[
+                    {
+                      img: "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=200&q=80",
+                      title: "Cantine scolaire",
+                      emoji: "🍽️",
+                      horaires: content.cantine_horaires || "Lundi, mardi, jeudi, vendredi : 12h - 14h",
+                      info: content.cantine_info || "Repas préparés par notre traiteur local avec produits frais",
+                      btnLabel: content.cantine_menu_label || "Voir les menus de la semaine",
+                      btnUrl: content.cantine_menu_url || "#"
+                    },
+                    {
+                      img: "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=200&q=80",
+                      title: "Garderie périscolaire",
+                      emoji: "🏡",
+                      horaires: content.garderie_horaires || "Matin : 7h30 - 8h30",
+                      info: content.garderie_info || "Soir : 16h30 - 18h30\nActivités encadrées et aide aux devoirs"
+                    },
+                    {
+                      img: "https://images.unsplash.com/photo-1560421683-6856ea585c78?auto=format&fit=crop&w=200&q=80",
+                      title: "Activités extrascolaires",
+                      emoji: "⚽",
+                      info: content.activites_info || "Mercredi après-midi : 14h - 17h\nActivités sportives, artistiques et culturelles",
+                      btnLabel: content.activites_programme_label || "Programme des activités",
+                      btnUrl: content.activites_programme_url || "#"
+                    }
+                  ].map((service, index) => (
+                    <AnimateOnScroll key={index} animation="fade-up" delay={index * 100}>
+                      <div className="media mb-4 service-card" style={{
+                        padding: 16,
+                        borderRadius: 12,
+                        background: 'white',
+                        border: '2px solid #e8fff4',
+                        transition: 'all 0.3s ease'
+                      }}>
+                        <figure className="media-left">
+                          <p className="image is-64x64">
+                            <img 
+                              src={service.img}
+                              alt={service.title}
+                              style={{ 
+                                objectFit: 'cover', 
+                                borderRadius: 10,
+                                boxShadow: '0 4px 12px rgba(72, 199, 116, 0.15)'
+                              }}
+                            />
+                          </p>
+                        </figure>
+                        <div className="media-content">
+                          <h3 className="subtitle is-5 has-text-link mb-1" style={{ 
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6
+                          }}>
+                            <span style={{ fontSize: 20 }}>{service.emoji}</span>
+                            {service.title}
+                          </h3>
+                          {service.horaires && (
+                            <p className="has-text-grey mb-2" style={{ fontSize: 14 }}>
+                              {service.horaires}
+                            </p>
+                          )}
+                          <p className="has-text-grey" style={{ fontSize: 14, whiteSpace: 'pre-line' }}>
+                            {service.info}
+                          </p>
+                          {service.btnLabel && service.btnUrl && (
+                            <a href={service.btnUrl} className="button is-small is-success is-light mt-2" style={{
+                              borderRadius: 8,
+                              fontWeight: 600
+                            }}>
+                              {service.btnLabel}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </AnimateOnScroll>
+                  ))}
                 </div>
-                
-                <div className="media mb-4">
-                  <figure className="media-left">
-                    <p className="image is-64x64">
-                      <img 
-                        src="https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=200&q=80" 
-                        alt="Garderie"
-                        style={{ objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    </p>
-                  </figure>
-                  <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-1">Garderie périscolaire</h3>
-                    <p className="has-text-grey">
-                      {content.garderie_horaires || "Matin : 7h30 - 8h30"}<br/>
-                      {content.garderie_info || "Soir : 16h30 - 18h30\nActivités encadrées et aide aux devoirs"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="media">
-                  <figure className="media-left">
-                    <p className="image is-64x64">
-                      <img 
-                        src="https://images.unsplash.com/photo-1560421683-6856ea585c78?auto=format&fit=crop&w=200&q=80" 
-                        alt="Activités"
-                        style={{ objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    </p>
-                  </figure>
-                  <div className="media-content">
-                    <h3 className="subtitle is-5 has-text-link mb-1">Activités extrascolaires</h3>
-                    <p className="has-text-grey">
-                      {content.activites_info || "Mercredi après-midi : 14h - 17h\nActivités sportives, artistiques et culturelles"}
-                    </p>
-                    <a href={content.activites_programme_url || "#"} className="button is-small is-link is-light mt-2">
-                      {content.activites_programme_label || "Programme des activités"}
-                    </a>
-                  </div>
-                </div>
-              </div>
+              </AnimateOnScroll>
 
               {/* Formulaire d'inscription */}
-              <div className="box mt-5" style={{ background: '#f8fafc', borderRadius: 16 }}>
-                <h2 className="title is-4 has-text-primary mb-4">Inscription aux services scolaires</h2>
-                
-                {formSubmitted ? (
-                  <div className="notification is-success">
-                    <button className="delete" onClick={() => setFormSubmitted(false)}></button>
-                    Votre demande d'inscription a bien été enregistrée. Vous recevrez une confirmation par email.
-                  </div>
-                ) : null}
+              <AnimateOnScroll animation="fade-left" delay={200}>
+                <div className="box animated-box mt-5" style={{ 
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)', 
+                  borderRadius: 16,
+                  border: '2px solid #e0e7ef',
+                  boxShadow: '0 4px 16px rgba(18, 119, 198, 0.08)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <h2 className="title is-4 has-text-primary mb-4" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <span style={{ fontSize: 32 }}>📝</span>
+                    Inscription aux services scolaires
+                  </h2>
+                  
+                  {formSubmitted && (
+                    <AnimateOnScroll animation="zoom-in">
+                      <div className="notification is-success" style={{
+                        borderRadius: 12,
+                        animation: 'slideDown 0.3s ease'
+                      }}>
+                        <button className="delete" onClick={() => setFormSubmitted(false)}></button>
+                        ✅ Votre demande d'inscription a bien été enregistrée. Vous recevrez une confirmation par email.
+                      </div>
+                    </AnimateOnScroll>
+                  )}
 
-                <form onSubmit={handleSubmit}>
-                  <div className="field">
-                    <label className="label">Informations sur l'enfant</label>
-                    <div className="columns">
-                      <div className="column">
-                        <div className="field">
-                          <label className="label is-small">Nom</label>
-                          <div className="control">
-                            <input
-                              className="input"
-                              type="text"
-                              name="nomEnfant"
-                              value={formData.nomEnfant}
-                              onChange={handleChange}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="column">
-                        <div className="field">
-                          <label className="label is-small">Prénom</label>
-                          <div className="control">
-                            <input
-                              className="input"
-                              type="text"
-                              name="prenomEnfant"
-                              value={formData.prenomEnfant}
-                              onChange={handleChange}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="field">
-                      <label className="label is-small">Date de naissance</label>
-                      <div className="control">
-                        <input
-                          className="input"
-                          type="date"
-                          name="dateNaissance"
-                          value={formData.dateNaissance}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="field">
-                      <label className="label is-small">Classe</label>
-                      <div className="control">
-                        <div className="select is-fullwidth">
-                          <select name="classe" value={formData.classe} onChange={handleChange} required>
-                            <option value="">Sélectionnez une classe</option>
-                            <option value="PS">Petite Section</option>
-                            <option value="MS">Moyenne Section</option>
-                            <option value="GS">Grande Section</option>
-                            <option value="CP">CP</option>
-                            <option value="CE1">CE1</option>
-                            <option value="CE2">CE2</option>
-                            <option value="CM1">CM1</option>
-                            <option value="CM2">CM2</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="field mt-5">
-                    <label className="label">Informations du responsable légal</label>
-                    <div className="columns">
-                      <div className="column">
-                        <div className="field">
-                          <label className="label is-small">Nom</label>
-                          <div className="control">
-                            <input
-                              className="input"
-                              type="text"
-                              name="nomParent"
-                              value={formData.nomParent}
-                              onChange={handleChange}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="column">
-                        <div className="field">
-                          <label className="label is-small">Prénom</label>
-                          <div className="control">
-                            <input
-                              className="input"
-                              type="text"
-                              name="prenomParent"
-                              value={formData.prenomParent}
-                              onChange={handleChange}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="columns">
-                      <div className="column">
-                        <div className="field">
-                          <label className="label is-small">Téléphone</label>
-                          <div className="control">
-                            <input
-                              className="input"
-                              type="tel"
-                              name="telephone"
-                              value={formData.telephone}
-                              onChange={handleChange}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="column">
-                        <div className="field">
-                          <label className="label is-small">Email</label>
-                          <div className="control">
-                            <input
-                              className="input"
-                              type="email"
-                              name="email"
-                              value={formData.email}
-                              onChange={handleChange}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="field">
-                      <label className="label is-small">Adresse</label>
-                      <div className="control">
-                        <textarea
-                          className="textarea"
-                          name="adresse"
-                          value={formData.adresse}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="field mt-5">
-                    <label className="label">Services souhaités</label>
-                    
-                    <div className="field">
-                      <div className="control">
-                        <label className="checkbox">
-                          <input
-                            type="checkbox"
-                            name="cantine"
-                            checked={formData.cantine}
-                            onChange={handleChange}
-                          />
-                          {' '}
-                          Inscription à la cantine
+                  <form onSubmit={handleSubmit}>
+                    <AnimateOnScroll animation="fade-up" delay={50}>
+                      <div className="field">
+                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 20 }}>👶</span>
+                          Informations sur l'enfant
                         </label>
-                      </div>
-                    </div>
-                    
-                    <div className="field">
-                      <div className="control">
-                        <label className="checkbox">
-                          <input
-                            type="checkbox"
-                            name="garderieMatin"
-                            checked={formData.garderieMatin}
-                            onChange={handleChange}
-                          />
-                          {' '}
-                          Garderie du matin (7h30 - 8h30)
-                        </label>
-                      </div>
-                    </div>
-                    
-                    <div className="field">
-                      <div className="control">
-                        <label className="checkbox">
-                          <input
-                            type="checkbox"
-                            name="garderieSoir"
-                            checked={formData.garderieSoir}
-                            onChange={handleChange}
-                          />
-                          {' '}
-                          Garderie du soir (16h30 - 18h30)
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+                        <div className="columns">
+                          <div className="column">
+                            <div className="field">
+                              <label className="label is-small">Nom</label>
+                              <div className="control">
+                                <input
+                                  className="input"
+                                  type="text"
+                                  name="nomEnfant"
+                                  value={formData.nomEnfant}
+                                  onChange={handleChange}
+                                  required
+                                  style={{ borderRadius: 10 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="column">
+                            <div className="field">
+                              <label className="label is-small">Prénom</label>
+                              <div className="control">
+                                <input
+                                  className="input"
+                                  type="text"
+                                  name="prenomEnfant"
+                                  value={formData.prenomEnfant}
+                                  onChange={handleChange}
+                                  required
+                                  style={{ borderRadius: 10 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="field">
+                          <label className="label is-small">Date de naissance</label>
+                          <div className="control">
+                            <input
+                              className="input"
+                              type="date"
+                              name="dateNaissance"
+                              value={formData.dateNaissance}
+                              onChange={handleChange}
+                              required
+                              style={{ borderRadius: 10 }}
+                            />
+                          </div>
+                        </div>
 
-                  <div className="field mt-5">
-                    <div className="control">
-                      <button 
-                        className="button is-link is-medium is-fullwidth"
-                        type="submit"
-                        style={{
-                          borderRadius: 10,
-                          fontWeight: 700,
-                          fontSize: 18,
-                          padding: '1rem 0',
-                          boxShadow: '0 2px 12px #1277c640',
-                        }}
-                      >
-                        Envoyer la demande d'inscription
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-              
-              <div className="box mt-5" style={{ background: '#f8fafc', borderRadius: 16 }}>
-                <h2 className="title is-5 has-text-primary mb-2">Documents utiles</h2>
-                <ul style={{ paddingLeft: 18 }}>
-                  {[1,2,3,4].map(i => (
-                    content[`doc_${i}_label`] && content[`doc_${i}_url`] ? (
-                      <li key={i} style={{ marginBottom: 10 }}>
-                        <a href={content[`doc_${i}_url`]} className="has-text-link is-underlined" target="_blank" rel="noopener noreferrer">
-                          <span style={{ fontSize: 16, marginRight: 8 }}>📄</span>
-                          {content[`doc_${i}_label`]}
-                        </a>
-                      </li>
-                    ) : null
-                  ))}
-                </ul>
-              </div>
+                        <div className="field">
+                          <label className="label is-small">Classe</label>
+                          <div className="control">
+                            <div className="select is-fullwidth">
+                              <select name="classe" value={formData.classe} onChange={handleChange} required style={{ borderRadius: 10 }}>
+                                <option value="">Sélectionnez une classe</option>
+                                <option value="PS">Petite Section</option>
+                                <option value="MS">Moyenne Section</option>
+                                <option value="GS">Grande Section</option>
+                                <option value="CP">CP</option>
+                                <option value="CE1">CE1</option>
+                                <option value="CE2">CE2</option>
+                                <option value="CM1">CM1</option>
+                                <option value="CM2">CM2</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AnimateOnScroll>
+
+                    <AnimateOnScroll animation="fade-up" delay={100}>
+                      <div className="field mt-5">
+                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 20 }}>👨‍👩‍👧</span>
+                          Informations du responsable légal
+                        </label>
+                        <div className="columns">
+                          <div className="column">
+                            <div className="field">
+                              <label className="label is-small">Nom</label>
+                              <div className="control">
+                                <input
+                                  className="input"
+                                  type="text"
+                                  name="nomParent"
+                                  value={formData.nomParent}
+                                  onChange={handleChange}
+                                  required
+                                  style={{ borderRadius: 10 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="column">
+                            <div className="field">
+                              <label className="label is-small">Prénom</label>
+                              <div className="control">
+                                <input
+                                  className="input"
+                                  type="text"
+                                  name="prenomParent"
+                                  value={formData.prenomParent}
+                                  onChange={handleChange}
+                                  required
+                                  style={{ borderRadius: 10 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="columns">
+                          <div className="column">
+                            <div className="field">
+                              <label className="label is-small">Téléphone</label>
+                              <div className="control">
+                                <input
+                                  className="input"
+                                  type="tel"
+                                  name="telephone"
+                                  value={formData.telephone}
+                                  onChange={handleChange}
+                                  required
+                                  style={{ borderRadius: 10 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="column">
+                            <div className="field">
+                              <label className="label is-small">Email</label>
+                              <div className="control">
+                                <input
+                                  className="input"
+                                  type="email"
+                                  name="email"
+                                  value={formData.email}
+                                  onChange={handleChange}
+                                  required
+                                  style={{ borderRadius: 10 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="field">
+                          <label className="label is-small">Adresse</label>
+                          <div className="control">
+                            <textarea
+                              className="textarea"
+                              name="adresse"
+                              value={formData.adresse}
+                              onChange={handleChange}
+                              required
+                              style={{ borderRadius: 10 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </AnimateOnScroll>
+
+                    <AnimateOnScroll animation="fade-up" delay={150}>
+                      <div className="field mt-5">
+                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 20 }}>✅</span>
+                          Services souhaités
+                        </label>
+                        
+                        {[
+                          { name: 'cantine', label: 'Inscription à la cantine', emoji: '🍽️' },
+                          { name: 'garderieMatin', label: 'Garderie du matin (7h30 - 8h30)', emoji: '🌅' },
+                          { name: 'garderieSoir', label: 'Garderie du soir (16h30 - 18h30)', emoji: '🌆' }
+                        ].map((service, idx) => (
+                          <div key={service.name} className="field checkbox-field" style={{
+                            padding: '12px 16px',
+                            background: 'white',
+                            borderRadius: 10,
+                            border: '2px solid #e0e7ef',
+                            marginBottom: 10,
+                            transition: 'all 0.2s ease'
+                          }}>
+                            <div className="control">
+                              <label className="checkbox" style={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                gap: 10,
+                                cursor: 'pointer',
+                                fontWeight: 500
+                              }}>
+                                <input
+                                  type="checkbox"
+                                  name={service.name}
+                                  checked={formData[service.name]}
+                                  onChange={handleChange}
+                                  style={{ width: 20, height: 20 }}
+                                />
+                                <span style={{ fontSize: 20 }}>{service.emoji}</span>
+                                <span>{service.label}</span>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </AnimateOnScroll>
+
+                    <AnimateOnScroll animation="zoom-in" delay={200}>
+                      <div className="field mt-5">
+                        <div className="control">
+                          <button 
+                            className="button is-link is-medium is-fullwidth submit-button"
+                            type="submit"
+                            style={{
+                              borderRadius: 12,
+                              fontWeight: 700,
+                              fontSize: 18,
+                              padding: '1.25rem 0',
+                              boxShadow: '0 4px 16px rgba(18, 119, 198, 0.3)',
+                              transition: 'all 0.3s ease',
+                              border: 'none'
+                            }}
+                          >
+                            <span style={{ marginRight: 8 }}>✉️</span>
+                            Envoyer la demande d'inscription
+                          </button>
+                        </div>
+                      </div>
+                    </AnimateOnScroll>
+                  </form>
+                </div>
+              </AnimateOnScroll>
             </div>
           </div>
         </div>
       </section>
+
+      {/* CSS pour les animations */}
+      <style jsx global>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .hero-animated {
+          animation: heroFadeIn 1.5s ease-out;
+        }
+
+        @keyframes heroFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(1.05);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animated-box:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 32px rgba(18, 119, 198, 0.18) !important;
+        }
+
+        .school-card:hover {
+          transform: translateX(8px);
+          border-color: #1277c6 !important;
+          box-shadow: 0 6px 20px rgba(18, 119, 198, 0.15) !important;
+        }
+
+        .service-card:hover {
+          transform: translateX(8px);
+          border-color: #48c774 !important;
+          box-shadow: 0 6px 20px rgba(72, 199, 116, 0.15) !important;
+        }
+
+        .table-row-hover:hover {
+          background: #f0f7ff !important;
+        }
+
+        .checkbox-field:hover {
+          border-color: #1277c6 !important;
+          background: #f8fbff !important;
+        }
+
+        .submit-button:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(18, 119, 198, 0.4) !important;
+        }
+
+        .document-link:hover {
+          transform: translateX(8px);
+          border-color: #ff9800 !important;
+          background: #fff8f0 !important;
+        }
+
+        .document-link:hover span:last-child {
+          opacity: 1 !important;
+        }
+
+        @media screen and (max-width: 768px) {
+          .hero.is-medium .hero-body {
+            padding: 3rem 1.5rem !important;
+          }
+
+          .title.is-2 {
+            font-size: 1.75rem !important;
+            line-height: 1.3 !important;
+          }
+
+          .title.is-3 {
+            font-size: 1.5rem !important;
+            line-height: 1.3 !important;
+          }
+
+          .title.is-4 {
+            font-size: 1.25rem !important;
+          }
+
+          .title.is-5 {
+            fontSize: 1.125rem !important;
+          }
+
+          .container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+          }
+
+          .section {
+            padding: 2rem 0.75rem !important;
+          }
+
+          .columns {
+            margin: 0 !important;
+          }
+          
+          .column {
+            padding: 0.5rem !important;
+          }
+
+          .box {
+            padding: 1rem !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+          }
+
+          .animated-box:hover {
+            transform: none !important;
+          }
+
+          .school-card,
+          .service-card {
+            padding: 12px !important;
+          }
+
+          .school-card:hover,
+          .service-card:hover {
+            transform: none !important;
+          }
+
+          .media-left {
+            margin-right: 0.75rem !important;
+          }
+
+          .image.is-96x96 {
+            height: 64px !important;
+            width: 64px !important;
+          }
+
+          .image.is-64x64 {
+            height: 48px !important;
+            width: 48px !important;
+          }
+
+          .subtitle.is-5 {
+            font-size: 1rem !important;
+          }
+
+          .buttons {
+            flex-wrap: wrap;
+          }
+
+          .button {
+            font-size: 0.875rem !important;
+            padding: 0.5rem 0.75rem !important;
+            white-space: normal !important;
+            height: auto !important;
+          }
+
+          .buttons .button {
+            width: 100%;
+            margin-bottom: 0.5rem;
+          }
+
+          .table {
+            font-size: 0.875rem !important;
+          }
+
+          .table th,
+          .table td {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.875rem !important;
+            text-align: left !important;
+            vertical-align: middle !important;
+          }
+
+          .table th:first-child,
+          .table td:first-child {
+            padding-left: 0.75rem !important;
+          }
+
+          .table th:last-child,
+          .table td:last-child {
+            padding-right: 0.75rem !important;
+          }
+
+          .field .columns {
+            margin: 0 !important;
+          }
+
+          .field .column {
+            padding: 0.25rem !important;
+          }
+
+          .input,
+          .textarea,
+          .select select {
+            font-size: 0.875rem !important;
+          }
+
+          .label {
+            font-size: 0.875rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+
+          .label.is-small {
+            font-size: 0.75rem !important;
+          }
+
+          .checkbox-field {
+            padding: 8px 12px !important;
+          }
+
+          .checkbox-field label {
+            font-size: 0.875rem !important;
+          }
+
+          .checkbox-field span:first-of-type {
+            font-size: 18px !important;
+          }
+
+          .submit-button {
+            font-size: 1rem !important;
+            padding: 1rem !important;
+          }
+
+          .submit-button:hover {
+            transform: none !important;
+          }
+
+          .notification {
+            padding: 1rem !important;
+            font-size: 0.875rem !important;
+          }
+
+          .document-link {
+            padding: 8px 12px !important;
+            font-size: 0.875rem !important;
+          }
+
+          .document-link:hover {
+            transform: none !important;
+          }
+
+          .media-content p {
+            font-size: 0.875rem !important;
+          }
+        }
+
+        @media screen and (max-width: 480px) {
+          .hero.is-medium .hero-body {
+            padding: 2rem 1rem !important;
+          }
+
+          .title.is-2 {
+            font-size: 1.5rem !important;
+          }
+
+          .title.is-3 {
+            font-size: 1.25rem !important;
+          }
+
+          .container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+          }
+
+          .section {
+            padding: 1.5rem 0.5rem !important;
+          }
+
+          .box {
+            padding: 0.75rem !important;
+            border-radius: 12px !important;
+          }
+
+          .media {
+            display: block !important;
+          }
+
+          .media-left {
+            margin-bottom: 0.75rem !important;
+            margin-right: 0 !important;
+          }
+
+          .media-left .image {
+            margin: 0 auto !important;
+          }
+
+          .title span[style*="fontSize"] {
+            font-size: 24px !important;
+          }
+
+          .buttons .button {
+            font-size: 0.8125rem !important;
+            padding: 0.5rem !important;
+          }
+
+          .table th,
+          .table td {
+            padding: 0.375rem 0.5rem !important;
+            font-size: 0.8125rem !important;
+          }
+
+          .table th:first-child,
+          .table td:first-child {
+            padding-left: 0.5rem !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

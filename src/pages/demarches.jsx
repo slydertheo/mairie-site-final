@@ -1,46 +1,167 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
-function QuickBox({ icon, label, href, isFile }) {
-  // Déterminer si c'est un PDF (soit par le flag isFile ou par l'extension .pdf)
+// Hook personnalisé pour les animations au défilement
+function useOnScreen(options) {
+  const ref = useRef();
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        if (options?.triggerOnce) {
+          observer.disconnect();
+        }
+      } else if (!options?.triggerOnce) {
+        setIsVisible(false);
+      }
+    }, {
+      threshold: options?.threshold || 0.1,
+      rootMargin: options?.rootMargin || '0px'
+    });
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [ref, options]);
+
+  return [ref, isVisible];
+}
+
+// Composant d'animation
+function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration = 800, threshold = 0.1, once = true }) {
+  const [ref, isVisible] = useOnScreen({ threshold: threshold, triggerOnce: once });
+
+  const animations = {
+    "fade-up": {
+      hidden: { opacity: 0, transform: 'translateY(50px) scale(0.95)' },
+      visible: { opacity: 1, transform: 'translateY(0) scale(1)' }
+    },
+    "fade-left": {
+      hidden: { opacity: 0, transform: 'translateX(50px)' },
+      visible: { opacity: 1, transform: 'translateX(0)' }
+    },
+    "fade-right": {
+      hidden: { opacity: 0, transform: 'translateX(-50px)' },
+      visible: { opacity: 1, transform: 'translateX(0)' }
+    },
+    "zoom-in": {
+      hidden: { opacity: 0, transform: 'scale(0.8)' },
+      visible: { opacity: 1, transform: 'scale(1)' }
+    },
+    "slide-up": {
+      hidden: { opacity: 0, transform: 'translateY(100px)' },
+      visible: { opacity: 1, transform: 'translateY(0)' }
+    }
+  };
+
+  const selectedAnimation = animations[animation] || animations["fade-up"];
+  
+  return (
+    <div
+      ref={ref}
+      style={{
+        ...selectedAnimation[isVisible ? 'visible' : 'hidden'],
+        transition: `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}ms`,
+        willChange: 'opacity, transform',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function QuickBox({ icon, label, href, isFile, index = 0 }) {
   const isPdf = isFile || (href && href.toLowerCase().endsWith('.pdf'));
   
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="box is-flex is-align-items-center"
-      style={{
-        background: '#fff',
-        gap: 12,
-        fontWeight: 600,
-        fontSize: 17,
-        color: '#1277c6',
-        border: '1.5px solid #e0e7ef',
-        borderRadius: 12,
-        marginBottom: 18,
-        transition: 'box-shadow 0.18s, border 0.18s',
-        cursor: 'pointer',
-        textDecoration: 'none',
-        boxShadow: '0 1px 6px #1277c610',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = '0 4px 16px #1277c620';
-        e.currentTarget.style.border = '1.5px solid #1277c6';
-        e.currentTarget.style.background = '#fafdff';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.boxShadow = '0 1px 6px #1277c610';
-        e.currentTarget.style.border = '1.5px solid #e0e7ef';
-        e.currentTarget.style.background = '#fff';
-      }}
-    >
-      <span style={{ fontSize: 32 }}>{isPdf ? '📄' : icon}</span>
-      <div>
-        {label}
-        {isPdf && <span className="tag is-small is-info is-light ml-2">PDF</span>}
-      </div>
-    </a>
+    <AnimateOnScroll animation="fade-up" delay={index * 80} duration={600}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="box is-flex is-align-items-center quick-box"
+        style={{
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
+          gap: 14,
+          fontWeight: 600,
+          fontSize: 17,
+          color: '#1277c6',
+          border: '2px solid #e0e7ef',
+          borderRadius: 16,
+          marginBottom: 18,
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: 'pointer',
+          textDecoration: 'none',
+          boxShadow: '0 2px 8px rgba(18, 119, 198, 0.08)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-6px) scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 12px 32px rgba(18, 119, 198, 0.2)';
+          e.currentTarget.style.borderColor = '#1277c6';
+          e.currentTarget.style.background = 'linear-gradient(135deg, #fafdff 0%, #e8f4ff 100%)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(18, 119, 198, 0.08)';
+          e.currentTarget.style.borderColor = '#e0e7ef';
+          e.currentTarget.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)';
+        }}
+      >
+        {/* Effet de brillance au survol */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: '-100%',
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+          transition: 'left 0.6s ease',
+          pointerEvents: 'none'
+        }} className="shine-effect"></div>
+
+        <span style={{
+          fontSize: 36,
+          width: 56,
+          height: 56,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+          borderRadius: 14,
+          flexShrink: 0,
+          boxShadow: '0 4px 12px rgba(18, 119, 198, 0.25)',
+          transition: 'transform 0.4s ease'
+        }}>
+          {isPdf ? '📄' : icon}
+        </span>
+        <div style={{ flex: 1 }}>
+          {label}
+          {isPdf && (
+            <span className="tag is-small is-info is-light ml-2" style={{
+              animation: 'pulse 2s ease-in-out infinite'
+            }}>
+              PDF
+            </span>
+          )}
+        </div>
+        <span style={{
+          fontSize: 24,
+          opacity: 0.5,
+          transition: 'all 0.3s ease'
+        }} className="arrow-icon">
+          →
+        </span>
+      </a>
+    </AnimateOnScroll>
   );
 }
 
@@ -116,9 +237,9 @@ export default function Demarches() {
 
   return (
     <>
-      {/* En-tête hero */}
+      {/* En-tête hero avec animation */}
       <section
-        className="hero is-primary is-medium"
+        className="hero is-primary is-medium hero-animated"
         style={{
           backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
           backgroundSize: 'cover',
@@ -126,49 +247,137 @@ export default function Demarches() {
           borderRadius: '0 0 32px 32px',
           boxShadow: '0 8px 32px #0a254030',
           marginBottom: 0,
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
-        <div className="hero-body">
+        {/* Effet de particules animées */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px',
+          animation: 'float 20s linear infinite',
+          opacity: 0.3
+        }}></div>
+
+        <div className="hero-body" style={{ position: 'relative', zIndex: 1 }}>
           <div className="container has-text-centered">
-            <h1 className="title is-2 has-text-weight-bold" style={{ color: '#fff', textShadow: '0 4px 24px #0a2540a0', letterSpacing: 1 }}>
-              {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
-            </h1>
-            {content.intro && <p className="subtitle is-5" style={{ color: '#fff' }}>{content.intro}</p>}
+            <AnimateOnScroll animation="fade-up" duration={1000}>
+              <h1 className="title is-2 has-text-weight-bold" style={{ 
+                color: '#fff', 
+                textShadow: '0 4px 24px #0a2540a0', 
+                letterSpacing: 1,
+                marginBottom: 20
+              }}>
+                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
+              </h1>
+            </AnimateOnScroll>
+            {content.intro && (
+              <AnimateOnScroll animation="fade-up" delay={200} duration={1000}>
+                <p className="subtitle is-5" style={{ color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+                  {content.intro}
+                </p>
+              </AnimateOnScroll>
+            )}
+            <AnimateOnScroll animation="zoom-in" delay={400}>
+              <div style={{
+                width: 80,
+                height: 4,
+                background: 'linear-gradient(90deg, transparent, #ffd700, transparent)',
+                margin: '20px auto',
+                borderRadius: 2
+              }}></div>
+            </AnimateOnScroll>
           </div>
         </div>
       </section>
 
       {/* Contenu démarches */}
-      <section className="section" style={{ background: '#fafdff', minHeight: '100vh', marginTop: 0 }}>
-        <div className="container" style={{ maxWidth: 1100 }}>
-          <h1 className="title is-3 has-text-link mb-5" style={{ textAlign: 'center' }}>
-            {content.titre || "Démarches administratives"}
-          </h1>
+      <section className="section" style={{ 
+        background: 'linear-gradient(180deg, #fafdff 0%, #f0f7ff 100%)', 
+        minHeight: '100vh', 
+        marginTop: 0,
+        position: 'relative'
+      }}>
+        {/* Motif de fond décoratif */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(18, 119, 198, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(18, 119, 198, 0.03) 0%, transparent 50%)',
+          pointerEvents: 'none'
+        }}></div>
+
+        <div className="container" style={{ maxWidth: 1100, position: 'relative', zIndex: 1 }}>
+          <AnimateOnScroll animation="fade-up" duration={800}>
+            <h1 className="title is-3 has-text-link mb-6" style={{ 
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontWeight: 800,
+              letterSpacing: 0.5
+            }}>
+              {content.titre || "Démarches administratives"}
+            </h1>
+          </AnimateOnScroll>
 
           {loading ? (
-            <div className="has-text-centered py-6">
-              <span className="icon is-large">
-                <i className="fas fa-spinner fa-pulse fa-2x"></i>
-              </span>
-              <p className="mt-2">Chargement des démarches...</p>
-            </div>
+            <AnimateOnScroll animation="zoom-in">
+              <div className="has-text-centered py-6">
+                <span className="icon is-large" style={{ color: '#1277c6' }}>
+                  <i className="fas fa-spinner fa-pulse fa-3x"></i>
+                </span>
+                <p className="mt-4 has-text-weight-semibold" style={{ color: '#4a5568', fontSize: 18 }}>
+                  Chargement des démarches...
+                </p>
+              </div>
+            </AnimateOnScroll>
           ) : (
-            <div className="columns is-variable is-5">
+            <div className="columns is-variable is-6">
               {/* Colonne 1 : Démarches rapides */}
               <div className="column is-half">
-                <h2 className="title is-5 has-text-primary mb-3">Démarches rapides</h2>
-                {demarchesRapides.length === 0 ? (
-                  <div className="notification is-light is-info">
-                    Aucune démarche rapide n'a été configurée.
+                <AnimateOnScroll animation="fade-right" delay={100}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                    padding: '16px 24px',
+                    borderRadius: '16px 16px 0 0',
+                    marginBottom: 20,
+                    boxShadow: '0 4px 16px rgba(18, 119, 198, 0.2)'
+                  }}>
+                    <h2 className="title is-5 mb-0" style={{ 
+                      color: 'white',
+                      fontWeight: 700,
+                      letterSpacing: 0.5,
+                      textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}>
+                      ⚡ Démarches rapides
+                    </h2>
                   </div>
+                </AnimateOnScroll>
+
+                {demarchesRapides.length === 0 ? (
+                  <AnimateOnScroll animation="fade-up">
+                    <div className="notification is-light is-info" style={{ borderRadius: 14 }}>
+                      Aucune démarche rapide n'a été configurée.
+                    </div>
+                  </AnimateOnScroll>
                 ) : (
-                  demarchesRapides.map((demarche) => (
+                  demarchesRapides.map((demarche, index) => (
                     <QuickBox 
                       key={demarche.id}
                       icon={demarche.icon}
                       label={demarche.label}
                       href={demarche.url}
                       isFile={demarche.isFile}
+                      index={index}
                     />
                   ))
                 )}
@@ -176,71 +385,192 @@ export default function Demarches() {
 
               {/* Colonne 2 : Urbanisme et autres liens */}
               <div className="column is-half">
-                <h2 className="title is-5 has-text-primary mb-3">Urbanisme</h2>
-                {demarchesUrbanisme.length === 0 ? (
-                  <div className="notification is-light is-info">
-                    Aucune démarche d'urbanisme n'a été configurée.
+                <AnimateOnScroll animation="fade-left" delay={100}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #48c774 0%, #3ec46d 100%)',
+                    padding: '16px 24px',
+                    borderRadius: '16px 16px 0 0',
+                    marginBottom: 20,
+                    boxShadow: '0 4px 16px rgba(72, 199, 116, 0.2)'
+                  }}>
+                    <h2 className="title is-5 mb-0" style={{ 
+                      color: 'white',
+                      fontWeight: 700,
+                      letterSpacing: 0.5,
+                      textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}>
+                      🏡 Urbanisme
+                    </h2>
                   </div>
+                </AnimateOnScroll>
+
+                {demarchesUrbanisme.length === 0 ? (
+                  <AnimateOnScroll animation="fade-up">
+                    <div className="notification is-light is-success" style={{ borderRadius: 14 }}>
+                      Aucune démarche d'urbanisme n'a été configurée.
+                    </div>
+                  </AnimateOnScroll>
                 ) : (
-                  demarchesUrbanisme.map((demarche) => (
+                  demarchesUrbanisme.map((demarche, index) => (
                     <QuickBox 
                       key={demarche.id}
                       icon={demarche.icon}
                       label={demarche.label}
                       href={demarche.url}
                       isFile={demarche.isFile}
+                      index={index}
                     />
                   ))
                 )}
 
                 {/* Autres démarches */}
-                <div className="box mt-5" style={{ background: '#f4f8fb', border: '1.5px solid #e0e7ef', borderRadius: 14 }}>
-                  <h3 className="subtitle is-6 has-text-link mb-2">Autres démarches utiles</h3>
-                  {demarchesAutres.length === 0 ? (
-                    <div className="notification is-light is-info is-size-7 py-2">
-                      Aucune autre démarche n'a été configurée.
-                    </div>
-                  ) : (
-                    <ul style={{ paddingLeft: 18, fontSize: 15 }}>
-                      {demarchesAutres.map(demarche => (
-                        <li key={demarche.id}>
-                          <span style={{ fontSize: 20, marginRight: 6 }}>{demarche.icon}</span>
-                          <a 
-                            href={demarche.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="has-text-link is-underlined"
-                          >
-                            {demarche.label}
-                            {demarche.isFile && <span className="tag is-small is-info is-light ml-1">PDF</span>}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                <AnimateOnScroll animation="fade-up" delay={300}>
+                  <div className="box mt-5" style={{ 
+                    background: 'linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%)', 
+                    border: '2px solid #e0e7ef', 
+                    borderRadius: 16,
+                    boxShadow: '0 4px 16px rgba(18, 119, 198, 0.08)',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <h3 className="subtitle is-6 has-text-link mb-3" style={{ 
+                      fontWeight: 700,
+                      letterSpacing: 0.3
+                    }}>
+                      🔗 Autres démarches utiles
+                    </h3>
+                    {demarchesAutres.length === 0 ? (
+                      <div className="notification is-light is-info is-size-7 py-2" style={{ borderRadius: 10 }}>
+                        Aucune autre démarche n'a été configurée.
+                      </div>
+                    ) : (
+                      <ul style={{ paddingLeft: 20, fontSize: 15 }}>
+                        {demarchesAutres.map((demarche, index) => (
+                          <AnimateOnScroll key={demarche.id} animation="fade-left" delay={index * 60}>
+                            <li style={{ marginBottom: 12, transition: 'transform 0.2s ease' }} className="other-link">
+                              <span style={{ fontSize: 22, marginRight: 8 }}>{demarche.icon}</span>
+                              <a 
+                                href={demarche.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="has-text-link"
+                                style={{
+                                  fontWeight: 600,
+                                  textDecoration: 'none',
+                                  transition: 'all 0.2s ease',
+                                  position: 'relative'
+                                }}
+                              >
+                                {demarche.label}
+                                {demarche.isFile && (
+                                  <span className="tag is-small is-info is-light ml-1">PDF</span>
+                                )}
+                              </a>
+                            </li>
+                          </AnimateOnScroll>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </AnimateOnScroll>
 
                 {/* PDF Règlement */}
                 {content.pdf_reglement_label && content.pdf_reglement_url && (
-                  <div className="has-text-centered mt-4">
-                    <a 
-                      href={content.pdf_reglement_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="button is-link is-outlined"
-                    >
-                      <span className="icon">
-                        <i className="fas fa-file-pdf"></i>
-                      </span>
-                      <span>{content.pdf_reglement_label}</span>
-                    </a>
-                  </div>
+                  <AnimateOnScroll animation="zoom-in" delay={400}>
+                    <div className="has-text-centered mt-5">
+                      <a 
+                        href={content.pdf_reglement_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="button is-link is-medium"
+                        style={{
+                          borderRadius: 14,
+                          fontWeight: 700,
+                          padding: '1.25rem 2rem',
+                          boxShadow: '0 6px 20px rgba(18, 119, 198, 0.25)',
+                          transition: 'all 0.3s ease',
+                          border: 'none'
+                        }}
+                      >
+                        <span className="icon">
+                          <i className="fas fa-file-pdf"></i>
+                        </span>
+                        <span>{content.pdf_reglement_label}</span>
+                      </a>
+                    </div>
+                  </AnimateOnScroll>
                 )}
               </div>
             </div>
           )}
         </div>
       </section>
+
+      {/* CSS pour les animations */}
+      <style jsx global>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(0.95); }
+        }
+
+        .quick-box:hover .shine-effect {
+          left: 100% !important;
+        }
+
+        .quick-box:hover span:first-of-type {
+          transform: scale(1.15) rotate(5deg);
+        }
+
+        .quick-box:hover .arrow-icon {
+          opacity: 1 !important;
+          transform: translateX(8px);
+        }
+
+        .other-link:hover {
+          transform: translateX(8px);
+        }
+
+        .other-link a:hover {
+          color: #0d5a9e !important;
+          text-decoration: underline !important;
+        }
+
+        .button.is-link:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 10px 30px rgba(18, 119, 198, 0.4) !important;
+        }
+
+        .hero-animated {
+          animation: heroFadeIn 1.5s ease-out;
+        }
+
+        @keyframes heroFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(1.05);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @media screen and (max-width: 768px) {
+          .quick-box {
+            font-size: 15px !important;
+          }
+          
+          .quick-box span:first-of-type {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 28px !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

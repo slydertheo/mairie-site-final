@@ -338,7 +338,7 @@ export default function Navbar() {
               position: 'relative',
             }}
           >
-            <figure className="image is-96x96" style={{ margin: '0 auto' }}>
+            <figure className="image is-10000x10000" style={{ margin: '0 auto' }}>
               <img
                 src="/LogoFriesen.png"
                 alt="Logo Friesen"
