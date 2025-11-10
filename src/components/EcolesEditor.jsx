@@ -976,6 +976,7 @@ function EcolesCrud() {
 // --- CRUD Services Périscolaires ---
 function ServicesCrud() {
   const [items, setItems] = useState([]);
+  const [sections, setSections] = useState([]);
   const [form, setForm] = useState({
     id: null,
     titre: '',
@@ -985,16 +986,29 @@ function ServicesCrud() {
     btnLabel: '',
     btnUrl: '',
     lienType: 'externe',
-    image: ''
+    image: '',
+    sectionId: '' // Nouvelle propriété pour lier à une section
+  });
+  const [sectionForm, setSectionForm] = useState({
+    id: null,
+    titre: '',
+    emoji: '🎨',
+    description: ''
   });
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState('');
+  const [editingSection, setEditingSection] = useState(null);
+  const [expandedSections, setExpandedSections] = useState({});
 
-  const persistServices = async (list) => {
+  const persistServices = async (servicesList, sectionsList) => {
     const res = await fetch('/api/pageContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page: 'ecoles', services_json: list })
+      body: JSON.stringify({ 
+        page: 'ecoles', 
+        services_json: servicesList,
+        services_sections_json: sectionsList 
+      })
     });
     if (!res.ok) throw new Error('Failed to persist services');
   };
@@ -1010,19 +1024,39 @@ function ServicesCrud() {
         const response = await fetch('/api/pageContent?page=ecoles');
         const data = await response.json();
         const obj = data?.[0] || {};
+        
+        // Charger les sections
+        const sectionsArr = Array.isArray(obj.services_sections_json) 
+          ? obj.services_sections_json 
+          : [{ id: 'default', titre: 'Services Périscolaires', emoji: '🎨', description: '' }];
+        const sectionsWithIds = sectionsArr.map((s) => ({ ...s, id: s?.id || genId() }));
+        setSections(sectionsWithIds);
+        
+        // Charger les services
         const arr = Array.isArray(obj.services_json) ? obj.services_json : [];
-        const withIds = arr.map((s) => ({ ...s, id: s?.id || genId() }));
+        const withIds = arr.map((s) => ({ 
+          ...s, 
+          id: s?.id || genId(),
+          sectionId: s?.sectionId || 'default' 
+        }));
         setItems(withIds);
 
-        if (withIds.some((s, i) => !arr[i]?.id)) {
+        // Synchroniser si nécessaire
+        if (withIds.some((s, i) => !arr[i]?.id) || sectionsWithIds.some((s, i) => !sectionsArr[i]?.id)) {
           try {
-            await persistServices(withIds);
+            await persistServices(withIds, sectionsWithIds);
           } catch {
-            toast.error('Synchronisation automatique des services impossible');
+            toast.error('Synchronisation automatique impossible');
           }
         }
+
+        // Tout déplier par défaut
+        const expanded = {};
+        sectionsWithIds.forEach(s => expanded[s.id] = true);
+        setExpandedSections(expanded);
       } catch {
         setItems([]);
+        setSections([{ id: 'default', titre: 'Services Périscolaires', emoji: '🎨', description: '' }]);
       }
     };
 
@@ -1030,6 +1064,7 @@ function ServicesCrud() {
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleSectionChange = (e) => setSectionForm({ ...sectionForm, [e.target.name]: e.target.value });
 
   const handleFile = async (e) => {
     const f = e.target.files?.[0];
@@ -1040,7 +1075,6 @@ function ServicesCrud() {
       return;
     }
 
-    // Vérifier que c'est bien une image
     if (!f.type.startsWith('image/')) {
       toast.error('Veuillez sélectionner une image (JPG, PNG, etc.)');
       return;
@@ -1084,7 +1118,6 @@ function ServicesCrud() {
       return;
     }
 
-    // Vérifier que c'est bien un PDF
     if (file.type !== 'application/pdf') {
       toast.error('Veuillez sélectionner un fichier PDF');
       return;
@@ -1119,14 +1152,132 @@ function ServicesCrud() {
   };
 
   const reset = () => {
-    setForm({ id: null, titre: '', emoji: '🎨', horaires: '', description: '', btnLabel: '', btnUrl: '', lienType: 'externe', image: '' });
+    setForm({ 
+      id: null, 
+      titre: '', 
+      emoji: '🎨', 
+      horaires: '', 
+      description: '', 
+      btnLabel: '', 
+      btnUrl: '', 
+      lienType: 'externe', 
+      image: '',
+      sectionId: sections[0]?.id || 'default'
+    });
     setPreview('');
   };
 
+  const resetSection = () => {
+    setSectionForm({ id: null, titre: '', emoji: '🎨', description: '' });
+    setEditingSection(null);
+  };
+
+  // Gestion des sections
+  const submitSection = async (e) => {
+    e.preventDefault();
+    if (!sectionForm.titre.trim()) {
+      toast.error('Le titre de la section est obligatoire');
+      return;
+    }
+
+    const nextSections = sectionForm.id
+      ? sections.map((s) => (s.id === sectionForm.id ? { ...s, ...sectionForm } : s))
+      : [...sections, { id: genId(), ...sectionForm }];
+
+    setSaving(true);
+    const toastId = toast.loading(sectionForm.id ? 'Modification...' : 'Ajout...');
+    try {
+      await persistServices(items, nextSections);
+      setSections(nextSections);
+      toast.update(toastId, { 
+        render: sectionForm.id ? 'Section modifiée' : 'Section ajoutée', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 2000 
+      });
+      resetSection();
+    } catch {
+      toast.update(toastId, { 
+        render: 'Erreur lors de l\'enregistrement', 
+        type: 'error', 
+        isLoading: false, 
+        autoClose: 3000 
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const editSection = (section) => {
+    setSectionForm({ ...section });
+    setEditingSection(section.id);
+  };
+
+  const deleteSection = async (id) => {
+    const section = sections.find(s => s.id === id);
+    if (!section) return;
+
+    const servicesInSection = items.filter(s => s.sectionId === id);
+    if (servicesInSection.length > 0) {
+      toast.error(`Impossible de supprimer : ${servicesInSection.length} service(s) dans cette section`);
+      return;
+    }
+
+    toast.info(
+      <div>
+        <p>Supprimer la section "{section.titre}" ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={async () => {
+              toast.dismiss();
+              const toastId = toast.loading('Suppression...');
+              const nextSections = sections.filter((s) => s.id !== id);
+              setSaving(true);
+
+              try {
+                await persistServices(items, nextSections);
+                setSections(nextSections);
+                if (editingSection === id) resetSection();
+                toast.update(toastId, {
+                  render: 'Section supprimée',
+                  type: 'success',
+                  isLoading: false,
+                  autoClose: 2000
+                });
+              } catch {
+                toast.update(toastId, {
+                  render: 'Erreur lors de la suppression',
+                  type: 'error',
+                  isLoading: false,
+                  autoClose: 3000
+                });
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Confirmer
+          </button>
+          <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+            Annuler
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeButton: false, closeOnClick: false }
+    );
+  };
+
+  // Gestion des services
   const submit = async (e) => {
     e.preventDefault();
     if (!form.titre.trim()) {
       toast.error('Le titre est obligatoire');
+      return;
+    }
+
+    if (!form.sectionId) {
+      toast.error('Veuillez sélectionner une section');
       return;
     }
 
@@ -1137,7 +1288,7 @@ function ServicesCrud() {
     setSaving(true);
     const toastId = toast.loading(form.id ? 'Modification...' : 'Ajout...');
     try {
-      await persistServices(next);
+      await persistServices(next, sections);
       setItems(next);
       toast.update(toastId, { 
         render: form.id ? 'Service enregistré' : 'Service ajouté', 
@@ -1180,7 +1331,7 @@ function ServicesCrud() {
               setSaving(true);
 
               try {
-                await persistServices(next);
+                await persistServices(next, sections);
                 setItems(next);
                 if (form.id === id) reset();
                 toast.update(toastId, {
@@ -1212,91 +1363,206 @@ function ServicesCrud() {
     );
   };
 
-  const moveUp = async (index) => {
-    if (index === 0) return;
-    const next = [...items];
-    [next[index - 1], next[index]] = [next[index], next[index - 1]];
-    const toastId = toast.loading('Déplacement...');
-    try {
-      await persistServices(next);
-      setItems(next);
-      toast.update(toastId, { 
-        render: 'Service déplacé', 
-        type: 'success', 
-        isLoading: false, 
-        autoClose: 1500 
-      });
-    } catch {
-      toast.update(toastId, { 
-        render: 'Erreur', 
-        type: 'error', 
-        isLoading: false, 
-        autoClose: 2000 
-      });
-    }
+  const toggleSection = (sectionId) => {
+    setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
 
-  const moveDown = async (index) => {
-    if (index === items.length - 1) return;
-    const next = [...items];
-    [next[index], next[index + 1]] = [next[index + 1], next[index]];
-    const toastId = toast.loading('Déplacement...');
-    try {
-      await persistServices(next);
-      setItems(next);
-      toast.update(toastId, { 
-        render: 'Service déplacé', 
-        type: 'success', 
-        isLoading: false, 
-        autoClose: 1500 
-      });
-    } catch {
-      toast.update(toastId, { 
-        render: 'Erreur', 
-        type: 'error', 
-        isLoading: false, 
-        autoClose: 2000 
-      });
-    }
+  const getServicesForSection = (sectionId) => {
+    return items.filter(s => s.sectionId === sectionId);
   };
 
   return (
     <div className="box mt-5" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
-      <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 22 }}>🎨</span> Services
+      <h3 className="subtitle is-5 mb-4" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 22 }}>🎨</span> Gestion des Services
       </h3>
-      <div className="notification is-info is-light mb-4" style={{ borderRadius: 10, fontSize: 14 }}>
-        <p>💡 <strong>Personnalisation :</strong> Vous pouvez modifier le titre et l'emoji de cette section dans l'onglet <strong>"En-tête"</strong> ci-dessus.</p>
-        <p className="mt-2">Par exemple : "Activités Extrascolaires 🎯", "Services aux familles 👨‍👩‍👧", etc.</p>
+
+      {/* Gestion des sections principales */}
+      <div className="box mb-4" style={{ background: '#fff8e1', borderRadius: 12, border: '2px solid #ffd54f' }}>
+        <h4 className="subtitle is-6 mb-3">
+          📂 Sections principales ({sections.length})
+        </h4>
+
+        <form onSubmit={submitSection} className="box mb-3" style={{ background: '#ffffff', borderRadius: 8 }}>
+          <div className="columns">
+            <div className="column is-2">
+              <label className="label is-small">Emoji</label>
+              <input 
+                className="input has-text-centered" 
+                name="emoji" 
+                value={sectionForm.emoji} 
+                onChange={handleSectionChange} 
+                placeholder="🎨" 
+                style={{ fontSize: 24 }} 
+              />
+            </div>
+            <div className="column is-5">
+              <label className="label is-small">Titre de la section *</label>
+              <input 
+                className="input" 
+                name="titre" 
+                value={sectionForm.titre} 
+                onChange={handleSectionChange} 
+                placeholder="Ex: Services Périscolaires, Activités Extrascolaires..." 
+                required 
+              />
+            </div>
+            <div className="column is-5">
+              <label className="label is-small">Description (optionnel)</label>
+              <input 
+                className="input" 
+                name="description" 
+                value={sectionForm.description} 
+                onChange={handleSectionChange} 
+                placeholder="Courte description..." 
+              />
+            </div>
+          </div>
+
+          <div className="field is-grouped">
+            <div className="control">
+              <button 
+                className={`button is-warning${saving ? ' is-loading' : ''}`} 
+                type="submit" 
+                disabled={saving}
+                style={{ borderRadius: 8 }}
+              >
+                {editingSection ? '💾 Modifier la section' : '➕ Ajouter une section'}
+              </button>
+            </div>
+            {editingSection && (
+              <div className="control">
+                <button 
+                  type="button" 
+                  className="button is-light" 
+                  onClick={resetSection} 
+                  disabled={saving}
+                  style={{ borderRadius: 8 }}
+                >
+                  ❌ Annuler
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+
+        {/* Liste des sections */}
+        {sections.map((section) => (
+          <div key={section.id} className="box mb-2" style={{ background: '#ffffff', borderRadius: 8 }}>
+            <div className="is-flex is-align-items-center is-justify-content-space-between">
+              <div className="is-flex is-align-items-center" style={{ gap: 10 }}>
+                <span style={{ fontSize: 24 }}>{section.emoji}</span>
+                <div>
+                  <div className="has-text-weight-bold">{section.titre}</div>
+                  {section.description && (
+                    <div className="is-size-7 has-text-grey">{section.description}</div>
+                  )}
+                  <div className="is-size-7 has-text-info mt-1">
+                    {getServicesForSection(section.id).length} service(s)
+                  </div>
+                </div>
+              </div>
+              <div className="buttons are-small mb-0">
+                <button 
+                  className="button is-small is-warning" 
+                  onClick={() => editSection(section)} 
+                  disabled={saving}
+                  title="Modifier"
+                >
+                  <span role="img" aria-label="Modifier">✏️</span>
+                </button>
+                <button 
+                  className="button is-small is-danger" 
+                  onClick={() => deleteSection(section.id)} 
+                  disabled={saving}
+                  title="Supprimer"
+                >
+                  <span role="img" aria-label="Supprimer">🗑️</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <form onSubmit={submit} className="box mb-4" style={{ background: '#f9fbfd', borderRadius: 8, border: '1px solid #e0e7ef' }}>
-        <div className="columns">
-          <div className="column is-8">
-            <div className="field is-grouped mb-3">
-              <div className="control is-expanded">
-                <label className="label is-small">Titre du service</label>
-                <input className="input" name="titre" value={form.titre} onChange={handleChange} placeholder="Ex: Cantine scolaire" required />
+      {/* Formulaire d'ajout de service */}
+      <div className="box mb-4" style={{ background: '#f0f9ff', borderRadius: 12, border: '2px solid #1277c6' }}>
+        <h4 className="subtitle is-6 mb-3">
+          {form.id ? '✏️ Modifier le service' : '➕ Ajouter un service'}
+        </h4>
+
+        <form onSubmit={submit}>
+          <div className="columns">
+            <div className="column is-8">
+              <div className="field mb-3">
+                <label className="label is-small">Section parente *</label>
+                <div className="select is-fullwidth">
+                  <select 
+                    name="sectionId" 
+                    value={form.sectionId || ''} 
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">-- Choisir une section --</option>
+                    {sections.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.emoji} {s.titre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="control">
-                <label className="label is-small">Emoji</label>
-                <input className="input has-text-centered" name="emoji" value={form.emoji} onChange={handleChange} placeholder="🍽️" style={{ width: 80, fontSize: 24 }} />
+
+              <div className="field is-grouped mb-3">
+                <div className="control is-expanded">
+                  <label className="label is-small">Titre du service *</label>
+                  <input 
+                    className="input" 
+                    name="titre" 
+                    value={form.titre} 
+                    onChange={handleChange} 
+                    placeholder="Ex: Cantine scolaire" 
+                    required 
+                  />
+                </div>
+                <div className="control">
+                  <label className="label is-small">Emoji</label>
+                  <input 
+                    className="input has-text-centered" 
+                    name="emoji" 
+                    value={form.emoji} 
+                    onChange={handleChange} 
+                    placeholder="🍽️" 
+                    style={{ width: 80, fontSize: 24 }} 
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="field mb-3">
-              <label className="label is-small">Horaires (optionnel)</label>
-              <input className="input" name="horaires" value={form.horaires} onChange={handleChange} placeholder="Ex: Lundi au vendredi : 12h - 14h" />
-            </div>
+              <div className="field mb-3">
+                <label className="label is-small">Horaires (optionnel)</label>
+                <input 
+                  className="input" 
+                  name="horaires" 
+                  value={form.horaires} 
+                  onChange={handleChange} 
+                  placeholder="Ex: Lundi au vendredi : 12h - 14h" 
+                />
+              </div>
 
-            <div className="field mb-3">
-              <label className="label is-small">Description</label>
-              <textarea className="textarea" name="description" value={form.description} onChange={handleChange} placeholder="Description du service" rows="3"></textarea>
-            </div>
+              <div className="field mb-3">
+                <label className="label is-small">Description</label>
+                <textarea 
+                  className="textarea" 
+                  name="description" 
+                  value={form.description} 
+                  onChange={handleChange} 
+                  placeholder="Description du service" 
+                  rows="3"
+                ></textarea>
+              </div>
 
-            <div className="field mb-3">
-              <label className="label is-small">Texte du bouton (optionnel)</label>
-              <div className="control">
+              <div className="field mb-3">
+                <label className="label is-small">Texte du bouton (optionnel)</label>
                 <input 
                   className="input" 
                   name="btnLabel" 
@@ -1305,82 +1571,87 @@ function ServicesCrud() {
                   placeholder="Ex: S'inscrire, Voir les menus, Page Facebook" 
                 />
               </div>
-            </div>
 
-            <div className="field">
-              <label className="label is-small">Type de lien pour le bouton</label>
-              <div className="control mb-2">
-                <label className="radio mr-4">
-                  <input 
-                    type="radio" 
-                    name="lienType" 
-                    value="externe" 
-                    checked={form.lienType === 'externe'} 
-                    onChange={handleChange}
-                  />
-                  {' '}URL externe (site web, Facebook, etc.)
-                </label>
-                <label className="radio">
-                  <input 
-                    type="radio" 
-                    name="lienType" 
-                    value="pdf" 
-                    checked={form.lienType === 'pdf'} 
-                    onChange={handleChange}
-                  />
-                  {' '}Fichier PDF
-                </label>
-              </div>
+              <div className="field">
+                <label className="label is-small">Type de lien pour le bouton</label>
+                <div className="control mb-2">
+                  <label className="radio mr-4">
+                    <input 
+                      type="radio" 
+                      name="lienType" 
+                      value="externe" 
+                      checked={form.lienType === 'externe'} 
+                      onChange={handleChange}
+                    />
+                    {' '}URL externe
+                  </label>
+                  <label className="radio">
+                    <input 
+                      type="radio" 
+                      name="lienType" 
+                      value="pdf" 
+                      checked={form.lienType === 'pdf'} 
+                      onChange={handleChange}
+                    />
+                    {' '}Fichier PDF
+                  </label>
+                </div>
 
-              {form.lienType === 'externe' ? (
-                <div className="control">
+                {form.lienType === 'externe' ? (
                   <input 
                     className="input" 
                     name="btnUrl" 
                     value={form.btnUrl} 
                     onChange={handleChange} 
-                    placeholder="https://... ou https://facebook.com/..." 
+                    placeholder="https://..." 
                   />
-                </div>
-              ) : (
-                <div className="file has-name is-fullwidth">
-                  <label className="file-label">
-                    <input 
-                      className="file-input" 
-                      type="file" 
-                      accept=".pdf,application/pdf" 
-                      onChange={handleFileLien}
-                    />
-                    <span className="file-cta">
-                      <span className="file-icon">📎</span>
-                      <span className="file-label">Choisir un PDF…</span>
-                    </span>
-                    <span className="file-name">{form.btnUrl ? 'Fichier sélectionné' : 'Aucun fichier'}</span>
-                  </label>
-                </div>
-              )}
-              {form.btnUrl && (
-                <p className="help is-success mt-1">✓ Lien : {form.btnUrl}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="column is-4">
-            <label className="label is-small">Image / Icône du service</label>
-            <div className="file has-name is-fullwidth mb-2">
-              <label className="file-label">
-                <input className="file-input" type="file" accept="image/*" onChange={handleFile} />
-                <span className="file-cta">
-                  <span className="file-icon"><i className="fas fa-upload"></i></span>
-                  <span className="file-label">Choisir une image...</span>
-                </span>
-                <span className="file-name">{preview ? 'Image sélectionnée' : 'Aucun fichier'}</span>
-              </label>
+                ) : (
+                  <div className="file has-name is-fullwidth">
+                    <label className="file-label">
+                      <input 
+                        className="file-input" 
+                        type="file" 
+                        accept=".pdf,application/pdf" 
+                        onChange={handleFileLien}
+                      />
+                      <span className="file-cta">
+                        <span className="file-icon">📎</span>
+                        <span className="file-label">Choisir un PDF…</span>
+                      </span>
+                      <span className="file-name">
+                        {form.btnUrl ? 'Fichier sélectionné' : 'Aucun fichier'}
+                      </span>
+                    </label>
+                  </div>
+                )}
+                {form.btnUrl && (
+                  <p className="help is-success mt-1">✓ Lien : {form.btnUrl}</p>
+                )}
+              </div>
             </div>
 
-            <div className="control mb-2">
+            <div className="column is-4">
+              <label className="label is-small">Image / Icône</label>
+              <div className="file has-name is-fullwidth mb-2">
+                <label className="file-label">
+                  <input 
+                    className="file-input" 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFile} 
+                  />
+                  <span className="file-cta">
+                    <span className="file-icon">📎</span>
+                    <span className="file-label">Choisir...</span>
+                  </span>
+                  <span className="file-name">
+                    {preview ? 'Image OK' : 'Aucun fichier'}
+                  </span>
+                </label>
+              </div>
+
               <input
-                className="input"
+                className="input mb-2"
                 name="image"
                 value={form.image}
                 onChange={(e) => {
@@ -1390,90 +1661,165 @@ function ServicesCrud() {
                 }}
                 placeholder="Ou URL d'image"
               />
+
+              {preview && (
+                <figure className="image" style={{ maxWidth: 200 }}>
+                  <img
+                    src={preview}
+                    alt="Aperçu"
+                    style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                    onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/200?text=Service'; }}
+                  />
+                </figure>
+              )}
             </div>
-
-            {preview && (
-              <figure className="image" style={{ maxWidth: 200 }}>
-                <img
-                  src={preview}
-                  alt="Aperçu"
-                  style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
-                  onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/200?text=Service'; }}
-                />
-              </figure>
-            )}
           </div>
-        </div>
 
-        <div className="field is-grouped">
-          <div className="control">
-            <button className={`button is-link${saving ? ' is-loading' : ''}`} type="submit" disabled={saving} style={{ borderRadius: 8 }}>
-              {form.id ? '💾 Enregistrer' : '➕ Ajouter'}
-            </button>
-          </div>
-          {form.id && (
+          <div className="field is-grouped mt-3">
             <div className="control">
-              <button type="button" className="button is-light" onClick={reset} disabled={saving} style={{ borderRadius: 8 }}>
-                ❌ Annuler
+              <button 
+                className={`button is-link${saving ? ' is-loading' : ''}`} 
+                type="submit" 
+                disabled={saving}
+                style={{ borderRadius: 8 }}
+              >
+                {form.id ? '💾 Enregistrer' : '➕ Ajouter'}
               </button>
             </div>
-          )}
-        </div>
-      </form>
+            {form.id && (
+              <div className="control">
+                <button 
+                  type="button" 
+                  className="button is-light" 
+                  onClick={reset} 
+                  disabled={saving}
+                  style={{ borderRadius: 8 }}
+                >
+                  ❌ Annuler
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
 
-      {items.length === 0 ? (
-        <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
-          Aucune école enregistrée
-        </div>
-      ) : (
-        <table className="table is-fullwidth is-striped is-hoverable">
-          <thead>
-            <tr>
-              <th style={{ width: 84 }}>Logo</th>
-              <th>Nom</th>
-              <th>Adresse</th>
-              <th>Contact</th>
-              <th className="has-text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it, index) => (
-              <tr key={it.id || index}>
-                <td>
-                  {it.image && (
-                    <img
-                      src={it.image}
-                      alt={it.nom}
-                      style={{ width: 72, height: 48, objectFit: 'cover', borderRadius: 6 }}
-                      onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/72x48?text=Logo'; }}
-                    />
-                  )}
-                </td>
-                <td className="has-text-weight-semibold">
-                  {it.nom}
-                  {it.partenaire && <div style={{ fontStyle: 'italic', fontSize: 14 }} className="has-text-grey mt-1">{it.partenaire}</div>}
-                </td>
-                <td className="is-size-7">{it.adresse}</td>
-                <td className="is-size-7">
-                  {it.tel && <>📞 {it.tel}<br /></>}
-                  {it.email && <>✉️ {it.email}<br /></>}
-                  {it.site && <a href={it.site} target="_blank" rel="noopener noreferrer">🌐 Site</a>}
-                </td>
-                <td className="has-text-right">
-                  <div className="buttons are-small is-right mb-0">
-                    <button className="button is-small is-info" onClick={() => edit(it)} disabled={saving} title="Modifier">
-                      <span role="img" aria-label="Modifier">✏️</span>
-                    </button>
-                    <button className="button is-danger" onClick={() => delIt(it.id, index)} disabled={saving} title="Supprimer">
-                      <span role="img" aria-label="Supprimer">🗑️</span>
-                    </button>
+      {/* Liste des services par section */}
+      <div className="box" style={{ background: '#f8fafc', borderRadius: 12, border: '1.5px solid #e0e7ef' }}>
+        <h4 className="subtitle is-6 mb-3">
+          📋 Services par section ({items.length} au total)
+        </h4>
+
+        {sections.length === 0 ? (
+          <div className="notification is-light is-warning">
+            Veuillez d'abord créer une section principale
+          </div>
+        ) : items.length === 0 ? (
+          <div className="notification is-light is-info">
+            Aucun service enregistré
+          </div>
+        ) : (
+          sections.map(section => {
+            const sectionServices = getServicesForSection(section.id);
+            return (
+              <div key={section.id} className="box mb-3" style={{ background: '#ffffff', borderRadius: 8 }}>
+                <div 
+                  className="is-flex is-align-items-center is-justify-content-space-between mb-2"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => toggleSection(section.id)}
+                >
+                  <div className="is-flex is-align-items-center" style={{ gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>
+                      {expandedSections[section.id] ? '▼' : '▶'}
+                    </span>
+                    <span style={{ fontSize: 24 }}>{section.emoji}</span>
+                    <div>
+                      <div className="has-text-weight-bold is-size-5">{section.titre}</div>
+                      <div className="is-size-7 has-text-grey">
+                        {sectionServices.length} service(s)
+                      </div>
+                    </div>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                </div>
+
+                {expandedSections[section.id] && (
+                  sectionServices.length === 0 ? (
+                    <div className="notification is-light is-info is-size-7">
+                      Aucun service dans cette section
+                    </div>
+                  ) : (
+                    <table className="table is-fullwidth is-hoverable" style={{ background: '#f8fafc' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 60 }}>Icône</th>
+                          <th>Titre</th>
+                          <th>Description</th>
+                          <th style={{ width: 120 }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sectionServices.map((service) => (
+                          <tr key={service.id}>
+                            <td>
+                              {service.image ? (
+                                <img
+                                  src={service.image}
+                                  alt={service.titre}
+                                  style={{ 
+                                    width: 48, 
+                                    height: 48, 
+                                    objectFit: 'cover', 
+                                    borderRadius: 6 
+                                  }}
+                                  onError={(e) => { 
+                                    e.currentTarget.src = 'https://via.placeholder.com/48?text=🎨'; 
+                                  }}
+                                />
+                              ) : (
+                                <span style={{ fontSize: 32 }}>{service.emoji || '🎨'}</span>
+                              )}
+                            </td>
+                            <td>
+                              <div className="has-text-weight-semibold">{service.titre}</div>
+                              {service.horaires && (
+                                <div className="is-size-7 has-text-grey">{service.horaires}</div>
+                              )}
+                            </td>
+                            <td className="is-size-7">
+                              {service.description?.length > 80 
+                                ? service.description.substring(0, 80) + '...' 
+                                : service.description}
+                            </td>
+                            <td>
+                              <div className="buttons are-small mb-0">
+                                <button 
+                                  className="button is-small is-info" 
+                                  onClick={() => edit(service)} 
+                                  disabled={saving}
+                                  title="Modifier"
+                                >
+                                  <span role="img" aria-label="Modifier">✏️</span>
+                                </button>
+                                <button 
+                                  className="button is-small is-danger" 
+                                  onClick={() => delIt(service.id)} 
+                                  disabled={saving}
+                                  title="Supprimer"
+                                >
+                                  <span role="img" aria-label="Supprimer">🗑️</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

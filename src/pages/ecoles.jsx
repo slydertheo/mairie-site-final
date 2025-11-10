@@ -38,7 +38,6 @@ function useOnScreen(options) {
 
 // Composant d'animation
 function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration = 800, threshold = 0.1, once = true }) {
-  // Utiliser un threshold plus faible sur mobile
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
@@ -111,9 +110,11 @@ export default function Ecoles() {
   const [vacances, setVacances] = useState([]);
   const [ecoles, setEcoles] = useState([]);
   const [services, setServices] = useState([]);
+  const [servicesSections, setServicesSections] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({});
 
   useEffect(() => {
     fetch('/api/pageContent?page=ecoles')
@@ -123,12 +124,25 @@ export default function Ecoles() {
         setContent(obj);
         setEcoles(Array.isArray(obj.ecoles_json) ? obj.ecoles_json : []);
         setVacances(Array.isArray(obj.vacances_json) ? obj.vacances_json : []);
-        setServices(Array.isArray(obj.services_json) ? obj.services_json : []);
         
-        // Charger les documents depuis documents_json ou migrer depuis les anciens champs
+        // Charger les sections de services
+        const sections = Array.isArray(obj.services_sections_json) 
+          ? obj.services_sections_json 
+          : [{ id: 'default', titre: 'Services Périscolaires', emoji: '🎨', description: '' }];
+        setServicesSections(sections);
+        
+        // Charger les services
+        const servicesData = Array.isArray(obj.services_json) ? obj.services_json : [];
+        setServices(servicesData);
+        
+        // Tout déplier par défaut
+        const expanded = {};
+        sections.forEach(s => expanded[s.id] = true);
+        setExpandedSections(expanded);
+        
+        // Charger les documents
         let docs = Array.isArray(obj.documents_json) ? obj.documents_json : [];
         if (docs.length === 0) {
-          // Migration des anciens champs pour l'affichage
           const legacy = [];
           for (let i = 1; i <= 4; i++) {
             if (obj[`doc_${i}_label`] && obj[`doc_${i}_url`]) {
@@ -155,7 +169,6 @@ export default function Ecoles() {
     e.preventDefault();
     console.log('Formulaire envoyé:', formData);
     setFormSubmitted(true);
-    // Reset form after submission
     setFormData({
       nomEnfant: '',
       prenomEnfant: '',
@@ -186,6 +199,14 @@ export default function Ecoles() {
     setSelectedService(null);
   };
 
+  const toggleSection = (sectionId) => {
+    setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
+
+  const getServicesForSection = (sectionId) => {
+    return services.filter(s => s.sectionId === sectionId);
+  };
+
   return (
     <>
       {/* En-tête hero avec animation */}
@@ -202,7 +223,6 @@ export default function Ecoles() {
           overflow: 'hidden'
         }}
       >
-        {/* Effet de particules animées */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -250,7 +270,6 @@ export default function Ecoles() {
           position: 'relative'
         }}
       >
-        {/* Motif de fond décoratif */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -518,7 +537,7 @@ export default function Ecoles() {
               </AnimateOnScroll>
             </div>
 
-            {/* Colonne 2 : Services périscolaires */}
+            {/* Colonne 2 : Services périscolaires par section */}
             <div className="column is-half">
               <AnimateOnScroll animation="fade-left" delay={100}>
                 <div className="box animated-box" style={{ 
@@ -533,85 +552,150 @@ export default function Ecoles() {
                     alignItems: 'center',
                     gap: 10
                   }}>
-                    <span style={{ fontSize: 32 }}>
-                      {content.services_section_emoji || '🎨'}
-                    </span>
-                    {content.services_section_titre || 'Services périscolaires'}
+                    <span style={{ fontSize: 32 }}>🎨</span>
+                    Services et Activités
                   </h2>
                   
-                  {services.length === 0 && (
+                  {servicesSections.length === 0 && (
                     <p className="has-text-grey">Aucun service renseigné pour le moment.</p>
                   )}
 
-                  {services.map((service, index) => (
-                    <AnimateOnScroll key={service.id || index} animation="fade-up" delay={index * 100}>
-                      <div 
-                        className="media mb-4 service-card" 
-                        style={{
-                          padding: 16,
-                          borderRadius: 12,
+                  {servicesSections.map((section, sectionIndex) => {
+                    const sectionServices = getServicesForSection(section.id);
+                    
+                    return (
+                      <AnimateOnScroll key={section.id} animation="fade-up" delay={sectionIndex * 100}>
+                        <div className="box mb-4" style={{
                           background: 'white',
+                          borderRadius: 12,
                           border: '2px solid #e8fff4',
-                          transition: 'all 0.3s ease',
-                          cursor: service.btnUrl ? 'pointer' : 'default'
-                        }}
-                        onClick={() => service.btnUrl && openServiceModal(service)}
-                      >
-                        {service.image && (
-                          <figure className="media-left">
-                            <p className="image is-64x64">
-                              <img 
-                                src={service.image}
-                                alt={service.titre}
-                                style={{ 
-                                  objectFit: 'cover', 
-                                  borderRadius: 10,
-                                  boxShadow: '0 4px 12px rgba(72, 199, 116, 0.15)'
-                                }}
-                                onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/64?text=S'; }}
-                              />
-                            </p>
-                          </figure>
-                        )}
-                        <div className="media-content">
-                          <h3 className="subtitle is-5 has-text-link mb-1" style={{ 
-                            fontWeight: 700,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6
-                          }}>
-                            {service.emoji && <span style={{ fontSize: 20 }}>{service.emoji}</span>}
-                            {service.titre}
-                          </h3>
-                          {service.horaires && (
-                            <p className="has-text-grey mb-2" style={{ fontSize: 14 }}>
-                              {service.horaires}
-                            </p>
-                          )}
-                          {service.description && (
-                            <p className="has-text-grey" style={{ fontSize: 14, whiteSpace: 'pre-line' }}>
-                              {service.description}
-                            </p>
-                          )}
-                          {service.btnLabel && service.btnUrl && (
-                            <button 
-                              className="button is-small is-success is-light mt-2" 
-                              style={{
-                                borderRadius: 8,
-                                fontWeight: 600
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openServiceModal(service);
-                              }}
-                            >
-                              {service.btnLabel} →
-                            </button>
+                          overflow: 'hidden'
+                        }}>
+                          {/* En-tête de section cliquable */}
+                          <div 
+                            onClick={() => toggleSection(section.id)}
+                            style={{
+                              cursor: 'pointer',
+                              padding: '1rem',
+                              background: 'linear-gradient(135deg, #f0fff8 0%, #e8fff4 100%)',
+                              borderBottom: expandedSections[section.id] ? '2px solid #d2ffe8' : 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              transition: 'all 0.3s ease'
+                            }}
+                            className="section-header"
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <span style={{ fontSize: 28 }}>{section.emoji || '📂'}</span>
+                              <div>
+                                <h3 className="subtitle is-5 mb-1" style={{ fontWeight: 700, color: '#1277c6' }}>
+                                  {section.titre}
+                                </h3>
+                                {section.description && (
+                                  <p className="is-size-7 has-text-grey mb-0">
+                                    {section.description}
+                                  </p>
+                                )}
+                                <p className="is-size-7 has-text-info mt-1">
+                                  {sectionServices.length} service(s)
+                                </p>
+                              </div>
+                            </div>
+                            <span style={{ 
+                              fontSize: 20, 
+                              transform: expandedSections[section.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.3s ease'
+                            }}>
+                              ▼
+                            </span>
+                          </div>
+
+                          {/* Services de la section */}
+                          {expandedSections[section.id] && (
+                            <div style={{ padding: '1rem' }}>
+                              {sectionServices.length === 0 ? (
+                                <p className="has-text-grey is-size-7">Aucun service dans cette section</p>
+                              ) : (
+                                sectionServices.map((service, serviceIndex) => (
+                                  <AnimateOnScroll key={service.id} animation="fade-up" delay={serviceIndex * 50}>
+                                    <div 
+                                      className="media mb-3 service-card" 
+                                      style={{
+                                        padding: 14,
+                                        borderRadius: 10,
+                                        background: '#f8fbff',
+                                        border: '1px solid #e8f4ff',
+                                        transition: 'all 0.3s ease',
+                                        cursor: service.btnUrl ? 'pointer' : 'default'
+                                      }}
+                                      onClick={() => service.btnUrl && openServiceModal(service)}
+                                    >
+                                      {service.image && (
+                                        <figure className="media-left">
+                                          <p className="image is-48x48">
+                                            <img 
+                                              src={service.image}
+                                              alt={service.titre}
+                                              style={{ 
+                                                objectFit: 'cover', 
+                                                borderRadius: 8,
+                                                boxShadow: '0 2px 8px rgba(72, 199, 116, 0.15)'
+                                              }}
+                                              onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/48?text=S'; }}
+                                            />
+                                          </p>
+                                        </figure>
+                                      )}
+                                      <div className="media-content">
+                                        <h4 className="subtitle is-6 has-text-link mb-1" style={{ 
+                                          fontWeight: 600,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 6
+                                        }}>
+                                          {service.emoji && <span style={{ fontSize: 18 }}>{service.emoji}</span>}
+                                          {service.titre}
+                                        </h4>
+                                        {service.horaires && (
+                                          <p className="has-text-grey mb-1" style={{ fontSize: 13 }}>
+                                            {service.horaires}
+                                          </p>
+                                        )}
+                                        {service.description && (
+                                          <p className="has-text-grey" style={{ fontSize: 13, whiteSpace: 'pre-line' }}>
+                                            {service.description.length > 100 
+                                              ? service.description.substring(0, 100) + '...' 
+                                              : service.description}
+                                          </p>
+                                        )}
+                                        {service.btnLabel && service.btnUrl && (
+                                          <button 
+                                            className="button is-small is-success is-light mt-2" 
+                                            style={{
+                                              borderRadius: 6,
+                                              fontWeight: 600,
+                                              fontSize: 12
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openServiceModal(service);
+                                            }}
+                                          >
+                                            {service.btnLabel} →
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </AnimateOnScroll>
+                                ))
+                              )}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </AnimateOnScroll>
-                  ))}
+                      </AnimateOnScroll>
+                    );
+                  })}
                 </div>
               </AnimateOnScroll>
 
@@ -1048,9 +1132,13 @@ export default function Ecoles() {
         }
 
         .service-card:hover {
-          transform: translateX(8px);
+          transform: translateX(4px);
           border-color: #48c774 !important;
-          box-shadow: 0 6px 20px rgba(72, 199, 116, 0.15) !important;
+          box-shadow: 0 4px 16px rgba(72, 199, 116, 0.12) !important;
+        }
+
+        .section-header:hover {
+          background: linear-gradient(135deg, #e8fff4 0%, #d2ffe8 100%) !important;
         }
 
         .table-row-hover:hover {
@@ -1120,7 +1208,15 @@ export default function Ecoles() {
           }
 
           .title.is-5 {
-            fontSize: 1.125rem !important;
+            font-size: 1.125rem !important;
+          }
+
+          .subtitle.is-5 {
+            font-size: 1rem !important;
+          }
+
+          .subtitle.is-6 {
+            font-size: 0.9rem !important;
           }
 
           .container {
@@ -1160,6 +1256,14 @@ export default function Ecoles() {
             transform: none !important;
           }
 
+          .section-header {
+            padding: 0.75rem !important;
+          }
+
+          .section-header:hover {
+            transform: none !important;
+          }
+
           .media-left {
             margin-right: 0.75rem !important;
           }
@@ -1174,8 +1278,9 @@ export default function Ecoles() {
             width: 48px !important;
           }
 
-          .subtitle.is-5 {
-            font-size: 1rem !important;
+          .image.is-48x48 {
+            height: 40px !important;
+            width: 40px !important;
           }
 
           .buttons {
@@ -1202,18 +1307,6 @@ export default function Ecoles() {
           .table td {
             padding: 0.5rem 0.75rem !important;
             font-size: 0.875rem !important;
-            text-align: left !important;
-            vertical-align: middle !important;
-          }
-
-          .table th:first-child,
-          .table td:first-child {
-            padding-left: 0.75rem !important;
-          }
-
-          .table th:last-child,
-          .table td:last-child {
-            padding-right: 0.75rem !important;
           }
 
           .field .columns {
@@ -1243,14 +1336,6 @@ export default function Ecoles() {
             padding: 8px 12px !important;
           }
 
-          .checkbox-field label {
-            font-size: 0.875rem !important;
-          }
-
-          .checkbox-field span:first-of-type {
-            font-size: 18px !important;
-          }
-
           .submit-button {
             font-size: 1rem !important;
             padding: 1rem !important;
@@ -1272,10 +1357,6 @@ export default function Ecoles() {
 
           .document-link:hover {
             transform: none !important;
-          }
-
-          .media-content p {
-            font-size: 0.875rem !important;
           }
 
           .modal-card {
@@ -1326,26 +1407,6 @@ export default function Ecoles() {
 
           .media-left .image {
             margin: 0 auto !important;
-          }
-
-          .title span[style*="fontSize"] {
-            font-size: 24px !important;
-          }
-
-          .buttons .button {
-            font-size: 0.8125rem !important;
-            padding: 0.5rem !important;
-          }
-
-          .table th,
-          .table td {
-            padding: 0.375rem 0.5rem !important;
-            font-size: 0.8125rem !important;
-          }
-
-          .table th:first-child,
-          .table td:first-child {
-            padding-left: 0.5rem !important;
           }
         }
       `}</style>

@@ -91,6 +91,7 @@ export default function PageAcceuil() {
   const [showPanneauDetailModal, setShowPanneauDetailModal] = useState(false); // Ajout
   const [elus, setElus] = useState([]); // Ajouter cet état
   const [liensUtiles, setLiensUtiles] = useState([]); // AJOUTER cet état
+  const [showAllElus, setShowAllElus] = useState(false); // AJOUTER cet état
 
   useEffect(() => {
     fetch('/api/pageContent?page=accueil')
@@ -246,6 +247,25 @@ export default function PageAcceuil() {
     'convocation': { label: "Convocations CM+", icon: '📢', bg: "#fef3c7", border: "2px solid #eab308", color: "#eab308", shadow: "#eab30830" },
     'urbanisme': { label: "Urbanisme / Permis", icon: '🏗️', bg: "#e0ffe6", border: "2px dashed #22c55e", color: "#22c55e", shadow: "#22c55e30" },
     'eau': { label: "Analyses d'eau, divers", icon: '💧', bg: "#e0f2fe", border: "2px solid #0ea5e9", color: "#0ea5e9", shadow: "#0ea5e930" },
+  };
+
+  // AJOUTER cette fonction helper pour filtrer les élus
+  const getElusToDisplay = () => {
+    if (!elus || elus.length === 0) return [];
+    
+    // Filtrer les fonctions principales (Maire, Premier(ère) adjoint(e), Adjoint(e)s)
+    const fonctionsPrincipales = elus.filter(elu => {
+      const fonction = elu.fonction.toLowerCase();
+      return fonction.includes('maire') || fonction.includes('adjoint'); // ✅ Ajout des adjoints
+    });
+
+    // Si on veut tout afficher ou s'il y a peu d'élus
+    if (showAllElus || elus.length <= 6) {
+      return elus;
+    }
+
+    // Sinon, afficher seulement les fonctions principales (Maire + Adjoints)
+    return fonctionsPrincipales;
   };
 
   return (
@@ -1009,7 +1029,7 @@ export default function PageAcceuil() {
               </div>
             </AnimateOnScroll>
 
-            {/* Onglet Municipalité - REMPLACER LA SECTION EXISTANTE */}
+            {/* Municipalité - SECTION CORRIGÉE */}
             <AnimateOnScroll animation="fade-up" delay={500} threshold={0.2}>
               <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
                 fontFamily: 'Merriweather, serif',
@@ -1027,84 +1047,149 @@ export default function PageAcceuil() {
                     <p>Aucun élu à afficher pour le moment</p>
                   </div>
                 ) : (
-                  <div className="columns is-multiline is-mobile">
-                    {elus.map((elu, idx) => {
-                      // Couleurs alternées pour les bordures
-                      const colors = ['#a97c50', '#1277c6', '#1b9bd7', '#22c55e', '#eab308', '#ef4444'];
-                      const color = colors[idx % colors.length];
-                      
-                      return (
-                        <div key={elu.id} className="column is-half-mobile is-one-third-tablet has-text-centered">
-                          <figure className="image is-96x96" style={{
-                            margin: '0 auto',
-                            borderRadius: '50%',
-                            overflow: 'hidden',
-                            border: `3px solid ${color}`,
-                            boxShadow: `0 2px 8px ${color}22`,
-                            transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                  <>
+                    {/* Élus principaux (Maire + Adjoints) */}
+                    <div className="columns is-multiline is-mobile">
+                      {elus
+                        .filter(elu => {
+                          const fonction = elu.fonction.toLowerCase();
+                          return fonction.includes('maire') || fonction.includes('adjoint');
+                        })
+                        .sort((a, b) => {
+                          // Ordre : Maire, Première adjointe, Premier adjoint, puis les autres adjoints
+                          const fonctionA = a.fonction.toLowerCase();
+                          const fonctionB = b.fonction.toLowerCase();
+                          
+                          if (fonctionA.includes('maire') && !fonctionA.includes('adjoint')) return -1;
+                          if (fonctionB.includes('maire') && !fonctionB.includes('adjoint')) return 1;
+                          
+                          if (fonctionA.includes('première') || fonctionA.includes('premier')) return -1;
+                          if (fonctionB.includes('première') || fonctionB.includes('premier')) return 1;
+                          
+                          return a.ordre - b.ordre;
+                        })
+                        .map((elu, idx) => {
+                          const colors = ['#a97c50', '#1277c6', '#1b9bd7', '#22c55e', '#eab308', '#ef4444'];
+                          const color = colors[idx % colors.length];
+                          
+                          return (
+                            <div key={elu.id} className="column is-half-mobile is-one-third-tablet has-text-centered">
+                              <figure className="image is-96x96" style={{
+                                margin: '0 auto',
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                border: `3px solid ${color}`,
+                                boxShadow: `0 2px 8px ${color}22`,
+                                transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                                e.currentTarget.style.boxShadow = `0 4px 16px ${color}44`;
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                                e.currentTarget.style.boxShadow = `0 2px 8px ${color}22`;
+                              }}
+                              >
+                                <img
+                                  src={elu.photo || 'https://via.placeholder.com/96?text=Photo'}
+                                  alt={`${elu.prenom} ${elu.nom}`}
+                                  style={{
+                                    objectFit: 'cover',
+                                    width: '100%',
+                                    height: '100%'
+                                  }}
+                                  onError={e => {
+                                    e.currentTarget.src = "https://via.placeholder.com/96?text=Elu";
+                                  }}
+                                />
+                              </figure>
+                              <div className="has-text-weight-bold mt-2" style={{ 
+                                color,
+                                fontSize: 16,
+                                fontFamily: 'Merriweather, serif'
+                              }}>
+                                {elu.prenom} {elu.nom}
+                              </div>
+                              <div className="is-size-7 has-text-grey" style={{ fontStyle: 'italic' }}>
+                                {elu.fonction}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Bouton "Voir tous les élus" si plus de élus que juste maire + adjoints */}
+                    {elus.filter(elu => {
+                      const fonction = elu.fonction.toLowerCase();
+                      return !fonction.includes('maire') && !fonction.includes('adjoint');
+                    }).length > 0 && (
+                      <div className="has-text-centered mt-4">
+                        <button 
+                          className="button is-medium"
+                          onClick={() => setShowAllElus(true)}
+                          style={{
+                            borderRadius: 12,
+                            fontWeight: 600,
+                            fontSize: 16,
+                            padding: '12px 32px',
+                            border: '2px solid #a97c50',
+                            color: '#a97c50',
+                            background: 'transparent',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 2px 8px #a97c5020',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            margin: '0 auto'
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
-                            e.currentTarget.style.boxShadow = `0 4px 16px ${color}44`;
+                            e.currentTarget.style.background = '#a97c50';
+                            e.currentTarget.style.color = 'white';
+                            e.currentTarget.style.transform = 'translateY(-3px)';
+                            e.currentTarget.style.boxShadow = '0 6px 20px #a97c5040';
                           }}
                           onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-                            e.currentTarget.style.boxShadow = `0 2px 8px ${color}22`;
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#a97c50';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px #a97c5020';
                           }}
-                          >
-                            <img
-                              src={elu.photo || 'https://via.placeholder.com/96?text=Photo'}
-                              alt={`${elu.prenom} ${elu.nom}`}
-                              style={{
-                                objectFit: 'cover',
-                                width: '100%',
-                                height: '100%'
-                              }}
-                              onError={e => {
-                                e.currentTarget.src = "https://via.placeholder.com/96?text=Elu";
-                              }}
-                            />
-                          </figure>
-                          <div className="has-text-weight-bold mt-2" style={{ 
-                            color,
-                            fontSize: 16,
-                            fontFamily: 'Merriweather, serif'
-                          }}>
-                            {elu.prenom} {elu.nom}
-                          </div>
-                          <div className="is-size-7 has-text-grey" style={{ fontStyle: 'italic' }}>
-                            {elu.fonction}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        >
+                          <span style={{ fontSize: 20 }}>👥</span>
+                          <span>Voir tous les élus ({elus.length})</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Lien vers la page municipalité */}
+                    <div className="has-text-centered mt-3">
+                      <a href="/municipalite" className="is-link" style={{ 
+                        fontWeight: 600, 
+                        fontSize: 15,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        background: '#a97c5010',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = '#a97c5020';
+                        e.currentTarget.style.transform = 'translateX(5px)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = '#a97c5010';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
+                      >
+                        En savoir plus sur la municipalité
+                        <span style={{ fontSize: 12 }}>→</span>
+                      </a>
+                    </div>
+                  </>
                 )}
-                <div className="has-text-centered mt-3">
-                  <a href="/municipalite" className="is-link" style={{ 
-                    fontWeight: 600, 
-                    fontSize: 15,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    background: '#a97c5010',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = '#a97c5020';
-                    e.currentTarget.style.transform = 'translateX(5px)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = '#a97c5010';
-                    e.currentTarget.style.transform = 'translateX(0)';
-                  }}
-                  >
-                    Voir tous les élus et commissions
-                    <span style={{ fontSize: 12 }}>→</span>
-                  </a>
-                </div>
               </div>
             </AnimateOnScroll>
           </div>
@@ -1388,25 +1473,25 @@ export default function PageAcceuil() {
         </div>
       )}
 
-      {/* Modal détail panneau d'affichage - AVEC IMAGE AMÉLIORÉE */}
+      {/* Modal détail panneau d'affichage - CORRIGER selectedPanneauDetailModal en selectedPanneauItem */}
       {showPanneauDetailModal && selectedPanneauItem && (
         <div className="modal is-active">
           <div className="modal-background" onClick={() => setShowPanneauDetailModal(false)}></div>
           <div className="modal-card" style={{ maxWidth: "700px", width: "90%" }}>
             <header className="modal-card-head" style={{ 
-              background: CATEGORIES[selectedPanneauDetailModal.categorie]?.bg || '#fffbe6',
-              borderBottom: `3px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'}`
+              background: CATEGORIES[selectedPanneauItem.categorie]?.bg || '#fffbe6',
+              borderBottom: `3px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color || '#a97c50'}`
             }}>
               <p className="modal-card-title" style={{ 
-                color: CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50',
+                color: CATEGORIES[selectedPanneauItem.categorie]?.color || '#a97c50',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10
               }}>
                 <span style={{ fontSize: 24 }}>
-                  {CATEGORIES[selectedPanneauDetailModal.categorie]?.icon || '📄'}
+                  {CATEGORIES[selectedPanneauItem.categorie]?.icon || '📄'}
                 </span>
-                {CATEGORIES[selectedPanneauDetailModal.categorie]?.label || 'Document'}
+                {CATEGORIES[selectedPanneauItem.categorie]?.label || 'Document'}
               </p>
               <button 
                 className="delete" 
@@ -1414,9 +1499,10 @@ export default function PageAcceuil() {
                 onClick={() => setShowPanneauDetailModal(false)}
               ></button>
             </header>
+            
             <section className="modal-card-body">
-              {/* IMAGE EN GRAND - AMÉLIORATION */}
-              {selectedPanneauDetailModal.image && selectedPanneauDetailModal.image.trim() !== '' ? (
+              {/* IMAGE EN GRAND */}
+              {selectedPanneauItem.image && selectedPanneauItem.image.trim() !== '' ? (
                 <figure className="image mb-4" style={{ 
                   maxHeight: '500px',
                   display: 'flex',
@@ -1425,12 +1511,12 @@ export default function PageAcceuil() {
                   background: '#f8fafc',
                   borderRadius: 12,
                   padding: 20,
-                  border: `3px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color}44`,
-                  boxShadow: `0 4px 16px ${CATEGORIES[selectedPanneauDetailModal.categorie]?.shadow}`
+                  border: `3px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color}44`,
+                  boxShadow: `0 4px 16px ${CATEGORIES[selectedPanneauItem.categorie]?.shadow}`
                 }}>
                   <img 
-                    src={selectedPanneauDetailModal.image} 
-                    alt={selectedPanneauDetailModal.titre}
+                    src={selectedPanneauItem.image} 
+                    alt={selectedPanneauItem.titre}
                     style={{ 
                       maxHeight: '460px',
                       maxWidth: '100%',
@@ -1441,9 +1527,9 @@ export default function PageAcceuil() {
                       boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
                       cursor: 'pointer'
                     }}
-                    onClick={() => window.open(selectedPanneauDetailModal.image, '_blank')}
+                    onClick={() => window.open(selectedPanneauItem.image, '_blank')}
                     onError={e => { 
-                      console.error('Erreur chargement image:', selectedPanneauDetailModal.image);
+                      console.error('Erreur chargement image:', selectedPanneauItem.image);
                       e.currentTarget.src = "https://via.placeholder.com/400x300?text=Document+non+disponible"; 
                     }}
                   />
@@ -1463,9 +1549,9 @@ export default function PageAcceuil() {
               
               <div className="content">
                 <h3 className="title is-4 mb-3" style={{ 
-                  color: CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'
+                  color: CATEGORIES[selectedPanneauItem.categorie]?.color || '#a97c50'
                 }}>
-                  {selectedPanneauDetailModal.titre}
+                  {selectedPanneauItem.titre}
                 </h3>
                 
                 <div className="mb-4" style={{ 
@@ -1480,7 +1566,7 @@ export default function PageAcceuil() {
                     <strong style={{ color: '#666' }}>📅 Date de publication :</strong>
                     <br />
                     <span style={{ fontSize: 15 }}>
-                      {new Date(selectedPanneauDetailModal.dateDebut).toLocaleDateString('fr-FR', {
+                      {new Date(selectedPanneauItem.dateDebut).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric'
@@ -1488,12 +1574,12 @@ export default function PageAcceuil() {
                     </span>
                   </div>
                   
-                  {selectedPanneauDetailModal.date && (
+                  {selectedPanneauItem.date && (
                     <div>
                       <strong style={{ color: '#666' }}>📆 Date du document :</strong>
                       <br />
                       <span style={{ fontSize: 15 }}>
-                        {new Date(selectedPanneauDetailModal.date).toLocaleDateString('fr-FR', {
+                        {new Date(selectedPanneauItem.date).toLocaleDateString('fr-FR', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric'
@@ -1502,20 +1588,20 @@ export default function PageAcceuil() {
                     </div>
                   )}
                   
-                  {selectedPanneauDetailModal.lieu && (
+                  {selectedPanneauItem.lieu && (
                     <div>
                       <strong style={{ color: '#666' }}>📍 Lieu :</strong>
                       <br />
-                      <span style={{ fontSize: 15 }}>{selectedPanneauDetailModal.lieu}</span>
+                      <span style={{ fontSize: 15 }}>{selectedPanneauItem.lieu}</span>
                     </div>
                   )}
                 </div>
                 
-                {selectedPanneauDetailModal.description && (
+                {selectedPanneauItem.description && (
                   <div style={{ 
                     padding: '16px',
                     background: '#fff',
-                    border: `1px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color}22`,
+                    border: `1px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color}22`,
                     borderRadius: 8,
                     lineHeight: '1.8',
                     fontSize: 16
@@ -1523,25 +1609,25 @@ export default function PageAcceuil() {
                     <strong style={{ 
                       display: 'block', 
                       marginBottom: 12,
-                      color: CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'
+                      color: CATEGORIES[selectedPanneauItem.categorie]?.color || '#a97c50'
                     }}>
                       Description :
                     </strong>
                     <div style={{ whiteSpace: 'pre-wrap' }}>
-                      {selectedPanneauDetailModal.description}
+                      {selectedPanneauItem.description}
                     </div>
                   </div>
                 )}
                 
                 <div className="notification is-light mt-4" style={{ 
-                  borderLeft: `4px solid ${CATEGORIES[selectedPanneauDetailModal.categorie]?.color || '#a97c50'}`,
-                  background: CATEGORIES[selectedPanneauDetailModal.categorie]?.bg || '#fffbe6'
+                  borderLeft: `4px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color || '#a97c50'}`,
+                  background: CATEGORIES[selectedPanneauItem.categorie]?.bg || '#fffbe6'
                 }}>
                   <p className="is-size-7">
                     <strong>ℹ️ Affichage valable du :</strong><br />
-                    {new Date(selectedPanneauDetailModal.dateDebut).toLocaleDateString('fr-FR')} 
+                    {new Date(selectedPanneauItem.dateDebut).toLocaleDateString('fr-FR')} 
                     {' au '}
-                    {new Date(selectedPanneauDetailModal.dateFin).toLocaleDateString('fr-FR')}
+                    {new Date(selectedPanneauItem.dateFin).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>
@@ -1553,10 +1639,10 @@ export default function PageAcceuil() {
               >
                 Fermer
               </button>
-              {selectedPanneauDetailModal.image && selectedPanneauDetailModal.image.trim() !== '' && (
+              {selectedPanneauItem.image && selectedPanneauItem.image.trim() !== '' && (
                 <>
                   <a 
-                    href={selectedPanneauDetailModal.image} 
+                    href={selectedPanneauItem.image} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="button is-link is-light"
@@ -1567,7 +1653,7 @@ export default function PageAcceuil() {
                     <span>Ouvrir dans un nouvel onglet</span>
                   </a>
                   <a 
-                    href={selectedPanneauDetailModal.image} 
+                    href={selectedPanneauItem.image} 
                     download
                     className="button is-success"
                   >
@@ -1582,6 +1668,256 @@ export default function PageAcceuil() {
           </div>
         </div>
       )}
+      
+      {/* Modal "Tous les élus" - AJOUTER AVANT LA FERMETURE DE LA DIV PRINCIPALE (avant le dernier </div>) */}
+      {showAllElus && (
+        <div className="modal is-active">
+          <div className="modal-background" onClick={() => setShowAllElus(false)}></div>
+          <div className="modal-card" style={{ maxWidth: "900px", width: "90%" }}>
+            <header className="modal-card-head" style={{ 
+              background: 'linear-gradient(120deg, #fffbe6 80%, #f8fafc 100%)',
+              borderBottom: '3px solid #a97c50'
+            }}>
+              <p className="modal-card-title" style={{ 
+                color: '#a97c50',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                fontFamily: 'Merriweather, serif'
+              }}>
+                <span style={{ fontSize: 28 }}>👥</span>
+                Conseil Municipal de Friesen
+              </p>
+              <button 
+                className="delete" 
+                aria-label="close" 
+                onClick={() => setShowAllElus(false)}
+              ></button>
+            </header>
+            
+            <section className="modal-card-body" style={{ 
+              maxHeight: '70vh', 
+              overflowY: 'auto',
+              padding: '2rem'
+            }}>
+              {/* Maire */}
+              {elus.filter(elu => elu.fonction.toLowerCase().includes('maire') && !elu.fonction.toLowerCase().includes('adjoint')).length > 0 && (
+                <div className="mb-5">
+                  <h3 className="title is-5 mb-3" style={{ 
+                    color: '#a97c50',
+                    borderBottom: '2px solid #a97c50',
+                    paddingBottom: 8
+                  }}>
+                    🏛️ Maire
+                  </h3>
+                  <div className="columns is-multiline">
+                    {elus
+                      .filter(elu => elu.fonction.toLowerCase().includes('maire') && !elu.fonction.toLowerCase().includes('adjoint'))
+                      .map(elu => (
+                        <div key={elu.id} className="column is-one-third">
+                          <div className="box has-text-centered" style={{
+                            background: 'linear-gradient(120deg, #fffbe6 80%, #fff 100%)',
+                            border: '2px solid #a97c50',
+                            borderRadius: 12,
+                            padding: '1.5rem',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-5px)';
+                            e.currentTarget.style.boxShadow = '0 8px 24px #a97c5030';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                          >
+                            <figure className="image is-128x128" style={{
+                              margin: '0 auto 1rem',
+                              borderRadius: '50%',
+                              overflow: 'hidden',
+                              border: '4px solid #a97c50',
+                              boxShadow: '0 4px 12px #a97c5030'
+                            }}>
+                              <img
+                                src={elu.photo || 'https://via.placeholder.com/128?text=Photo'}
+                                alt={`${elu.prenom} ${elu.nom}`}
+                                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                                onError={e => { e.currentTarget.src = "https://via.placeholder.com/128?text=Maire"; }}
+                              />
+                            </figure>
+                            <div className="has-text-weight-bold" style={{ 
+                              color: '#a97c50',
+                              fontSize: 18,
+                              marginBottom: 4
+                            }}>
+                              {elu.prenom} {elu.nom}
+                            </div>
+                            <div className="is-size-7 has-text-grey" style={{ fontStyle: 'italic' }}>
+                              {elu.fonction}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Adjoints */}
+              {elus.filter(elu => elu.fonction.toLowerCase().includes('adjoint')).length > 0 && (
+                <div className="mb-5">
+                  <h3 className="title is-5 mb-3" style={{ 
+                    color: '#1277c6',
+                    borderBottom: '2px solid #1277c6',
+                    paddingBottom: 8
+                  }}>
+                    👔 Adjoints
+                  </h3>
+                  <div className="columns is-multiline">
+                    {elus
+                      .filter(elu => elu.fonction.toLowerCase().includes('adjoint'))
+                      .sort((a, b) => {
+                        const fonctionA = a.fonction.toLowerCase();
+                        const fonctionB = b.fonction.toLowerCase();
+                        if (fonctionA.includes('première') || fonctionA.includes('premier')) return -1;
+                        if (fonctionB.includes('première') || fonctionB.includes('premier')) return 1;
+                        return a.ordre - b.ordre;
+                      })
+                      .map((elu, idx) => {
+                        const colors = ['#1277c6', '#1b9bd7', '#22c55e', '#eab308'];
+                        const color = colors[idx % colors.length];
+                        
+                        return (
+                          <div key={elu.id} className="column is-one-third">
+                            <div className="box has-text-centered" style={{
+                              background: 'linear-gradient(120deg, #eaf6ff 80%, #fff 100%)',
+                              border: `2px solid ${color}`,
+                              borderRadius: 12,
+                              padding: '1.5rem',
+                              transition: 'all 0.3s ease'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.transform = 'translateY(-5px)';
+                              e.currentTarget.style.boxShadow = `0 8px 24px ${color}30`;
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            >
+                              <figure className="image is-96x96" style={{
+                                margin: '0 auto 1rem',
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                border: `3px solid ${color}`,
+                                boxShadow: `0 2px 8px ${color}30`
+                              }}>
+                                <img
+                                  src={elu.photo || 'https://via.placeholder.com/96?text=Photo'}
+                                  alt={`${elu.prenom} ${elu.nom}`}
+                                  style={{
+                                    objectFit: 'cover',
+                                    width: '100%',
+                                    height: '100%'
+                                  }}
+                                  onError={e => { e.currentTarget.src = "https://via.placeholder.com/96?text=Adjoint"; }}
+                                />
+                              </figure>
+                              <div className="has-text-weight-bold" style={{ 
+                                color,
+                                fontSize: 16,
+                                marginBottom: 4
+                              }}>
+                                {elu.prenom} {elu.nom}
+                              </div>
+                              <div className="is-size-7 has-text-grey" style={{ fontStyle: 'italic' }}>
+                                {elu.fonction}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* Conseillers municipaux */}
+              {elus.filter(elu => {
+                const fonction = elu.fonction.toLowerCase();
+                return fonction.includes('conseiller') || fonction.includes('conseillère');
+              }).length > 0 && (
+                <div>
+                  <h3 className="title is-5 mb-3" style={{ 
+                    color: '#22c55e',
+                    borderBottom: '2px solid #22c55e',
+                    paddingBottom: 8
+                  }}>
+                    📋 Conseillers Municipaux
+                  </h3>
+                  <div className="columns is-multiline">
+                    {elus
+                      .filter(elu => {
+                        const fonction = elu.fonction.toLowerCase();
+                        return fonction.includes('conseiller') || fonction.includes('conseillère');
+                      })
+                      .sort((a, b) => a.ordre - b.ordre)
+                      .map(elu => (
+                        <div key={elu.id} className="column is-one-quarter">
+                          <div className="box has-text-centered" style={{
+                            background: '#fff',
+                            border: '1px solid #e0e7ef',
+                            borderRadius: 10,
+                            padding: '1rem',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-3px)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px #22c55e30';
+                            e.currentTarget.style.borderColor = '#22c55e';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.borderColor = '#e0e7ef';
+                          }}
+                          >
+                            <figure className="image is-64x64" style={{
+                              margin: '0 auto 0.5rem',
+                              borderRadius: '50%',
+                              overflow: 'hidden',
+                              border: '2px solid #22c55e'
+                            }}>
+                              <img
+                                src={elu.photo || 'https://via.placeholder.com/64?text=Photo'}
+                                alt={`${elu.prenom} ${elu.nom}`}
+                                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                                onError={e => { e.currentTarget.src = "https://via.placeholder.com/64?text=CM"; }}
+                              />
+                            </figure>
+                            <div className="has-text-weight-bold" style={{ 
+                              fontSize: 14,
+                              marginBottom: 2,
+                              color: '#333'
+                            }}>
+                              {elu.prenom} {elu.nom}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </section>
+            <footer className="modal-card-foot" style={{ justifyContent: 'space-between' }}>
+              <button 
+                className="button" 
+                onClick={() => setShowAllElus(false)}
+              >
+                Fermer
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1590,6 +1926,7 @@ export default function PageAcceuil() {
 function ActualiteCard({ img, date, title, color }) {
   // Images libres de droits pour chaque actu
   const images = {
+
     "Fête locale : dates et programme": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=facearea&w=400&q=80",
     "Travaux de voirie : point d’avancement": "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=facearea&w=400&q=80",
     "Prochain conseil municipal le 15 avril": "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=facearea&w=400&q=80",

@@ -20,6 +20,7 @@ export default function IntercommunaliteEditor() {
   const [editingOrg, setEditingOrg] = useState(null);
   const [editingProj, setEditingProj] = useState(null);
   const [editingRep, setEditingRep] = useState(null);
+  const [savingSection, setSavingSection] = useState(null);
   const formOrgRef = useRef(null);
   const formProjRef = useRef(null);
   const formRepRef = useRef(null);
@@ -110,7 +111,16 @@ export default function IntercommunaliteEditor() {
   // Handlers Organismes
   const handleOrgChange = (i, field, value) => {
     const organismes = [...content.organismes];
-    organismes[i][field] = value;
+    organismes[i] = { ...organismes[i], [field]: value };
+    setContent({ ...content, organismes });
+  };
+
+  const handleOrgCompetencesChange = (i, value) => {
+    const organismes = [...content.organismes];
+    organismes[i] = { 
+      ...organismes[i], 
+      competences: value.split('\n').filter(c => c.trim())
+    };
     setContent({ ...content, organismes });
   };
 
@@ -161,7 +171,7 @@ export default function IntercommunaliteEditor() {
   // Handlers Projets
   const handleProjChange = (i, field, value) => {
     const projets = [...content.projets];
-    projets[i][field] = value;
+    projets[i] = { ...projets[i], [field]: value };
     setContent({ ...content, projets });
   };
 
@@ -212,7 +222,7 @@ export default function IntercommunaliteEditor() {
   // Handlers Représentants
   const handleRepChange = (i, field, value) => {
     const representants = [...content.representants];
-    representants[i][field] = value;
+    representants[i] = { ...representants[i], [field]: value };
     setContent({ ...content, representants });
   };
 
@@ -260,10 +270,9 @@ export default function IntercommunaliteEditor() {
 
   const cancelEditRep = () => setEditingRep(null);
 
-  // Sauvegarde
-  const handleSave = async e => {
-    e.preventDefault();
-    setLoading(true);
+  // Sauvegarde par section
+  const saveSection = async (section) => {
+    setSavingSection(section);
     const toastId = toast.loading('Enregistrement...');
 
     try {
@@ -279,32 +288,37 @@ export default function IntercommunaliteEditor() {
       if (!res.ok) throw new Error('Erreur');
 
       toast.update(toastId, {
-        render: 'Modifications enregistrées !',
+        render: '✅ Section enregistrée !',
         type: 'success',
         isLoading: false,
         autoClose: 2000
       });
+
+      // Fermer le formulaire d'édition après sauvegarde
+      if (section === 'organismes') setEditingOrg(null);
+      if (section === 'projets') setEditingProj(null);
+      if (section === 'representants') setEditingRep(null);
     } catch (err) {
       toast.update(toastId, {
-        render: 'Erreur lors de l\'enregistrement',
+        render: '❌ Erreur lors de l\'enregistrement',
         type: 'error',
         isLoading: false,
         autoClose: 3000
       });
     } finally {
-      setLoading(false);
+      setSavingSection(null);
     }
   };
 
   return (
-    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32 }}>
+    <div className="container" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 32, paddingBottom: 32 }}>
       <div className="box" style={{
         borderRadius: 14,
         background: '#fafdff',
         border: '1.5px solid #e0e7ef',
-        boxShadow: '0 2px 12px #e0e7ef33'
+        boxShadow: '0 2px 12px rgba(224, 231, 239, 0.2)'
       }}>
-        <h2 className="title is-4 has-text-link mb-4" style={{ 
+        <h2 className="title is-4 has-text-link mb-5" style={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: 10,
@@ -314,265 +328,693 @@ export default function IntercommunaliteEditor() {
           <span style={{ fontSize: 28 }}>🗂️</span> Gestion de la page Intercommunalité
         </h2>
 
-        <form onSubmit={handleSave}>
-          {/* Sections générales */}
-          <div className="box mb-4" style={{ 
-            borderRadius: 12, 
-            border: '1.5px solid #e0e7ef', 
-            background: '#fff' 
-          }}>
-            <h3 className="subtitle is-5 mb-3" style={{ color: '#1277c6', fontWeight: 700 }}>
-              📄 Sections générales
-            </h3>
-            <div className="field mb-3">
-              <label className="label is-small">Titre Hero</label>
-              <input
-                className="input"
-                name="hero_titre"
-                placeholder="Ex: Intercommunalité et partenaires"
-                value={content.hero_titre}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="field mb-3">
-              <label className="label is-small">Titre principal</label>
-              <input
-                className="input"
-                name="titre"
-                placeholder="Ex: Intercommunalité et partenaires territoriaux"
-                value={content.titre}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="field mb-3">
-              <label className="label is-small">Introduction</label>
-              <textarea
-                className="textarea"
-                name="intro"
-                placeholder="Texte d'introduction..."
-                value={content.intro}
-                onChange={handleChange}
-                rows="4"
-              ></textarea>
-            </div>
-            <div className="field">
-              <label className="label is-small">Texte de contact</label>
-              <input
-                className="input"
-                name="contact"
-                placeholder="Ex: Pour plus d'informations, contactez la mairie"
-                value={content.contact}
-                onChange={handleChange}
-              />
-            </div>
+        {/* Section générale */}
+        <div className="box mb-5" style={{ 
+          borderRadius: 12, 
+          border: '1.5px solid #e0e7ef', 
+          background: '#fff' 
+        }}>
+          <h3 className="subtitle is-5 mb-4" style={{ color: '#1277c6', fontWeight: 700 }}>
+            📄 Sections générales
+          </h3>
+          <div className="field mb-3">
+            <label className="label is-small">Titre Hero</label>
+            <input
+              className="input"
+              name="hero_titre"
+              placeholder="Ex: Intercommunalité et partenaires"
+              value={content.hero_titre}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="field mb-3">
+            <label className="label is-small">Titre principal</label>
+            <input
+              className="input"
+              name="titre"
+              placeholder="Ex: Intercommunalité et partenaires territoriaux"
+              value={content.titre}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="field mb-3">
+            <label className="label is-small">Introduction</label>
+            <textarea
+              className="textarea"
+              name="intro"
+              placeholder="Texte d'introduction..."
+              value={content.intro}
+              onChange={handleChange}
+              rows="4"
+            ></textarea>
+          </div>
+          <div className="field mb-4">
+            <label className="label is-small">Texte de contact</label>
+            <input
+              className="input"
+              name="contact"
+              placeholder="Ex: Pour plus d'informations, contactez la mairie"
+              value={content.contact}
+              onChange={handleChange}
+            />
           </div>
 
-          {/* ORGANISMES */}
-          <div className="box mb-4" style={{ 
-            borderRadius: 12, 
-            border: '1.5px solid #e0e7ef', 
-            background: '#fff' 
-          }}>
-            <h3 className="subtitle is-5 mb-3" style={{ color: '#1277c6', fontWeight: 700 }}>
-              🏢 Organismes intercommunaux
-            </h3>
-            <div className="field mb-3">
-              <label className="label is-small">Titre de la section</label>
-              <input
-                className="input"
-                name="titre_organismes"
-                placeholder="Ex: Organismes intercommunaux"
-                value={content.titre_organismes}
-                onChange={handleChange}
-              />
-            </div>
+          <div className="has-text-right">
+            <button 
+              className={`button is-link${savingSection === 'general' ? ' is-loading' : ''}`}
+              onClick={() => saveSection('general')}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 10, fontWeight: 600 }}
+            >
+              <span style={{ marginRight: 8 }}>💾</span>
+              Enregistrer cette section
+            </button>
+          </div>
+        </div>
 
-            {/* Formulaire d'édition */}
-            {editingOrg !== null && (
-              <div 
-                ref={formOrgRef}
-                className="box mb-4" 
-                style={{
-                  background: '#f0f9ff',
-                  borderRadius: 12,
-                  border: '2px solid #1277c6',
-                  scrollMarginTop: '20px'
-                }}
-              >
-                <h4 className="subtitle is-6 mb-3">
-                  {editingOrg === content.organismes.length - 1 && !content.organismes[editingOrg]?.nom
-                    ? '➕ Nouvel organisme'
-                    : '✏️ Modifier l\'organisme'}
-                </h4>
+        {/* ORGANISMES */}
+        <div className="box mb-5" style={{ 
+          borderRadius: 12, 
+          border: '1.5px solid #e0e7ef', 
+          background: '#fff' 
+        }}>
+          <h3 className="subtitle is-5 mb-4" style={{ color: '#1277c6', fontWeight: 700 }}>
+            🏢 Organismes intercommunaux
+          </h3>
+          <div className="field mb-4">
+            <label className="label is-small">Titre de la section</label>
+            <input
+              className="input"
+              name="titre_organismes"
+              placeholder="Ex: Organismes intercommunaux"
+              value={content.titre_organismes}
+              onChange={handleChange}
+            />
+          </div>
 
-                <div className="columns is-multiline">
-                  <div className="column is-8">
-                    <div className="field mb-3">
-                      <label className="label is-small">Nom de l'organisme *</label>
-                      <input
-                        className="input"
-                        placeholder="Ex: Communauté de Communes du Pays de..."
-                        value={content.organismes[editingOrg]?.nom || ''}
-                        onChange={e => handleOrgChange(editingOrg, 'nom', e.target.value)}
-                        required
-                      />
-                    </div>
+          {/* Formulaire d'édition */}
+          {editingOrg !== null && (
+            <div 
+              ref={formOrgRef}
+              className="box mb-4" 
+              style={{
+                background: '#f0f9ff',
+                borderRadius: 12,
+                border: '2px solid #1277c6',
+                scrollMarginTop: '20px'
+              }}
+            >
+              <h4 className="subtitle is-6 mb-3">
+                {editingOrg === content.organismes.length - 1 && !content.organismes[editingOrg]?.nom
+                  ? '➕ Nouvel organisme'
+                  : '✏️ Modifier l\'organisme'}
+              </h4>
 
-                    <div className="field mb-3">
-                      <label className="label is-small">Site web</label>
-                      <input
-                        className="input"
-                        placeholder="https://..."
-                        value={content.organismes[editingOrg]?.siteWeb || ''}
-                        onChange={e => handleOrgChange(editingOrg, 'siteWeb', e.target.value)}
-                      />
-                    </div>
-
-                    <div className="field mb-3">
-                      <label className="label is-small">Description</label>
-                      <textarea
-                        className="textarea"
-                        placeholder="Description de l'organisme..."
-                        value={content.organismes[editingOrg]?.description || ''}
-                        onChange={e => handleOrgChange(editingOrg, 'description', e.target.value)}
-                        rows="3"
-                      ></textarea>
-                    </div>
-
-                    <div className="field">
-                      <label className="label is-small">Compétences (une par ligne)</label>
-                      <textarea
-                        className="textarea"
-                        placeholder="Gestion des déchets&#10;Développement économique&#10;..."
-                        value={content.organismes[editingOrg]?.competences?.join('\n') || ''}
-                        onChange={e => handleOrgChange(editingOrg, 'competences', e.target.value.split('\n').filter(c => c.trim()))}
-                        rows="4"
-                      ></textarea>
-                    </div>
+              <div className="columns is-multiline">
+                <div className="column is-8">
+                  <div className="field mb-3">
+                    <label className="label is-small">Nom de l'organisme *</label>
+                    <input
+                      className="input"
+                      placeholder="Ex: Communauté de Communes du Pays de..."
+                      value={content.organismes[editingOrg]?.nom || ''}
+                      onChange={e => handleOrgChange(editingOrg, 'nom', e.target.value)}
+                      required
+                    />
                   </div>
 
-                  <div className="column is-4">
-                    <label className="label is-small">Logo</label>
-                    <div className="file has-name is-fullwidth mb-2">
-                      <label className="file-label">
-                        <input
-                          className="file-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={e => handleImageUpload(e, 'organisme', editingOrg)}
-                          disabled={uploading}
-                        />
-                        <span className="file-cta">
-                          <span className="file-icon">{uploading ? '⏳' : '📎'}</span>
-                          <span className="file-label">{uploading ? 'Upload...' : 'Choisir...'}</span>
-                        </span>
-                        <span className="file-name">
-                          {content.organismes[editingOrg]?.logo ? 'Image OK' : 'Aucun fichier'}
-                        </span>
-                      </label>
-                    </div>
+                  <div className="field mb-3">
+                    <label className="label is-small">Site web</label>
+                    <input
+                      className="input"
+                      placeholder="https://..."
+                      value={content.organismes[editingOrg]?.siteWeb || ''}
+                      onChange={e => handleOrgChange(editingOrg, 'siteWeb', e.target.value)}
+                    />
+                  </div>
 
-                    <div className="control mb-2">
+                  <div className="field mb-3">
+                    <label className="label is-small">Description</label>
+                    <textarea
+                      className="textarea"
+                      placeholder="Description de l'organisme..."
+                      value={content.organismes[editingOrg]?.description || ''}
+                      onChange={e => handleOrgChange(editingOrg, 'description', e.target.value)}
+                      rows="3"
+                    ></textarea>
+                  </div>
+
+                  <div className="field">
+                    <label className="label is-small">Compétences (une par ligne)</label>
+                    <textarea
+                      className="textarea"
+                      placeholder="Gestion des déchets&#10;Développement économique&#10;..."
+                      value={content.organismes[editingOrg]?.competences?.join('\n') || ''}
+                      onChange={e => handleOrgCompetencesChange(editingOrg, e.target.value)}
+                      rows="4"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div className="column is-4">
+                  <label className="label is-small">Logo</label>
+                  <div className="file has-name is-fullwidth mb-2">
+                    <label className="file-label">
                       <input
-                        className="input"
-                        placeholder="Ou URL d'image"
-                        value={content.organismes[editingOrg]?.logo || ''}
-                        onChange={e => handleOrgChange(editingOrg, 'logo', e.target.value)}
+                        className="file-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleImageUpload(e, 'organisme', editingOrg)}
                         disabled={uploading}
                       />
+                      <span className="file-cta">
+                        <span className="file-icon">{uploading ? '⏳' : '📎'}</span>
+                        <span className="file-label">{uploading ? 'Upload...' : 'Choisir...'}</span>
+                      </span>
+                      <span className="file-name">
+                        {content.organismes[editingOrg]?.logo ? 'Image OK' : 'Aucun fichier'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="control mb-2">
+                    <input
+                      className="input"
+                      placeholder="Ou URL d'image"
+                      value={content.organismes[editingOrg]?.logo || ''}
+                      onChange={e => handleOrgChange(editingOrg, 'logo', e.target.value)}
+                      disabled={uploading}
+                    />
+                  </div>
+
+                  {content.organismes[editingOrg]?.logo && (
+                    <figure className="image" style={{ maxWidth: 200 }}>
+                      <img
+                        src={content.organismes[editingOrg].logo}
+                        alt="Logo"
+                        style={{
+                          objectFit: 'contain',
+                          borderRadius: 8,
+                          border: '1px solid #eee',
+                          background: '#fff',
+                          padding: '0.5rem'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/200?text=Logo';
+                        }}
+                      />
+                    </figure>
+                  )}
+                </div>
+              </div>
+
+              <div className="field is-grouped mt-3">
+                <div className="control">
+                  <button
+                    type="button"
+                    className="button is-light"
+                    onClick={cancelEditOrg}
+                    disabled={savingSection !== null || uploading}
+                    style={{ borderRadius: 8 }}
+                  >
+                    ❌ Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Liste des organismes */}
+          <div className="box" style={{ 
+            background: '#f8fafc', 
+            borderRadius: 12, 
+            border: '1.5px solid #e0e7ef' 
+          }}>
+            <h4 className="subtitle is-6 mb-3">
+              📋 Liste des organismes ({content.organismes?.length || 0})
+            </h4>
+
+            {(!content.organismes || content.organismes.length === 0) ? (
+              <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
+                Aucun organisme enregistré
+              </div>
+            ) : (
+              <div className="columns is-multiline">
+                {content.organismes.map((org, index) => (
+                  <div className="column is-full" key={index}>
+                    <div className="box" style={{
+                      background: '#ffffff',
+                      borderRadius: 12,
+                      border: '1px solid #e0e7ef',
+                      padding: '1rem'
+                    }}>
+                      <div className="is-flex is-justify-content-space-between is-align-items-start mb-2">
+                        <div className="is-flex is-align-items-start" style={{ gap: '1rem', flex: 1 }}>
+                          {org.logo && (
+                            <figure className="image" style={{ width: 64, height: 64, flexShrink: 0 }}>
+                              <img
+                                src={org.logo}
+                                alt={org.nom}
+                                style={{
+                                  objectFit: 'contain',
+                                  borderRadius: 8,
+                                  border: '1px solid #eee',
+                                  background: '#fff',
+                                  padding: '0.25rem',
+                                  width: '100%',
+                                  height: '100%'
+                                }}
+                              />
+                            </figure>
+                          )}
+                          <div style={{ flex: 1 }}>
+                            <h3 className="title is-5 has-text-link mb-1">{org.nom}</h3>
+                            {org.description && (
+                              <p className="is-size-7 has-text-grey" style={{ marginBottom: '0.5rem' }}>
+                                {org.description.length > 150 
+                                  ? org.description.substring(0, 150) + '...' 
+                                  : org.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="buttons are-small mb-0" style={{ flexShrink: 0, marginLeft: '1rem' }}>
+                          <button
+                            type="button"
+                            className="button is-small is-info"
+                            onClick={() => editOrg(index)}
+                            disabled={savingSection !== null}
+                            title="Modifier"
+                          >
+                            <span role="img" aria-label="Modifier">✏️</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="button is-small is-danger"
+                            onClick={() => removeOrg(index)}
+                            disabled={savingSection !== null}
+                            title="Supprimer"
+                          >
+                            <span role="img" aria-label="Supprimer">🗑️</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {org.competences && org.competences.length > 0 && (
+                        <div className="tags mt-2">
+                          {org.competences.slice(0, 5).map((comp, i) => (
+                            <span key={i} className="tag is-info is-light is-small">{comp}</span>
+                          ))}
+                          {org.competences.length > 5 && (
+                            <span className="tag is-light is-small">+{org.competences.length - 5}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
-
-                    {content.organismes[editingOrg]?.logo && (
-                      <figure className="image" style={{ maxWidth: 200 }}>
-                        <img
-                          src={content.organismes[editingOrg].logo}
-                          alt="Logo"
-                          style={{
-                            objectFit: 'contain',
-                            borderRadius: 8,
-                            border: '1px solid #eee',
-                            background: '#fff',
-                            padding: '0.5rem'
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/200?text=Logo';
-                          }}
-                        />
-                      </figure>
-                    )}
                   </div>
-                </div>
-
-                <div className="field is-grouped mt-3">
-                  <div className="control">
-                    <button
-                      type="button"
-                      className="button is-light"
-                      onClick={cancelEditOrg}
-                      disabled={loading || uploading}
-                      style={{ borderRadius: 8 }}
-                    >
-                      ❌ Annuler
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
 
-            {/* Liste des organismes */}
-            <div className="box" style={{ 
-              background: '#f8fafc', 
-              borderRadius: 12, 
-              border: '1.5px solid #e0e7ef' 
-            }}>
+            <button
+              type="button"
+              className="button is-link is-light mt-3"
+              onClick={addOrg}
+              disabled={savingSection !== null || uploading}
+              style={{ borderRadius: 8 }}
+            >
+              <span style={{ marginRight: 6 }}>➕</span> Ajouter un organisme
+            </button>
+          </div>
+
+          <div className="has-text-right mt-4">
+            <button 
+              className={`button is-link${savingSection === 'organismes' ? ' is-loading' : ''}`}
+              onClick={() => saveSection('organismes')}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 10, fontWeight: 600 }}
+            >
+              <span style={{ marginRight: 8 }}>💾</span>
+              Enregistrer cette section
+            </button>
+          </div>
+        </div>
+
+        {/* PROJETS */}
+        <div className="box mb-5" style={{ 
+          borderRadius: 12, 
+          border: '1.5px solid #e0e7ef', 
+          background: '#fff' 
+        }}>
+          <h3 className="subtitle is-5 mb-4" style={{ color: '#1277c6', fontWeight: 700 }}>
+            🛠️ Projets intercommunaux
+          </h3>
+          <div className="field mb-4">
+            <label className="label is-small">Titre de la section</label>
+            <input
+              className="input"
+              name="titre_projets"
+              placeholder="Ex: Projets intercommunaux en cours"
+              value={content.titre_projets}
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* Formulaire d'édition */}
+          {editingProj !== null && (
+            <div 
+              ref={formProjRef}
+              className="box mb-4" 
+              style={{
+                background: '#f0f9ff',
+                borderRadius: 12,
+                border: '2px solid #1277c6',
+                scrollMarginTop: '20px'
+              }}
+            >
               <h4 className="subtitle is-6 mb-3">
-                📋 Liste des organismes ({content.organismes?.length || 0})
+                {editingProj === content.projets.length - 1 && !content.projets[editingProj]?.titre
+                  ? '➕ Nouveau projet'
+                  : '✏️ Modifier le projet'}
               </h4>
 
-              {(!content.organismes || content.organismes.length === 0) ? (
-                <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
-                  Aucun organisme enregistré
+              <div className="columns is-multiline">
+                <div className="column is-8">
+                  <div className="field mb-3">
+                    <label className="label is-small">Titre du projet *</label>
+                    <input
+                      className="input"
+                      placeholder="Ex: Nouvelle déchetterie intercommunale"
+                      value={content.projets[editingProj]?.titre || ''}
+                      onChange={e => handleProjChange(editingProj, 'titre', e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="field mb-3">
+                    <label className="label is-small">Structure porteuse</label>
+                    <input
+                      className="input"
+                      placeholder="Ex: Communauté de Communes"
+                      value={content.projets[editingProj]?.structure || ''}
+                      onChange={e => handleProjChange(editingProj, 'structure', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label className="label is-small">Description</label>
+                    <textarea
+                      className="textarea"
+                      placeholder="Description du projet..."
+                      value={content.projets[editingProj]?.description || ''}
+                      onChange={e => handleProjChange(editingProj, 'description', e.target.value)}
+                      rows="4"
+                    ></textarea>
+                  </div>
                 </div>
-              ) : (
-                <div className="columns is-multiline">
-                  {content.organismes.map((org, index) => (
-                    <div className="column is-full" key={index}>
-                      <div className="box" style={{
-                        background: '#ffffff',
-                        borderRadius: 12,
-                        border: '1px solid #e0e7ef',
-                        padding: '1rem'
-                      }}>
-                        <div className="is-flex is-justify-content-space-between is-align-items-start mb-2">
-                          <div className="is-flex is-align-items-center" style={{ gap: '1rem', flex: 1 }}>
-                            {org.logo && (
-                              <figure className="image" style={{ width: 64, height: 64, flexShrink: 0 }}>
-                                <img
-                                  src={org.logo}
-                                  alt={org.nom}
-                                  style={{
-                                    objectFit: 'contain',
-                                    borderRadius: 8,
-                                    border: '1px solid #eee',
-                                    background: '#fff',
-                                    padding: '0.25rem'
-                                  }}
-                                />
-                              </figure>
-                            )}
-                            <div>
-                              <h3 className="title is-5 has-text-link mb-1">{org.nom}</h3>
-                              {org.description && (
-                                <p className="is-size-7 has-text-grey">{org.description.substring(0, 100)}...</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="buttons are-small mb-0">
+
+                <div className="column is-4">
+                  <label className="label is-small">Image du projet</label>
+                  <div className="file has-name is-fullwidth mb-2">
+                    <label className="file-label">
+                      <input
+                        className="file-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleImageUpload(e, 'projet', editingProj)}
+                        disabled={uploading}
+                      />
+                      <span className="file-cta">
+                        <span className="file-icon">{uploading ? '⏳' : '📎'}</span>
+                        <span className="file-label">{uploading ? 'Upload...' : 'Choisir...'}</span>
+                      </span>
+                      <span className="file-name">
+                        {content.projets[editingProj]?.image ? 'Image OK' : 'Aucun fichier'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="control mb-2">
+                    <input
+                      className="input"
+                      placeholder="Ou URL d'image"
+                      value={content.projets[editingProj]?.image || ''}
+                      onChange={e => handleProjChange(editingProj, 'image', e.target.value)}
+                      disabled={uploading}
+                    />
+                  </div>
+
+                  {content.projets[editingProj]?.image && (
+                    <figure className="image" style={{ maxWidth: 200 }}>
+                      <img
+                        src={content.projets[editingProj].image}
+                        alt="Projet"
+                        style={{
+                          objectFit: 'cover',
+                          borderRadius: 8,
+                          border: '1px solid #eee',
+                          aspectRatio: '16/9'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/200?text=Projet';
+                        }}
+                      />
+                    </figure>
+                  )}
+                </div>
+              </div>
+
+              <div className="field is-grouped mt-3">
+                <div className="control">
+                  <button
+                    type="button"
+                    className="button is-light"
+                    onClick={cancelEditProj}
+                    disabled={savingSection !== null || uploading}
+                    style={{ borderRadius: 8 }}
+                  >
+                    ❌ Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Liste des projets */}
+          <div className="box" style={{ 
+            background: '#f8fafc', 
+            borderRadius: 12, 
+            border: '1.5px solid #e0e7ef' 
+          }}>
+            <h4 className="subtitle is-6 mb-3">
+              📋 Liste des projets ({content.projets?.length || 0})
+            </h4>
+
+            {(!content.projets || content.projets.length === 0) ? (
+              <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
+                Aucun projet enregistré
+              </div>
+            ) : (
+              <div className="columns is-multiline">
+                {content.projets.map((proj, index) => (
+                  <div className="column is-half" key={index}>
+                    <div className="box" style={{
+                      background: '#ffffff',
+                      borderRadius: 12,
+                      border: '1px solid #e0e7ef',
+                      padding: '1rem',
+                      height: '100%'
+                    }}>
+                      <div className="is-flex is-justify-content-space-between is-align-items-start">
+                        <div style={{ flex: 1 }}>
+                          <h3 className="title is-6 has-text-link mb-1">{proj.titre}</h3>
+                          {proj.structure && (
+                            <p className="is-size-7 has-text-grey mb-2">
+                              <strong>Structure :</strong> {proj.structure}
+                            </p>
+                          )}
+                          {proj.description && (
+                            <p className="is-size-7">
+                              {proj.description.length > 100 
+                                ? proj.description.substring(0, 100) + '...' 
+                                : proj.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="buttons are-small mb-0" style={{ marginLeft: '1rem', flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            className="button is-small is-info"
+                            onClick={() => editProj(index)}
+                            disabled={savingSection !== null}
+                            title="Modifier"
+                          >
+                            <span role="img" aria-label="Modifier">✏️</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="button is-small is-danger"
+                            onClick={() => removeProj(index)}
+                            disabled={savingSection !== null}
+                            title="Supprimer"
+                          >
+                            <span role="img" aria-label="Supprimer">🗑️</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="button is-link is-light mt-3"
+              onClick={addProj}
+              disabled={savingSection !== null || uploading}
+              style={{ borderRadius: 8 }}
+            >
+              <span style={{ marginRight: 6 }}>➕</span> Ajouter un projet
+            </button>
+          </div>
+
+          <div className="has-text-right mt-4">
+            <button 
+              className={`button is-link${savingSection === 'projets' ? ' is-loading' : ''}`}
+              onClick={() => saveSection('projets')}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 10, fontWeight: 600 }}
+            >
+              <span style={{ marginRight: 8 }}>💾</span>
+              Enregistrer cette section
+            </button>
+          </div>
+        </div>
+
+        {/* REPRÉSENTANTS */}
+        <div className="box" style={{ 
+          borderRadius: 12, 
+          border: '1.5px solid #e0e7ef', 
+          background: '#fff' 
+        }}>
+          <h3 className="subtitle is-5 mb-4" style={{ color: '#1277c6', fontWeight: 700 }}>
+            👥 Représentants
+          </h3>
+          <div className="field mb-4">
+            <label className="label is-small">Titre de la section</label>
+            <input
+              className="input"
+              name="titre_representants"
+              placeholder="Ex: Représentants de Friesen"
+              value={content.titre_representants}
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* Formulaire d'édition */}
+          {editingRep !== null && (
+            <div 
+              ref={formRepRef}
+              className="box mb-4" 
+              style={{
+                background: '#f0f9ff',
+                borderRadius: 12,
+                border: '2px solid #1277c6',
+                scrollMarginTop: '20px'
+              }}
+            >
+              <h4 className="subtitle is-6 mb-3">
+                {editingRep === content.representants.length - 1 && !content.representants[editingRep]?.structure
+                  ? '➕ Nouveau représentant'
+                  : '✏️ Modifier le représentant'}
+              </h4>
+
+              <div className="field mb-3">
+                <label className="label is-small">Structure *</label>
+                <input
+                  className="input"
+                  placeholder="Ex: Communauté de Communes"
+                  value={content.representants[editingRep]?.structure || ''}
+                  onChange={e => handleRepChange(editingRep, 'structure', e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="field mb-3">
+                <label className="label is-small">Délégués titulaires</label>
+                <input
+                  className="input"
+                  placeholder="Ex: M. Dupont, Mme Martin"
+                  value={content.representants[editingRep]?.titulaires || ''}
+                  onChange={e => handleRepChange(editingRep, 'titulaires', e.target.value)}
+                />
+              </div>
+
+              <div className="field mb-3">
+                <label className="label is-small">Délégués suppléants</label>
+                <input
+                  className="input"
+                  placeholder="Ex: M. Bernard, Mme Durand"
+                  value={content.representants[editingRep]?.suppleants || ''}
+                  onChange={e => handleRepChange(editingRep, 'suppleants', e.target.value)}
+                />
+              </div>
+
+              <div className="field is-grouped mt-3">
+                <div className="control">
+                  <button
+                    type="button"
+                    className="button is-light"
+                    onClick={cancelEditRep}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    ❌ Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Liste des représentants */}
+          <div className="box" style={{ 
+            background: '#f8fafc', 
+            borderRadius: 12, 
+            border: '1.5px solid #e0e7ef' 
+          }}>
+            <h4 className="subtitle is-6 mb-3">
+              📋 Liste des représentants ({content.representants?.length || 0})
+            </h4>
+
+            {(!content.representants || content.representants.length === 0) ? (
+              <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
+                Aucun représentant enregistré
+              </div>
+            ) : (
+              <div className="table-container">
+                <table className="table is-fullwidth is-hoverable" style={{ background: '#ffffff' }}>
+                  <thead>
+                    <tr style={{ background: '#f0f9ff' }}>
+                      <th>Structure</th>
+                      <th>Titulaires</th>
+                      <th>Suppléants</th>
+                      <th style={{ width: 120, textAlign: 'center' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {content.representants.map((rep, index) => (
+                      <tr key={index}>
+                        <td><strong>{rep.structure}</strong></td>
+                        <td>{rep.titulaires || '-'}</td>
+                        <td>{rep.suppleants || '-'}</td>
+                        <td>
+                          <div className="buttons are-small mb-0 is-justify-content-center">
                             <button
                               type="button"
                               className="button is-small is-info"
-                              onClick={() => editOrg(index)}
-                              disabled={loading}
+                              onClick={() => editRep(index)}
+                              disabled={savingSection !== null}
                               title="Modifier"
                             >
                               <span role="img" aria-label="Modifier">✏️</span>
@@ -580,428 +1022,44 @@ export default function IntercommunaliteEditor() {
                             <button
                               type="button"
                               className="button is-small is-danger"
-                              onClick={() => removeOrg(index)}
-                              disabled={loading}
+                              onClick={() => removeRep(index)}
+                              disabled={savingSection !== null}
                               title="Supprimer"
                             >
                               <span role="img" aria-label="Supprimer">🗑️</span>
                             </button>
                           </div>
-                        </div>
-
-                        {org.competences && org.competences.length > 0 && (
-                          <div className="tags mt-2">
-                            {org.competences.slice(0, 3).map((comp, i) => (
-                              <span key={i} className="tag is-info is-light is-small">{comp}</span>
-                            ))}
-                            {org.competences.length > 3 && (
-                              <span className="tag is-light is-small">+{org.competences.length - 3}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="button is-link is-light mt-3"
-                onClick={addOrg}
-                disabled={loading || uploading}
-                style={{ borderRadius: 8 }}
-              >
-                <span style={{ marginRight: 6 }}>➕</span> Ajouter un organisme
-              </button>
-            </div>
-          </div>
-
-          {/* PROJETS */}
-          <div className="box mb-4" style={{ 
-            borderRadius: 12, 
-            border: '1.5px solid #e0e7ef', 
-            background: '#fff' 
-          }}>
-            <h3 className="subtitle is-5 mb-3" style={{ color: '#1277c6', fontWeight: 700 }}>
-              🛠️ Projets intercommunaux
-            </h3>
-            <div className="field mb-3">
-              <label className="label is-small">Titre de la section</label>
-              <input
-                className="input"
-                name="titre_projets"
-                placeholder="Ex: Projets intercommunaux en cours"
-                value={content.titre_projets}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* Formulaire d'édition */}
-            {editingProj !== null && (
-              <div 
-                ref={formProjRef}
-                className="box mb-4" 
-                style={{
-                  background: '#f0f9ff',
-                  borderRadius: 12,
-                  border: '2px solid #1277c6',
-                  scrollMarginTop: '20px'
-                }}
-              >
-                <h4 className="subtitle is-6 mb-3">
-                  {editingProj === content.projets.length - 1 && !content.projets[editingProj]?.titre
-                    ? '➕ Nouveau projet'
-                    : '✏️ Modifier le projet'}
-                </h4>
-
-                <div className="columns is-multiline">
-                  <div className="column is-8">
-                    <div className="field mb-3">
-                      <label className="label is-small">Titre du projet *</label>
-                      <input
-                        className="input"
-                        placeholder="Ex: Nouvelle déchetterie intercommunale"
-                        value={content.projets[editingProj]?.titre || ''}
-                        onChange={e => handleProjChange(editingProj, 'titre', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="field mb-3">
-                      <label className="label is-small">Structure porteuse</label>
-                      <input
-                        className="input"
-                        placeholder="Ex: Communauté de Communes"
-                        value={content.projets[editingProj]?.structure || ''}
-                        onChange={e => handleProjChange(editingProj, 'structure', e.target.value)}
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label className="label is-small">Description</label>
-                      <textarea
-                        className="textarea"
-                        placeholder="Description du projet..."
-                        value={content.projets[editingProj]?.description || ''}
-                        onChange={e => handleProjChange(editingProj, 'description', e.target.value)}
-                        rows="4"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div className="column is-4">
-                    <label className="label is-small">Image du projet</label>
-                    <div className="file has-name is-fullwidth mb-2">
-                      <label className="file-label">
-                        <input
-                          className="file-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={e => handleImageUpload(e, 'projet', editingProj)}
-                          disabled={uploading}
-                        />
-                        <span className="file-cta">
-                          <span className="file-icon">{uploading ? '⏳' : '📎'}</span>
-                          <span className="file-label">{uploading ? 'Upload...' : 'Choisir...'}</span>
-                        </span>
-                        <span className="file-name">
-                          {content.projets[editingProj]?.image ? 'Image OK' : 'Aucun fichier'}
-                        </span>
-                      </label>
-                    </div>
-
-                    <div className="control mb-2">
-                      <input
-                        className="input"
-                        placeholder="Ou URL d'image"
-                        value={content.projets[editingProj]?.image || ''}
-                        onChange={e => handleProjChange(editingProj, 'image', e.target.value)}
-                        disabled={uploading}
-                      />
-                    </div>
-
-                    {content.projets[editingProj]?.image && (
-                      <figure className="image" style={{ maxWidth: 200 }}>
-                        <img
-                          src={content.projets[editingProj].image}
-                          alt="Projet"
-                          style={{
-                            objectFit: 'cover',
-                            borderRadius: 8,
-                            border: '1px solid #eee',
-                            aspectRatio: '16/9'
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/200?text=Projet';
-                          }}
-                        />
-                      </figure>
-                    )}
-                  </div>
-                </div>
-
-                <div className="field is-grouped mt-3">
-                  <div className="control">
-                    <button
-                      type="button"
-                      className="button is-light"
-                      onClick={cancelEditProj}
-                      disabled={loading || uploading}
-                      style={{ borderRadius: 8 }}
-                    >
-                      ❌ Annuler
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Liste des projets */}
-            <div className="box" style={{ 
-              background: '#f8fafc', 
-              borderRadius: 12, 
-              border: '1.5px solid #e0e7ef' 
-            }}>
-              <h4 className="subtitle is-6 mb-3">
-                📋 Liste des projets ({content.projets?.length || 0})
-              </h4>
-
-              {(!content.projets || content.projets.length === 0) ? (
-                <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
-                  Aucun projet enregistré
-                </div>
-              ) : (
-                <div className="columns is-multiline">
-                  {content.projets.map((proj, index) => (
-                    <div className="column is-half" key={index}>
-                      <div className="box" style={{
-                        background: '#ffffff',
-                        borderRadius: 12,
-                        border: '1px solid #e0e7ef',
-                        padding: '1rem'
-                      }}>
-                        <div className="is-flex is-justify-content-space-between is-align-items-start mb-2">
-                          <div>
-                            <h3 className="title is-6 has-text-link mb-1">{proj.titre}</h3>
-                            {proj.structure && (
-                              <p className="is-size-7 has-text-grey mb-2">{proj.structure}</p>
-                            )}
-                            {proj.description && (
-                              <p className="is-size-7">{proj.description.substring(0, 80)}...</p>
-                            )}
-                          </div>
-                          <div className="buttons are-small mb-0" style={{ marginLeft: '1rem', flexShrink: 0 }}>
-                            <button
-                              type="button"
-                              className="button is-small is-info"
-                              onClick={() => editProj(index)}
-                              disabled={loading}
-                              title="Modifier"
-                            >
-                              <span role="img" aria-label="Modifier">✏️</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="button is-small is-danger"
-                              onClick={() => removeProj(index)}
-                              disabled={loading}
-                              title="Supprimer"
-                            >
-                              <span role="img" aria-label="Supprimer">🗑️</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="button is-link is-light mt-3"
-                onClick={addProj}
-                disabled={loading || uploading}
-                style={{ borderRadius: 8 }}
-              >
-                <span style={{ marginRight: 6 }}>➕</span> Ajouter un projet
-              </button>
-            </div>
-          </div>
-
-          {/* REPRÉSENTANTS */}
-          <div className="box mb-4" style={{ 
-            borderRadius: 12, 
-            border: '1.5px solid #e0e7ef', 
-            background: '#fff' 
-          }}>
-            <h3 className="subtitle is-5 mb-3" style={{ color: '#1277c6', fontWeight: 700 }}>
-              👥 Représentants
-            </h3>
-            <div className="field mb-3">
-              <label className="label is-small">Titre de la section</label>
-              <input
-                className="input"
-                name="titre_representants"
-                placeholder="Ex: Représentants de Friesen"
-                value={content.titre_representants}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* Formulaire d'édition */}
-            {editingRep !== null && (
-              <div 
-                ref={formRepRef}
-                className="box mb-4" 
-                style={{
-                  background: '#f0f9ff',
-                  borderRadius: 12,
-                  border: '2px solid #1277c6',
-                  scrollMarginTop: '20px'
-                }}
-              >
-                <h4 className="subtitle is-6 mb-3">
-                  {editingRep === content.representants.length - 1 && !content.representants[editingRep]?.structure
-                    ? '➕ Nouveau représentant'
-                    : '✏️ Modifier le représentant'}
-                </h4>
-
-                <div className="field mb-3">
-                  <label className="label is-small">Structure *</label>
-                  <input
-                    className="input"
-                    placeholder="Ex: Communauté de Communes"
-                    value={content.representants[editingRep]?.structure || ''}
-                    onChange={e => handleRepChange(editingRep, 'structure', e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="field mb-3">
-                  <label className="label is-small">Délégués titulaires</label>
-                  <input
-                    className="input"
-                    placeholder="Ex: M. Dupont, Mme Martin"
-                    value={content.representants[editingRep]?.titulaires || ''}
-                    onChange={e => handleRepChange(editingRep, 'titulaires', e.target.value)}
-                  />
-                </div>
-
-                <div className="field mb-3">
-                  <label className="label is-small">Délégués suppléants</label>
-                  <input
-                    className="input"
-                    placeholder="Ex: M. Bernard, Mme Durand"
-                    value={content.representants[editingRep]?.suppleants || ''}
-                    onChange={e => handleRepChange(editingRep, 'suppleants', e.target.value)}
-                  />
-                </div>
-
-                <div className="field is-grouped mt-3">
-                  <div className="control">
-                    <button
-                      type="button"
-                      className="button is-light"
-                      onClick={cancelEditRep}
-                      disabled={loading}
-                      style={{ borderRadius: 8 }}
-                    >
-                      ❌ Annuler
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Liste des représentants */}
-            <div className="box" style={{ 
-              background: '#f8fafc', 
-              borderRadius: 12, 
-              border: '1.5px solid #e0e7ef' 
-            }}>
-              <h4 className="subtitle is-6 mb-3">
-                📋 Liste des représentants ({content.representants?.length || 0})
-              </h4>
-
-              {(!content.representants || content.representants.length === 0) ? (
-                <div className="notification is-light is-info is-size-7 py-2 px-3" style={{ borderRadius: 8 }}>
-                  Aucun représentant enregistré
-                </div>
-              ) : (
-                <div className="table-container">
-                  <table className="table is-fullwidth is-hoverable" style={{ background: '#ffffff' }}>
-                    <thead>
-                      <tr style={{ background: '#f0f9ff' }}>
-                        <th>Structure</th>
-                        <th>Titulaires</th>
-                        <th>Suppléants</th>
-                        <th style={{ width: 100 }}>Actions</th>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {content.representants.map((rep, index) => (
-                        <tr key={index}>
-                          <td><strong>{rep.structure}</strong></td>
-                          <td>{rep.titulaires}</td>
-                          <td>{rep.suppleants}</td>
-                          <td>
-                            <div className="buttons are-small mb-0">
-                              <button
-                                type="button"
-                                className="button is-small is-info"
-                                onClick={() => editRep(index)}
-                                disabled={loading}
-                                title="Modifier"
-                              >
-                                <span role="img" aria-label="Modifier">✏️</span>
-                              </button>
-                              <button
-                                type="button"
-                                className="button is-small is-danger"
-                                onClick={() => removeRep(index)}
-                                disabled={loading}
-                                title="Supprimer"
-                              >
-                                <span role="img" aria-label="Supprimer">🗑️</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-              <button
-                type="button"
-                className="button is-link is-light mt-3"
-                onClick={addRep}
-                disabled={loading}
-                style={{ borderRadius: 8 }}
-              >
-                <span style={{ marginRight: 6 }}>➕</span> Ajouter un représentant
-              </button>
-            </div>
+            <button
+              type="button"
+              className="button is-link is-light mt-3"
+              onClick={addRep}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 8 }}
+            >
+              <span style={{ marginRight: 6 }}>➕</span> Ajouter un représentant
+            </button>
           </div>
 
-          {/* Bouton de sauvegarde */}
-          <div className="field is-grouped mt-5" style={{ justifyContent: 'center' }}>
-            <div className="control">
-              <button 
-                className={`button is-link is-medium${loading ? ' is-loading' : ''}`} 
-                type="submit" 
-                disabled={loading || uploading}
-                style={{ borderRadius: 10, fontWeight: 600, padding: '0.75rem 2rem' }}
-              >
-                <span style={{ marginRight: 8 }}>💾</span>
-                Enregistrer toutes les modifications
-              </button>
-            </div>
+          <div className="has-text-right mt-4">
+            <button 
+              className={`button is-link${savingSection === 'representants' ? ' is-loading' : ''}`}
+              onClick={() => saveSection('representants')}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 10, fontWeight: 600 }}
+            >
+              <span style={{ marginRight: 8 }}>💾</span>
+              Enregistrer cette section
+            </button>
           </div>
-        </form>
+        </div>
       </div>
 
       <ToastContainer position="top-right" autoClose={2500} newestOnTop />
