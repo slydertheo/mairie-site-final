@@ -599,6 +599,106 @@ export default function AssociationsEditor() {
           </div>
         </div>
 
+        {/* Section Salles communales */}
+        <div className="box mb-5" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+          <h3 className="subtitle is-5 mb-4" style={{ color: '#1277c6', fontWeight: 700 }}>
+            🏛️ Salles communales
+          </h3>
+          <div className="field mb-3">
+            <label className="label is-small">Titre</label>
+            <input
+              className="input"
+              name="salles_titre"
+              value={content.salles?.titre || ''}
+              onChange={e => setContent({ ...content, salles: { ...content.salles, titre: e.target.value } })}
+              placeholder="Ex: Salles communales"
+            />
+          </div>
+          <div className="field mb-3">
+            <label className="label is-small">Texte descriptif</label>
+            <textarea
+              className="textarea"
+              name="salles_texte"
+              value={content.salles?.texte || ''}
+              onChange={e => setContent({ ...content, salles: { ...content.salles, texte: e.target.value } })}
+              placeholder="Description des salles disponibles..."
+              rows={2}
+            />
+          </div>
+          
+          <div className="field mb-3">
+            <label className="label is-small">Liste des salles ({content.salles?.liste?.length || 0})</label>
+            {(content.salles?.liste || []).map((salle, i) => (
+              <div key={i} className="field has-addons mb-2">
+                <div className="control is-expanded">
+                  <input
+                    className="input"
+                    value={salle}
+                    onChange={e => {
+                      const newListe = [...(content.salles?.liste || [])];
+                      newListe[i] = e.target.value;
+                      setContent({ ...content, salles: { ...content.salles, liste: newListe } });
+                    }}
+                    placeholder="Ex: Salle polyvalente (capacité 200 personnes)"
+                  />
+                </div>
+                <div className="control">
+                  <button
+                    type="button"
+                    className="button is-danger"
+                    onClick={() => {
+                      const newListe = (content.salles?.liste || []).filter((_, idx) => idx !== i);
+                      setContent({ ...content, salles: { ...content.salles, liste: newListe } });
+                      toast.success('Salle supprimée', { autoClose: 2000 });
+                    }}
+                    disabled={savingSection !== null}
+                    title="Supprimer"
+                  >
+                    <span role="img" aria-label="Supprimer">🗑️</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="button is-info is-light is-small mt-2"
+              onClick={() => {
+                const newListe = [...(content.salles?.liste || []), ''];
+                setContent({ ...content, salles: { ...content.salles, liste: newListe } });
+                toast.success('Nouvelle salle ajoutée', { autoClose: 2000 });
+              }}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 8 }}
+            >
+              <span role="img" aria-label="Ajouter" style={{ marginRight: 6 }}>➕</span>
+              <span>Ajouter une salle</span>
+            </button>
+          </div>
+
+          <div className="field mb-4">
+            <label className="label is-small">Lien de réservation</label>
+            <input
+              className="input"
+              name="salles_contact_url"
+              value={content.salles?.contact_url || ''}
+              onChange={e => setContent({ ...content, salles: { ...content.salles, contact_url: e.target.value } })}
+              placeholder="/contact ou https://..."
+            />
+            <p className="help">Le bouton "Réserver une salle" redirigera vers ce lien</p>
+          </div>
+          <div className="has-text-right">
+            <button 
+              className={`button is-link${savingSection === 'salles' ? ' is-loading' : ''}`}
+              onClick={() => saveSection('salles')}
+              disabled={savingSection !== null}
+              style={{ borderRadius: 10, fontWeight: 600 }}
+            >
+              <span style={{ marginRight: 8 }}>💾</span>
+              Enregistrer cette section
+            </button>
+          </div>
+        </div>
+
         {/* Section Forum */}
         <div className="box mb-5" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
           <h3 className="subtitle is-5 mb-4" style={{ color: '#1277c6', fontWeight: 700 }}>

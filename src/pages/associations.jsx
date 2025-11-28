@@ -73,6 +73,7 @@ export default function Associations() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [content, setContent] = useState({});
+  const [showContactInfo, setShowContactInfo] = useState(false); // AJOUTER
 
   useEffect(() => {
     fetch('/api/pageContent?page=associations')
@@ -405,9 +406,9 @@ export default function Associations() {
           </AnimateOnScroll>
 
           {/* Informations sur les subventions et permanence conseil */}
-          <div className="columns mt-6 is-variable is-4">
-            {/* Section Subventions */}
-            <div className="column is-full">
+          <div className="columns mt-6 is-variable is-8">
+            {/* Section Subventions - Prend toute la largeur */}
+            <div className="column is-12">
               <AnimateOnScroll animation="fade-up" delay={200}>
                 <div className="box" style={{
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -431,7 +432,7 @@ export default function Associations() {
                         {content.subventions?.texte || 'La commune soutient les associations locales...'}
                       </p>
                       {content.subventions?.date_limite && (
-                        <div className="notification is-light mb-3" style={{
+                        <div className="notification mb-3" style={{
                           background: 'rgba(255,255,255,0.15)',
                           border: '2px solid rgba(255,255,255,0.3)',
                           color: 'white',
@@ -440,7 +441,7 @@ export default function Associations() {
                           <strong>📅 Date limite de dépôt :</strong> {content.subventions.date_limite}
                         </div>
                       )}
-                      <div className="buttons" style={{ gap: 12, flexWrap: 'wrap' }}>
+                      <div className="buttons" style={{ gap: 12 }}>
                         {content.subventions?.formulaire_url && (
                           <a 
                             href={content.subventions.formulaire_url}
@@ -506,9 +507,12 @@ export default function Associations() {
                 </div>
               </AnimateOnScroll>
             </div>
+          </div>
 
+          {/* Deux colonnes pour permanence conseil et salles */}
+          <div className="columns is-variable is-8 mt-4">
             {/* Section Permanence conseil */}
-            <div className="column is-half">
+            <div className="column is-6">
               <AnimateOnScroll animation="fade-right" delay={300}>
                 <div className="box" style={{
                   background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -516,7 +520,9 @@ export default function Associations() {
                   borderRadius: 16,
                   padding: 32,
                   boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)',
-                  height: '100%'
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}>
                   <h3 className="title is-4 has-text-white mb-3" style={{
                     fontFamily: 'Merriweather, serif',
@@ -525,13 +531,13 @@ export default function Associations() {
                     gap: 12
                   }}>
                     <span style={{ fontSize: 32 }}>📝</span>
-                    {content.creation?.titre || 'Permanence conseil associatif'}
+                    {content.creation?.titre || 'Créer une association'}
                   </h3>
-                  <p className="mb-4" style={{ fontSize: 16, lineHeight: 1.7, color: 'rgba(255,255,255,0.95)' }}>
-                    {content.creation?.texte || 'Besoin d\'aide pour créer votre association ? Nous sommes là pour vous accompagner.'}
+                  <p className="mb-4" style={{ fontSize: 16, lineHeight: 1.7, color: 'rgba(255,255,255,0.95)', flex: 1 }}>
+                    {content.creation?.texte || 'Vous avez un projet associatif pour notre commune ?'}
                   </p>
                   {content.creation?.permanence && (
-                    <div className="notification is-light mb-3" style={{
+                    <div className="notification mb-3" style={{
                       background: 'rgba(255,255,255,0.15)',
                       border: '2px solid rgba(255,255,255,0.3)',
                       color: 'white',
@@ -573,7 +579,7 @@ export default function Associations() {
             </div>
 
             {/* Section Réservation de salles */}
-            <div className="column is-half">
+            <div className="column is-6">
               <AnimateOnScroll animation="fade-left" delay={300}>
                 <div className="box" style={{
                   background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
@@ -581,7 +587,9 @@ export default function Associations() {
                   borderRadius: 16,
                   padding: 32,
                   boxShadow: '0 8px 32px rgba(79, 172, 254, 0.3)',
-                  height: '100%'
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}>
                   <h3 className="title is-4 has-text-white mb-3" style={{
                     fontFamily: 'Merriweather, serif',
@@ -595,7 +603,7 @@ export default function Associations() {
                   <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.6, color: 'rgba(255,255,255,0.95)' }}>
                     {content.salles?.texte || 'La commune met à disposition des associations plusieurs salles.'}
                   </p>
-                  <ul style={{ marginBottom: 20, fontSize: 14, lineHeight: 1.8 }}>
+                  <ul style={{ marginBottom: 20, fontSize: 14, lineHeight: 1.8, flex: 1 }}>
                     {(content.salles?.liste || [
                       "Salle polyvalente (capacité 200 personnes)",
                       "Salle de réunion de la mairie (capacité 30 personnes)",
@@ -678,8 +686,8 @@ export default function Associations() {
               <p className="mb-4" style={{ fontSize: 17, lineHeight: 1.6 }}>
                 {content.contact?.texte || "Vous souhaitez en savoir plus sur la vie associative de notre commune ?"}
               </p>
-              <a 
-                href={content.contact?.contact_url || "/contact"} 
+              <button 
+                onClick={() => setShowContactInfo(!showContactInfo)}
                 className="button is-link is-medium"
                 style={{
                   borderRadius: 12,
@@ -697,8 +705,215 @@ export default function Associations() {
                 }}
               >
                 <span style={{ marginRight: 8 }}>📧</span>
-                <span>Contactez la mairie</span>
-              </a>
+                <span>{showContactInfo ? 'Masquer les informations' : 'Contactez la mairie'}</span>
+              </button>
+
+              {/* Section d'informations de contact */}
+              {showContactInfo && (
+                <div className="box mt-5" style={{
+                  background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
+                  padding: 32,
+                  borderRadius: 16,
+                  boxShadow: '0 4px 16px #1277c620',
+                  maxWidth: 800,
+                  margin: '0 auto',
+                  marginTop: 24
+                }}>
+                  {/* En-tête avec icône */}
+                  <div className="has-text-centered mb-4">
+                    <span style={{ fontSize: 48 }}>✉️</span>
+                    <h3 className="title is-4 mt-3 mb-2" style={{
+                      fontFamily: 'Merriweather, serif',
+                      color: '#1277c6'
+                    }}>
+                      Contactez la mairie
+                    </h3>
+                    <p className="has-text-grey" style={{ 
+                      fontSize: 15,
+                      lineHeight: 1.6
+                    }}>
+                      Nous sommes à votre écoute pour toutes vos questions
+                    </p>
+                  </div>
+
+                  {/* Boutons de contact */}
+                  <div className="buttons is-centered mb-4" style={{ gap: 12, flexWrap: 'wrap' }}>
+                    <a
+                      href={`mailto:${content.email || 'mairie@friesen.fr'}?subject=Question sur les associations`}
+                      className="button is-link is-medium"
+                      style={{
+                        borderRadius: 12,
+                        fontWeight: 600,
+                        fontSize: 15,
+                        padding: '10px 20px',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        boxShadow: '0 2px 8px #1277c620'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px #1277c640';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px #1277c620';
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>📧</span>
+                      <span>Envoyer un email</span>
+                    </a>
+
+                    <a
+                      href={`tel:${(content.telephone || '').replace(/\s/g, '')}`}
+                      className="button is-info is-light is-medium"
+                      style={{
+                        borderRadius: 12,
+                        fontWeight: 600,
+                        fontSize: 15,
+                        padding: '10px 20px',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        border: '2px solid #1b9bd7',
+                        background: 'white'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = '#1b9bd7';
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px #1b9bd740';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.color = '#1b9bd7';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>📞</span>
+                      <span>Appeler</span>
+                    </a>
+                  </div>
+
+                  {/* Informations de contact en cartes */}
+                  <div className="columns is-variable is-4">
+                    {/* Email */}
+                    <div className="column">
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '14px 16px',
+                        background: 'white',
+                        borderRadius: 12,
+                        border: '1px solid #e0e7ef',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px #1277c610'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = '#f8fafc';
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px #1277c620';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px #1277c610';
+                      }}
+                      >
+                        <span style={{ 
+                          fontSize: 20,
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          boxShadow: '0 2px 8px #1277c630'
+                        }}>📧</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="is-size-7 has-text-grey mb-1" style={{ fontWeight: 500 }}>
+                            Email
+                          </div>
+                          <a 
+                            href={`mailto:${content.email || 'mairie@friesen.fr'}`}
+                            className="has-text-link has-text-weight-semibold"
+                            style={{ fontSize: 14, wordBreak: 'break-all' }}
+                          >
+                            {content.email || 'mairie@friesen.fr'}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Téléphone */}
+                    <div className="column">
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '14px 16px',
+                        background: 'white',
+                        borderRadius: 12,
+                        border: '1px solid #e0e7ef',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px #1277c610'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = '#f8fafc';
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px #1277c620';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px #1277c610';
+                      }}
+                      >
+                        <span style={{ 
+                          fontSize: 20,
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          boxShadow: '0 2px 8px #1277c630'
+                        }}>📞</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="is-size-7 has-text-grey mb-1" style={{ fontWeight: 500 }}>
+                            Téléphone
+                          </div>
+                          <a 
+                            href={`tel:${(content.telephone || '').replace(/\s/g, '')}`}
+                            className="has-text-link has-text-weight-semibold"
+                            style={{ fontSize: 14 }}
+                          >
+                            {content.telephone || '03 XX XX XX XX'}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Message d'encouragement */}
+                  <div className="has-text-centered mt-4">
+                    <p className="has-text-grey" style={{
+                      fontSize: 13,
+                      fontStyle: 'italic'
+                    }}>
+                      💬 Nous vous répondrons dans les plus brefs délais
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </AnimateOnScroll>
         </div>
