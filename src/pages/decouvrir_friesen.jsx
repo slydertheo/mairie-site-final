@@ -441,6 +441,22 @@ export default function Visites() {
                       </p>
                       <p>{eq.description}</p>
                       {eq.note && <p className="is-size-7 mt-2">{eq.note}</p>}
+                      {eq.lien && (
+                        <div className="mt-3">
+                          <a 
+                            href={eq.lien} 
+                            className="button is-link is-small"
+                            style={{ borderRadius: 8, fontWeight: 600 }}
+                            target={eq.lien.startsWith('http') ? '_blank' : '_self'}
+                            rel={eq.lien.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          >
+                            <span className="icon is-small">
+                              <i className="fas fa-external-link-alt"></i>
+                            </span>
+                            <span>En savoir plus</span>
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -79,20 +79,15 @@ export default function AssociationsEditor() {
 
   // Associations CRUD
   const handleAssocChange = (i, field, value) => {
-    const associations = [...content.associations];
-    associations[i][field] = value;
-    setContent({ ...content, associations });
+    const updated = [...(content.associations || [])];
+    updated[i][field] = value;
+    setContent({ ...content, associations: updated });
   };
   
   const addAssoc = () => {
-    setContent({
-      ...content,
-      associations: [
-        ...(content.associations || []),
-        { nom: '', description: '', contact: '', email: '', activites: '', lieu: '', site: '', image: '', categorie: '' }
-      ]
-    });
-    toast.success('Nouvelle association ajoutée', { autoClose: 2000 });
+    const newAssoc = { nom: '', categorie: '', description: '', contact: '', email: '', activites: '', lieu: '', site: '', image: '' };
+    setContent({ ...content, associations: [...(content.associations || []), newAssoc] });
+    toast.success('Association ajoutée', { autoClose: 2000 });
   };
   
   const removeAssoc = i => {
@@ -106,10 +101,8 @@ export default function AssociationsEditor() {
             className="button is-danger is-small"
             onClick={() => {
               toast.dismiss();
-              setContent({
-                ...content,
-                associations: content.associations.filter((_, idx) => idx !== i)
-              });
+              const updated = (content.associations || []).filter((_, idx) => idx !== i);
+              setContent({ ...content, associations: updated });
               toast.success('Association supprimée', { autoClose: 2000 });
             }}
           >
@@ -126,17 +119,15 @@ export default function AssociationsEditor() {
 
   // Events CRUD
   const handleEventChange = (i, field, value) => {
-    const events = [...content.events];
-    events[i][field] = value;
-    setContent({ ...content, events });
+    const updated = [...(content.events || [])];
+    updated[i][field] = value;
+    setContent({ ...content, events: updated });
   };
   
   const addEvent = () => {
-    setContent({
-      ...content,
-      events: [...(content.events || []), { date: '', titre: '', association: '', lieu: '' }]
-    });
-    toast.success('Nouvel événement ajouté', { autoClose: 2000 });
+    const newEvent = { titre: '', date: '', association: '', lieu: '' };
+    setContent({ ...content, events: [...(content.events || []), newEvent] });
+    toast.success('Événement ajouté', { autoClose: 2000 });
   };
   
   const removeEvent = i => {
@@ -150,10 +141,8 @@ export default function AssociationsEditor() {
             className="button is-danger is-small"
             onClick={() => {
               toast.dismiss();
-              setContent({
-                ...content,
-                events: content.events.filter((_, idx) => idx !== i)
-              });
+              const updated = (content.events || []).filter((_, idx) => idx !== i);
+              setContent({ ...content, events: updated });
               toast.success('Événement supprimé', { autoClose: 2000 });
             }}
           >
@@ -647,9 +636,33 @@ export default function AssociationsEditor() {
                     type="button"
                     className="button is-danger"
                     onClick={() => {
-                      const newListe = (content.salles?.liste || []).filter((_, idx) => idx !== i);
-                      setContent({ ...content, salles: { ...content.salles, liste: newListe } });
-                      toast.success('Salle supprimée', { autoClose: 2000 });
+                      const salleName = salle || 'cette salle';
+                      
+                      toast.info(
+                        <div>
+                          <p className="mb-2">Supprimer <strong>{salleName}</strong> ?</p>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              className="button is-danger is-small"
+                              onClick={() => {
+                                toast.dismiss();
+                                const newListe = (content.salles?.liste || []).filter((_, idx) => idx !== i);
+                                setContent({ ...content, salles: { ...content.salles, liste: newListe } });
+                                toast.success('Salle supprimée', { autoClose: 2000 });
+                              }}
+                            >
+                              Confirmer
+                            </button>
+                            <button 
+                              className="button is-light is-small" 
+                              onClick={() => toast.dismiss()}
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        </div>,
+                        { autoClose: false, closeButton: false }
+                      );
                     }}
                     disabled={savingSection !== null}
                     title="Supprimer"

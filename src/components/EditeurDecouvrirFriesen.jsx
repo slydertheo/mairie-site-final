@@ -257,11 +257,17 @@ export default function EditeurDecouvrirFriesen() {
                         setContent({ ...content, equipementsSportifsInfos: arr });
                       }} placeholder="Ballons (foot, basket, volley), raquettes de badminton et autres équipements disponibles à la mairie." />
                       <label className="label">Note (optionnel)</label>
-                      <input className="input mb-2" value={eq.note} onChange={e => {
+                      <input className="input mb-2" value={eq.note || ''} onChange={e => {
                         const arr = [...content.equipementsSportifsInfos];
                         arr[i].note = e.target.value;
                         setContent({ ...content, equipementsSportifsInfos: arr });
                       }} placeholder="Caution demandée. Réservation conseillée en période estivale." />
+                      <label className="label">Lien site web (optionnel)</label>
+                      <input className="input mb-2" value={eq.lien || ''} onChange={e => {
+                        const arr = [...content.equipementsSportifsInfos];
+                        arr[i].lien = e.target.value;
+                        setContent({ ...content, equipementsSportifsInfos: arr });
+                      }} placeholder="https://... ou /contact" />
                       <button type="button" className="button is-danger is-light mt-2"
                         onClick={() => setContent({
                           ...content,
@@ -278,7 +284,7 @@ export default function EditeurDecouvrirFriesen() {
                   ...content,
                   equipementsSportifsInfos: [
                     ...content.equipementsSportifsInfos,
-                    { emoji: "", titre: "", description: "", note: "" }
+                    { emoji: "", titre: "", description: "", note: "", lien: "" }
                   ]
                 })}>
                 Ajouter une ligne
