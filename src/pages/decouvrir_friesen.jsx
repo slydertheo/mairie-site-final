@@ -109,8 +109,8 @@ export default function Visites() {
             <h2 className="title is-4 has-text-primary mb-4">Points d'intérêt</h2>
             
             <div className="columns is-multiline">
-              {content.pointsInteret.map((point) => (
-                <div key={point.id} className="column is-half">
+              {content.pointsInteret.map((point, index) => (
+                <div key={index} className="column is-half">
                   <div className="card" style={{ 
                     borderRadius: 16, 
                     overflow: 'hidden',
@@ -200,8 +200,8 @@ export default function Visites() {
             </div>
 
             <div className="columns is-multiline">
-              {content.circuitsPedestres.map((circuit) => (
-                <div key={circuit.id} className="column is-half">
+              {content.circuitsPedestres.map((circuit, index) => (
+                <div key={index} className="column is-half">
                   <div className="card" style={{ 
                     borderRadius: 16, 
                     overflow: 'hidden',
@@ -294,8 +294,8 @@ export default function Visites() {
             </div>
 
             <div className="columns is-multiline">
-              {content.circuitsVTT.map((circuit) => (
-                <div key={circuit.id} className="column is-half">
+              {content.circuitsVTT.map((circuit, index) => (
+                <div key={index} className="column is-half">
                   <div className="card" style={{ 
                     borderRadius: 16, 
                     overflow: 'hidden',
@@ -382,8 +382,8 @@ export default function Visites() {
               </div>
             </div>
 
-            {content.installationsSportives.map((installation) => (
-              <div key={installation.id} className="box mb-5" style={{ 
+            {content.installationsSportives.map((installation, index) => (
+              <div key={index} className="box mb-5" style={{ 
                 borderRadius: 16, 
                 overflow: 'hidden',
                 boxShadow: '0 2px 12px #1277c620',
@@ -578,7 +578,7 @@ export default function Visites() {
               overflow: 'hidden',
               padding: 0
             }}>
-              {/* En-tête */}
+              {/* En-tête */}j
               <div style={{
                 background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
                 padding: '2rem 1.5rem',
@@ -596,11 +596,11 @@ export default function Visites() {
 
               {/* Contenu */}
               <div style={{ padding: '2.5rem 1.5rem' }}>
-                <div className="columns is-vcentered is-mobile" style={{ margin: 0 }}>
+                <div className="columns is-vcentered" style={{ margin: 0 }}>
                   <div className="column is-12-mobile is-4-tablet has-text-centered" style={{ padding: '1rem' }}>
                     <figure className="image" style={{ maxWidth: 280, margin: '0 auto' }}>
                       <img 
-                        src="https://images.unsplash.com/photo-1582880414731-b8cecb28af33?auto=format&fit=crop&w=300&q=80" 
+                        src={content.officeTourisme.image || "https://images.unsplash.com/photo-1582880414731-b8cecb28af33?auto=format&fit=crop&w=300&q=80"} 
                         alt="Office du tourisme" 
                         style={{ 
                           objectFit: 'cover', 
@@ -613,133 +613,51 @@ export default function Visites() {
                   </div>
                   
                   <div className="column is-12-mobile is-8-tablet" style={{ padding: '1rem' }}>
-                    <div className="columns is-multiline is-mobile" style={{ margin: '0 -0.5rem' }}>
-                      {/* Colonne gauche */}
-                      <div className="column is-12-mobile is-6-tablet" style={{ padding: '0.5rem' }}>
-                        {content.officeTourisme.adresse && (
-                          <div style={{ 
-                            background: '#f8fafc',
-                            padding: '1.5rem',
-                            borderRadius: 12,
-                            border: '2px solid #e0e7ef',
-                            marginBottom: 12,
-                            transition: 'all 0.3s ease'
-                          }}
-                          className="info-card"
-                          >
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'flex-start',
-                              gap: 12
-                            }}>
-                              <span style={{ fontSize: 28, flexShrink: 0 }}>📍</span>
-                              <div>
-                                <p className="has-text-weight-bold mb-2" style={{ color: '#1277c6', fontSize: 15 }}>
-                                  Adresse
-                                </p>
-                                <p style={{ fontSize: 14, color: '#4a5568', lineHeight: 1.5, wordBreak: 'break-word' }}>
-                                  {content.officeTourisme.adresse}
-                                </p>
-                              </div>
-                            </div>
+                    <div className="info-grid">
+                      {content.officeTourisme.adresse && (
+                        <div className="info-card-tourism">
+                          <div className="info-icon">📍</div>
+                          <div className="info-content">
+                            <p className="info-label">Adresse</p>
+                            <p className="info-text">{content.officeTourisme.adresse}</p>
                           </div>
-                        )}
-                        
-                        {content.officeTourisme.tel && (
-                          <div style={{ 
-                            background: '#f8fafc',
-                            padding: '1.5rem',
-                            borderRadius: 12,
-                            border: '2px solid #e0e7ef',
-                            marginBottom: 12,
-                            transition: 'all 0.3s ease'
-                          }}
-                          className="info-card"
-                          >
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'flex-start',
-                              gap: 12
-                            }}>
-                              <span style={{ fontSize: 28, flexShrink: 0 }}>📞</span>
-                              <div>
-                                <p className="has-text-weight-bold mb-2" style={{ color: '#1277c6', fontSize: 15 }}>
-                                  Téléphone
-                                </p>
-                                <p style={{ fontSize: 14, color: '#4a5568', lineHeight: 1.5 }}>
-                                  {content.officeTourisme.tel}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       
-                      {/* Colonne droite */}
-                      <div className="column is-12-mobile is-6-tablet" style={{ padding: '0.5rem' }}>
-                        {content.officeTourisme.email && (
-                          <div style={{ 
-                            background: '#f8fafc',
-                            padding: '1.5rem',
-                            borderRadius: 12,
-                            border: '2px solid #e0e7ef',
-                            marginBottom: 12,
-                            transition: 'all 0.3s ease'
-                          }}
-                          className="info-card"
-                          >
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'flex-start',
-                              gap: 12
-                            }}>
-                              <span style={{ fontSize: 28, flexShrink: 0 }}>📧</span>
-                              <div>
-                                <p className="has-text-weight-bold mb-2" style={{ color: '#1277c6', fontSize: 15 }}>
-                                  Email
-                                </p>
-                                <p style={{ fontSize: 14, color: '#4a5568', lineHeight: 1.5, wordBreak: 'break-word' }}>
-                                  {content.officeTourisme.email}
-                                </p>
-                              </div>
-                            </div>
+                      {content.officeTourisme.tel && (
+                        <div className="info-card-tourism">
+                          <div className="info-icon">📞</div>
+                          <div className="info-content">
+                            <p className="info-label">Téléphone</p>
+                            <p className="info-text">{content.officeTourisme.tel}</p>
                           </div>
-                        )}
-                        
-                        {content.officeTourisme.horaires && (
-                          <div style={{ 
-                            background: '#f8fafc',
-                            padding: '1.5rem',
-                            borderRadius: 12,
-                            border: '2px solid #e0e7ef',
-                            marginBottom: 12,
-                            transition: 'all 0.3s ease'
-                          }}
-                          className="info-card"
-                          >
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'flex-start',
-                              gap: 12
-                            }}>
-                              <span style={{ fontSize: 28, flexShrink: 0 }}>🕒</span>
-                              <div>
-                                <p className="has-text-weight-bold mb-2" style={{ color: '#1277c6', fontSize: 15 }}>
-                                  Horaires
-                                </p>
-                                <p style={{ fontSize: 14, color: '#4a5568', lineHeight: 1.5 }}>
-                                  {content.officeTourisme.horaires}
-                                </p>
-                              </div>
-                            </div>
+                        </div>
+                      )}
+                      
+                      {content.officeTourisme.email && (
+                        <div className="info-card-tourism">
+                          <div className="info-icon">📧</div>
+                          <div className="info-content">
+                            <p className="info-label">Email</p>
+                            <p className="info-text">{content.officeTourisme.email}</p>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+                      
+                      {content.officeTourisme.horaires && (
+                        <div className="info-card-tourism">
+                          <div className="info-icon">🕒</div>
+                          <div className="info-content">
+                            <p className="info-label">Horaires</p>
+                            <p className="info-text">{content.officeTourisme.horaires}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Boutons - Affichage conditionnel */}
                     {(content.officeTourisme.site || content.officeTourisme.email) && (
-                      <div className="buttons mt-5 is-flex-wrap-wrap" style={{ gap: 10 }}>
+                      <div className="tourism-buttons">
                         {content.officeTourisme.site && (
                           <a 
                             href={content.officeTourisme.site} 
@@ -749,7 +667,7 @@ export default function Visites() {
                               fontWeight: 600,
                               padding: '0.75rem 1.75rem',
                               flex: '1 1 auto',
-                              minWidth: '200px'
+                              minWidth: 'max-content'
                             }}
                           >
                             <span className="icon">
@@ -767,7 +685,7 @@ export default function Visites() {
                               fontWeight: 600,
                               padding: '0.75rem 1.75rem',
                               flex: '1 1 auto',
-                              minWidth: '200px'
+                              minWidth: 'max-content'
                             }}
                           >
                             <span className="icon">
@@ -812,64 +730,57 @@ export default function Visites() {
 
               {/* Contenu */}
               <div style={{ padding: '2.5rem 1.5rem' }}>
-                <div className="columns is-multiline is-mobile" style={{ margin: '0 -0.75rem' }}>
+                <div className="pratique-grid">
                   {content.infosPratiques.map((info, index) => (
-                    <div 
-                      key={index} 
-                      className={`column ${
-                        content.infosPratiques.length === 1 ? 'is-12' :
-                        content.infosPratiques.length === 2 ? 'is-6-mobile is-6-tablet' :
-                        content.infosPratiques.length === 3 ? 'is-6-mobile is-4-tablet' :
-                        'is-6-mobile is-4-tablet is-4-desktop'
-                      }`}
-                      style={{ padding: '0.75rem' }}
-                    >
-                      <div style={{ 
-                        background: 'linear-gradient(135deg, #f8fff8 0%, #efffef 100%)',
-                        padding: '1.75rem 1.25rem',
-                        borderRadius: 16,
-                        textAlign: 'center',
-                        height: '100%',
-                        border: '2px solid #e8f5e8',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        minHeight: '180px'
-                      }}
-                      className="pratique-card"
-                      >
-                        <div style={{ fontSize: 48, marginBottom: 16 }}>{info.emoji}</div>
-                        <p className="has-text-weight-bold mb-3" style={{ color: '#48c774', fontSize: 17 }}>
-                          {info.titre}
-                        </p>
-                        <p style={{ fontSize: 14, color: '#4a5568', lineHeight: 1.6 }}>
-                          {info.texte}
-                        </p>
-                      </div>
+                    <div key={index} className="pratique-card-new">
+                      <div className="pratique-icon">{info.emoji}</div>
+                      <h4 className="pratique-title">{info.titre}</h4>
+                      <p className="pratique-text">{info.texte}</p>
+                      {info.lien && (
+                        <div className="mt-3">
+                          <a 
+                            href={info.lien} 
+                            className="button is-success is-small"
+                            style={{ 
+                              borderRadius: 8, 
+                              fontWeight: 600,
+                              boxShadow: '0 2px 8px #48c77420'
+                            }}
+                            target={info.lien.startsWith('http') ? '_blank' : '_self'}
+                            rel={info.lien.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          >
+                            <span className="icon is-small">
+                              <i className="fas fa-arrow-right"></i>
+                            </span>
+                            <span>En savoir plus</span>
+                          </a>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
                 
                 <div className="has-text-centered mt-6">
-                  <Link 
-                    href="/infos-pratiques" 
-                    className="button is-success is-large"
-                    style={{
-                      borderRadius: 12,
-                      fontWeight: 700,
-                      padding: '1rem 2.5rem',
-                      boxShadow: '0 6px 16px #48c77440',
-                      fontSize: 18
-                    }}
-                  >
-                    <span className="icon is-medium">
-                      <i className="fas fa-info-circle"></i>
-                    </span>
-                    <span>Toutes les informations pratiques</span>
-                  </Link>
+                  {content.lienInfosPratiques ? (
+                    <a 
+                      href={content.lienInfosPratiques}
+                      className="button is-success is-large"
+                      style={{
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        padding: '1rem 2.5rem',
+                        boxShadow: '0 6px 16px #48c77440',
+                        fontSize: 18
+                      }}
+                      target={content.lienInfosPratiques.startsWith('http') ? '_blank' : '_self'}
+                      rel={content.lienInfosPratiques.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    >
+                      <span className="icon is-medium">
+                        <i className="fas fa-info-circle"></i>
+                      </span>
+                      <span>Toutes les informations pratiques</span>
+                    </a>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -879,16 +790,116 @@ export default function Visites() {
 
       {/* CSS responsive */}
       <style jsx global>{`
-        .info-card:hover {
+        /* Office du Tourisme - Grid Layout */
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        
+        .info-card-tourism {
+          background: #f8fafc;
+          padding: 1.25rem;
+          border-radius: 12px;
+          border: 2px solid #e0e7ef;
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+          transition: all 0.3s ease;
+          min-height: 100px;
+        }
+        
+        .info-card-tourism:hover {
           transform: translateY(-4px);
           box-shadow: 0 8px 16px rgba(18, 119, 198, 0.15);
           border-color: #1277c6;
         }
         
-        .pratique-card:hover {
+        .info-icon {
+          font-size: 28px;
+          flex-shrink: 0;
+          line-height: 1;
+        }
+        
+        .info-content {
+          flex: 1;
+          min-width: 0;
+        }
+        
+        .info-label {
+          font-weight: 700;
+          color: #1277c6;
+          font-size: 15px;
+          margin-bottom: 0.5rem;
+          line-height: 1.3;
+        }
+        
+        .info-text {
+          font-size: 14px;
+          color: #4a5568;
+          line-height: 1.5;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+        
+        .tourism-buttons {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-top: 1.5rem;
+        }
+        
+        /* Informations Pratiques - Grid Layout */
+        .pratique-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1.5rem;
+        }
+        
+        .pratique-card-new {
+          background: linear-gradient(135deg, #f8fff8 0%, #efffef 100%);
+          padding: 2rem 1.5rem;
+          border-radius: 16px;
+          border: 2px solid #e8f5e8;
+          text-align: center;
+          transition: all 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          min-height: 200px;
+        }
+        
+        .pratique-card-new:hover {
           transform: translateY(-6px);
           box-shadow: 0 12px 28px rgba(72, 199, 116, 0.25);
           border-color: #48c774;
+        }
+        
+        .pratique-icon {
+          font-size: 48px;
+          margin-bottom: 1rem;
+          line-height: 1;
+        }
+        
+        .pratique-title {
+          font-weight: 700;
+          color: #48c774;
+          font-size: 17px;
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+        }
+        
+        .pratique-text {
+          font-size: 14px;
+          color: #4a5568;
+          line-height: 1.6;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+          flex-grow: 1;
         }
         
         @media screen and (max-width: 768px) {
@@ -916,17 +927,6 @@ export default function Visites() {
             white-space: normal !important;
             height: auto !important;
             padding: 0.75rem 1.25rem !important;
-            width: 100%;
-          }
-          
-          .buttons {
-            flex-direction: column;
-            gap: 10px;
-          }
-          
-          .buttons .button {
-            width: 100%;
-            margin: 0 !important;
           }
           
           .is-centered-mobile {
@@ -947,12 +947,60 @@ export default function Visites() {
             font-size: 1.75rem !important;
           }
           
-          .pratique-card {
-            min-height: 160px !important;
+          /* Office du Tourisme - Mobile */
+          .info-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
           }
           
-          .info-card {
-            margin-bottom: 0.75rem !important;
+          .info-card-tourism {
+            min-height: auto;
+            padding: 1rem;
+          }
+          
+          .info-icon {
+            font-size: 24px;
+          }
+          
+          .info-label {
+            font-size: 14px;
+          }
+          
+          .info-text {
+            font-size: 13px;
+          }
+          
+          .tourism-buttons {
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          
+          .tourism-buttons .button {
+            width: 100%;
+            min-width: auto !important;
+          }
+          
+          /* Informations Pratiques - Mobile */
+          .pratique-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          
+          .pratique-card-new {
+            min-height: 160px;
+            padding: 1.5rem 1rem;
+          }
+          
+          .pratique-icon {
+            font-size: 40px;
+          }
+          
+          .pratique-title {
+            font-size: 16px;
+          }
+          
+          .pratique-text {
+            font-size: 13px;
           }
         }
         
@@ -964,6 +1012,31 @@ export default function Visites() {
           
           .button.is-medium {
             font-size: 15px !important;
+          }
+          
+          .info-grid,
+          .pratique-grid {
+            gap: 0.5rem;
+          }
+        }
+        
+        @media screen and (min-width: 769px) and (max-width: 1024px) {
+          .info-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .pratique-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        
+        @media screen and (min-width: 1025px) {
+          .info-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .pratique-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           }
         }
       `}</style>
