@@ -299,12 +299,25 @@ export default function InfosPratiques() {
                               padding: '16px',
                               borderRadius: 12,
                               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                              textAlign: 'left',
+                              whiteSpace: 'normal',
+                              display: 'block'
                             }}
                           >
-                            <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                            <span>
-                              <strong>{lien.titre}</strong><br />
-                              <small className="has-text-grey">{lien.description}</small>
+                            <span className="icon" style={{ verticalAlign: 'top' }}>
+                              <i className="fas fa-external-link-alt"></i>
+                            </span>
+                            <span style={{ 
+                              display: 'inline-block', 
+                              verticalAlign: 'top',
+                              maxWidth: 'calc(100% - 30px)',
+                              wordWrap: 'break-word',
+                              overflowWrap: 'break-word'
+                            }}>
+                              <strong style={{ display: 'block', marginBottom: '4px' }}>{lien.titre}</strong>
+                              <small className="has-text-grey" style={{ display: 'block', lineHeight: '1.4' }}>
+                                {lien.description}
+                              </small>
                             </span>
                           </a>
                         </div>

@@ -10,7 +10,8 @@ import MarchesCrud from '../components/MarchesCrud';
 import IntercommunaliteEditor from '../components/EditeurIntercomunalité.jsx';
 import AssociationsEditor from '../components/AssociationsEditor';
 import EditeurDecouvrirFriesen from '../components/EditeurDecouvrirFriesen'; 
-import EditeurInfosPratiques from '../components/EditeurInfosPratiques'; 
+import EditeurInfosPratiques from '../components/EditeurInfosPratiques';
+import EditeurNavbar from '../components/EditeurNavbar'; // NOUVEAU
 
 const PAGES = [
   { slug: 'accueil', title: 'Accueil' },
@@ -34,7 +35,7 @@ export default function InterfaceAdmin() {
           className="title is-2 has-text-link mb-5"
           style={{ textAlign: 'center', marginTop: 70 }}
         >
-          Interface d’administration
+          Interface d'administration
         </h1>
         <div className="tabs is-toggle is-fullwidth mb-5">
           <ul>
@@ -44,6 +45,9 @@ export default function InterfaceAdmin() {
             <li className={activeTab === 'content' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('content')}>Contenus du site</a>
             </li>
+            <li className={activeTab === 'navbar' ? 'is-active' : ''}>
+              <a onClick={() => setActiveTab('navbar')}>Images Navbar</a>
+            </li>
             <li className={activeTab === 'settings' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('settings')}>Paramètres</a>
             </li>
@@ -52,7 +56,7 @@ export default function InterfaceAdmin() {
 
         {activeTab === 'dashboard' && (
           <div>
-            <h2 className="title is-4">Bienvenue sur l’admin</h2>
+            <h2 className="title is-4">Bienvenue sur l'admin</h2>
             <p>Utilisez les onglets ci-dessus pour gérer le site et les utilisateurs.</p>
           </div>
         )}
@@ -101,17 +105,17 @@ export default function InterfaceAdmin() {
           </div>
         )}
 
-        {activeTab === 'demarches' && (
+        {activeTab === 'navbar' && (
           <div>
-            <h2 className="title is-4">Gestion des démarches</h2>
-            <DemarchesEditor />
+            <h2 className="title is-4">Gestion des images de la navbar</h2>
+            <EditeurNavbar />
           </div>
         )}
 
         {activeTab === 'settings' && (
           <div>
             <h2 className="title is-4">Paramètres du site</h2>
-            <p>Fonctionnalités à développer : paramètres généraux, sécurité, etc.</p>
+            <p>Fonctionnalités à développer : paramètres généraux, sécurité, etc.</p>
           </div>
         )}
 

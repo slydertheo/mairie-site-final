@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 const LoginIcon = ({ color = "#fff" }) => (
   <svg width="20" height="20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -36,13 +37,14 @@ function getStrengthLabel(score) {
 }
 
 export default function Navbar() {
+  const router = useRouter();
   const [active, setActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [errorType, setErrorType] = useState('danger'); // 'danger' ou 'success'
+  const [errorType, setErrorType] = useState('danger');
   const [registerMode, setRegisterMode] = useState(false);
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
@@ -51,6 +53,36 @@ export default function Navbar() {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotMsg, setForgotMsg] = useState('');
+  const [navbarImages, setNavbarImages] = useState({});
+
+  // Charger les images de navbar
+  useEffect(() => {
+    fetch('/api/navbar-images')
+      .then(res => res.json())
+      .then(data => {
+        if (data.images) {
+          setNavbarImages(data.images);
+        }
+      })
+      .catch(err => console.error('Erreur chargement images navbar:', err));
+  }, []);
+
+  // Déterminer l'image à afficher selon la page
+  const getCurrentPageImage = () => {
+    const path = router.pathname;
+    let pageSlug = 'accueil';
+
+    if (path === '/') pageSlug = 'accueil';
+    else if (path === '/demarches') pageSlug = 'demarches';
+    else if (path === '/ecoles') pageSlug = 'ecoles';
+    else if (path === '/commerces') pageSlug = 'commerces';
+    else if (path === '/intercommunalite') pageSlug = 'intercommunalite';
+    else if (path === '/associations') pageSlug = 'associations';
+    else if (path === '/decouvrir_friesen') pageSlug = 'decouvrir_friesen';
+    else if (path === '/infos_pratiques') pageSlug = 'infos_pratiques';
+
+    return navbarImages[pageSlug] || '/LogoFriesen.png';
+  };
 
   // Pour empêcher la navigation lors du clic sur Connexion
   const handleLoginClick = (e) => {
@@ -189,8 +221,8 @@ export default function Navbar() {
             }}
           >
             <img
-              src="/LogoFriesen.png"
-              alt="Blason de la mairie de Friesen"
+              src={getCurrentPageImage()}
+              alt="Logo de la mairie de Friesen"
               style={{
                 height: 40,
                 width: 40,
@@ -198,6 +230,9 @@ export default function Navbar() {
                 borderRadius: '50%',
                 boxShadow: '0 2px 8px #1277c620',
                 marginRight: 8,
+              }}
+              onError={(e) => {
+                e.currentTarget.src = '/LogoFriesen.png';
               }}
             />
             <span style={{

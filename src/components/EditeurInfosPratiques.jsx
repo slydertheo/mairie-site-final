@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function EditeurInfosPratiques() {
   const [activeTab, setActiveTab] = useState('bulletins');
@@ -38,12 +40,13 @@ export default function EditeurInfosPratiques() {
     liensUtilesContacts: []
   });
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [savingSection, setSavingSection] = useState(null);
 
   useEffect(() => {
     fetch('/api/pageContent?page=infos_pratiques')
       .then(res => res.json())
-      .then(data => setContent({ ...content, ...(data[0] || {}) }));
+      .then(data => setContent({ ...content, ...(data[0] || {}) }))
+      .catch(() => toast.error('Erreur lors du chargement'));
     // eslint-disable-next-line
   }, []);
 
@@ -57,8 +60,28 @@ export default function EditeurInfosPratiques() {
     setContent({ ...content, [section]: [...(content[section] || []), template] });
   };
 
-  const removeListItem = (section, idx) => {
-    setContent({ ...content, [section]: content[section].filter((_, i) => i !== idx) });
+  const removeListItem = (section, idx, itemName = 'cet élément') => {
+    toast.info(
+      <div>
+        <p className="mb-2">Supprimer <strong>{itemName}</strong> ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={() => {
+              toast.dismiss();
+              setContent({ ...content, [section]: content[section].filter((_, i) => i !== idx) });
+              toast.success('Élément supprimé', { autoClose: 2000 });
+            }}
+          >
+            Confirmer
+          </button>
+          <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+            Annuler
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeButton: false }
+    );
   };
 
   const handleNestedListChange = (parent, section, idx, field, value) => {
@@ -83,34 +106,99 @@ export default function EditeurInfosPratiques() {
     });
   };
 
-  const removeNestedListItem = (parent, section, idx) => {
-    setContent({
-      ...content,
-      [parent]: {
-        ...content[parent],
-        [section]: content[parent][section].filter((_, i) => i !== idx)
-      }
-    });
+  const removeNestedListItem = (parent, section, idx, itemName = 'cet élément') => {
+    toast.info(
+      <div>
+        <p className="mb-2">Supprimer <strong>{itemName}</strong> ?</p>
+        <div className="buttons mt-3">
+          <button
+            className="button is-danger is-small"
+            onClick={() => {
+              toast.dismiss();
+              setContent({
+                ...content,
+                [parent]: {
+                  ...content[parent],
+                  [section]: content[parent][section].filter((_, i) => i !== idx)
+                }
+              });
+              toast.success('Élément supprimé', { autoClose: 2000 });
+            }}
+          >
+            Confirmer
+          </button>
+          <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+            Annuler
+          </button>
+        </div>
+      </div>,
+      { autoClose: false, closeButton: false }
+    );
+  };
+
+  const saveSection = async (sectionName) => {
+    setSavingSection(sectionName);
+    const toastId = toast.loading('Enregistrement...');
+
+    try {
+      await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'infos_pratiques',
+          ...content
+        })
+      });
+
+      toast.update(toastId, {
+        render: '✅ Section enregistrée !',
+        type: 'success',
+        isLoading: false,
+        autoClose: 2000
+      });
+    } catch (err) {
+      toast.update(toastId, {
+        render: '❌ Erreur lors de l\'enregistrement',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000
+      });
+    } finally {
+      setSavingSection(null);
+    }
   };
 
   const handleSave = async e => {
     e.preventDefault();
     setLoading(true);
-    await fetch('/api/pageContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        page: 'infos_pratiques',
-        ...content
-      })
-    });
-    setLoading(false);
-    setMsg('Modifications enregistrées !');
-    setTimeout(() => setMsg(''), 2000);
-  };
+    const toastId = toast.loading('Enregistrement global...');
 
-  const handleSaveCollecteDechets = () => {
-    console.log("Collecte des déchets sauvegardée");
+    try {
+      await fetch('/api/pageContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: 'infos_pratiques',
+          ...content
+        })
+      });
+
+      toast.update(toastId, {
+        render: '✅ Modifications enregistrées !',
+        type: 'success',
+        isLoading: false,
+        autoClose: 2000
+      });
+    } catch (err) {
+      toast.update(toastId, {
+        render: '❌ Erreur lors de l\'enregistrement',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -154,7 +242,7 @@ export default function EditeurInfosPratiques() {
         <form onSubmit={handleSave}>
           {activeTab === 'bulletins' && (
             <>
-              {/* Introduction et titres de la section Bulletins */}
+              {/* Introduction */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">📝 Introduction - Bulletins communaux</h2>
                 
@@ -175,7 +263,7 @@ export default function EditeurInfosPratiques() {
                 <label className="label">Texte d'introduction</label>
                 <textarea 
                   className="textarea mb-3" 
-                  value={content.bulletinsInfo?.introduction || "Retrouvez ici les bulletins municipaux publiés par la commune de Friesen. Ces publications trimestrielles vous informent des actualités et des projets de la commune."} 
+                  value={content.bulletinsInfo?.introduction || ""} 
                   onChange={e => setContent({ 
                     ...content, 
                     bulletinsInfo: { 
@@ -186,109 +274,97 @@ export default function EditeurInfosPratiques() {
                   placeholder="Texte d'introduction"
                   rows={3}
                 />
+
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'bulletinsInfo' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('bulletinsInfo')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
-              {/* Gestion des bulletins récents (affichés en cartes) */}
+              {/* Bulletins récents */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">📰 Bulletins récents</h2>
                 
                 {(content.bulletins || []).map((bulletin, i) => (
-                  <div key={i} className="box mb-3" style={{ position: 'relative' }}>
-                    <button 
-                      type="button" 
-                      className="delete is-medium" 
-                      style={{ position: 'absolute', top: 10, right: 10 }} 
-                      onClick={() => removeListItem('bulletins', i)}
-                      aria-label="Supprimer ce bulletin"
-                    ></button>
+                  <div key={i} className="box mb-3" style={{ background: "#f9fbfd", borderRadius: 12, border: '1.5px solid #e0e7ef' }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-info is-light">Bulletin #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeListItem('bulletins', i, bulletin.titre || 'ce bulletin')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        <span role="img" aria-label="Supprimer">🗑️</span>
+                      </button>
+                    </div>
                     
                     <div className="columns">
                       <div className="column is-3">
-                        <div className="field">
-                          <label className="label">Date</label>
-                          <input 
-                            className="input" 
-                            value={bulletin.date || ""} 
-                            onChange={e => handleListChange('bulletins', i, 'date', e.target.value)} 
-                            placeholder="Ex: Juin 2025"
-                          />
-                        </div>
-                      </div>
-                      <div className="column">
-                        <div className="field">
-                          <label className="label">Titre</label>
-                          <input 
-                            className="input" 
-                            value={bulletin.titre || ""} 
-                            onChange={e => handleListChange('bulletins', i, 'titre', e.target.value)} 
-                            placeholder="Ex: Bulletin municipal - Été 2025"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="field">
-                      <label className="label">Nom du fichier</label>
-                      <div className="control has-icons-left">
+                        <label className="label">Date</label>
                         <input 
                           className="input" 
-                          value={bulletin.fichier || ""} 
-                          onChange={e => handleListChange('bulletins', i, 'fichier', e.target.value)} 
-                          placeholder="Ex: bulletin-ete-2025.pdf"
+                          value={bulletin.date || ""} 
+                          onChange={e => handleListChange('bulletins', i, 'date', e.target.value)} 
+                          placeholder="Ex: Juin 2025"
                         />
-                        <span className="icon is-small is-left">
-                          <i className="fas fa-file-pdf"></i>
-                        </span>
                       </div>
-                      <p className="help">Le fichier doit être uploadé dans le dossier /public/bulletins/</p>
+                      <div className="column">
+                        <label className="label">Titre</label>
+                        <input 
+                          className="input" 
+                          value={bulletin.titre || ""} 
+                          onChange={e => handleListChange('bulletins', i, 'titre', e.target.value)} 
+                          placeholder="Ex: Bulletin municipal - Été 2025"
+                        />
+                      </div>
                     </div>
                     
-                    <div className="field mt-3">
-                      <div className="buttons">
-                        <button 
-                          type="button" 
-                          className="button is-small is-info" 
-                          onClick={() => {
-                            const newBulletins = [...content.bulletins];
-                            if (i > 0) {
-                              [newBulletins[i], newBulletins[i-1]] = [newBulletins[i-1], newBulletins[i]];
-                              setContent({...content, bulletins: newBulletins});
-                            }
-                          }}
-                          disabled={i === 0}
-                        >
-                          <span className="icon"><i className="fas fa-arrow-up"></i></span>
-                          <span>Monter</span>
-                        </button>
-                        
-                        <button 
-                          type="button" 
-                          className="button is-small is-info" 
-                          onClick={() => {
-                            const newBulletins = [...content.bulletins];
-                            if (i < newBulletins.length - 1) {
-                              [newBulletins[i], newBulletins[i+1]] = [newBulletins[i+1], newBulletins[i]];
-                              setContent({...content, bulletins: newBulletins});
-                            }
-                          }}
-                          disabled={i === (content.bulletins || []).length - 1}
-                        >
-                          <span className="icon"><i className="fas fa-arrow-down"></i></span>
-                          <span>Descendre</span>
-                        </button>
-                      </div>
-                    </div>
+                    <label className="label">Nom du fichier</label>
+                    <input 
+                      className="input mb-2" 
+                      value={bulletin.fichier || ""} 
+                      onChange={e => handleListChange('bulletins', i, 'fichier', e.target.value)} 
+                      placeholder="Ex: bulletin-ete-2025.pdf"
+                    />
                   </div>
                 ))}
                 
-                <button 
-                  type="button" 
-                  className="button is-link" 
-                  onClick={() => addListItem('bulletins', { id: Date.now(), titre: "", date: "", fichier: "" })}
-                >
-                  <span className="icon"><i className="fas fa-plus"></i></span>
-                  <span>Ajouter un bulletin récent</span>
-                </button>
+                <div className="has-text-centered">
+                  <button 
+                    type="button" 
+                    className="button is-link is-light" 
+                    onClick={() => addListItem('bulletins', { id: Date.now(), titre: "", date: "", fichier: "" })}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span className="icon">
+                      <i className="fas fa-plus"></i>
+                    </span>
+                    <span>Ajouter un bulletin récent</span>
+                  </button>
+                </div>
+
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'bulletins' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('bulletins')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
               {/* Gestion des archives par année */}
@@ -530,23 +606,63 @@ export default function EditeurInfosPratiques() {
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-danger mb-4">📞 Numéros d'urgence</h2>
                 {content.contacts.urgence.map((c, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-danger is-light">Contact #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeNestedListItem('contacts', 'urgence', i, c.service || 'ce contact')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Service</label>
                     <input className="input mb-2" value={c.service} onChange={e => handleNestedListChange('contacts', 'urgence', i, 'service', e.target.value)} placeholder="Service" />
                     <label className="label">Numéro</label>
                     <input className="input mb-2" value={c.numero} onChange={e => handleNestedListChange('contacts', 'urgence', i, 'numero', e.target.value)} placeholder="Numéro" />
                     <label className="label">Détails</label>
                     <input className="input mb-2" value={c.details} onChange={e => handleNestedListChange('contacts', 'urgence', i, 'details', e.target.value)} placeholder="Détails" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeNestedListItem('contacts', 'urgence', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addNestedListItem('contacts', 'urgence', { service: "", numero: "", details: "" })}>Ajouter un contact</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light" onClick={() => addNestedListItem('contacts', 'urgence', { service: "", numero: "", details: "" })} style={{ borderRadius: 8 }}>
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un contact</span>
+                  </button>
+                </div>
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'contactsUrgence' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('contactsUrgence')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-danger mb-4">🔒 Services de sécurité</h2>
                 {(content.contacts.securite || []).map((c, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-danger is-light">Service #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeNestedListItem('contacts', 'securite', i, c.service || 'ce service')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Service</label>
                     <input className="input mb-2" value={c.service} onChange={e => handleNestedListChange('contacts', 'securite', i, 'service', e.target.value)} placeholder="Service" />
                     <label className="label">Numéro</label>
@@ -555,16 +671,44 @@ export default function EditeurInfosPratiques() {
                     <input className="input mb-2" value={c.details} onChange={e => handleNestedListChange('contacts', 'securite', i, 'details', e.target.value)} placeholder="Détails" />
                     <label className="label">Horaires</label>
                     <input className="input mb-2" value={c.horaires} onChange={e => handleNestedListChange('contacts', 'securite', i, 'horaires', e.target.value)} placeholder="Horaires" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeNestedListItem('contacts', 'securite', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addNestedListItem('contacts', 'securite', { service: "", numero: "", details: "", horaires: "" })}>Ajouter un contact de sécurité</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light" onClick={() => addNestedListItem('contacts', 'securite', { service: "", numero: "", details: "", horaires: "" })} style={{ borderRadius: 8 }}>
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un contact de sécurité</span>
+                  </button>
+                </div>
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'contactsSecurite' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('contactsSecurite')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-info mb-4">🏢 Services publics</h2>
                 {(content.contacts.services || []).map((c, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-info is-light">Service #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeNestedListItem('contacts', 'services', i, c.service || 'ce service')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Service</label>
                     <input className="input mb-2" value={c.service} onChange={e => handleNestedListChange('contacts', 'services', i, 'service', e.target.value)} placeholder="Service" />
                     <label className="label">Numéro</label>
@@ -573,16 +717,48 @@ export default function EditeurInfosPratiques() {
                     <input className="input mb-2" value={c.details} onChange={e => handleNestedListChange('contacts', 'services', i, 'details', e.target.value)} placeholder="Détails" />
                     <label className="label">Horaires</label>
                     <input className="input mb-2" value={c.horaires} onChange={e => handleNestedListChange('contacts', 'services', i, 'horaires', e.target.value)} placeholder="Horaires" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeNestedListItem('contacts', 'services', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addNestedListItem('contacts', 'services', { service: "", numero: "", details: "", horaires: "" })}>Ajouter un service public</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light" onClick={() => addNestedListItem('contacts', 'services', { service: "", numero: "", details: "", horaires: "" })} style={{ borderRadius: 8 }}>
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un service public</span>
+                  </button>
+                </div>
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'contactsServices' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('contactsServices')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">🔗 Liens utiles - Contacts et Urgences</h2>
                 {(content.liensUtilesContacts || []).map((lien, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-link is-light">Lien #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => {
+                          const arr = (content.liensUtilesContacts || []).filter((_, idx) => idx !== i);
+                          setContent({ ...content, liensUtilesContacts: arr });
+                          toast.success('Lien supprimé', { autoClose: 2000 });
+                        }}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Titre</label>
                     <input className="input mb-2" value={lien.titre} onChange={e => {
                       const arr = [...(content.liensUtilesContacts || [])];
@@ -605,7 +781,7 @@ export default function EditeurInfosPratiques() {
                     }} placeholder="URL du lien" />
                     
                     <label className="label">Type de service</label>
-                    <div className="select mb-2">
+                    <div className="select mb-2 is-fullwidth">
                       <select value={lien.type || 'urgence'} onChange={e => {
                         const arr = [...(content.liensUtilesContacts || [])];
                         arr[i].type = e.target.value;
@@ -619,51 +795,68 @@ export default function EditeurInfosPratiques() {
                       </select>
                     </div>
                     
-                    <div className="field is-grouped mt-3">
-                      <div className="control">
-                        <button type="button" className="button is-danger is-small" onClick={() => {
-                          const arr = (content.liensUtilesContacts || []).filter((_, idx) => idx !== i);
-                          setContent({ ...content, liensUtilesContacts: arr });
-                        }}>Supprimer</button>
-                      </div>
-                      
-                      <div className="control">
-                        <button type="button" className="button is-info is-small" onClick={() => {
+                    <div className="buttons mt-3">
+                      <button 
+                        type="button" 
+                        className="button is-small is-white"
+                        title="Monter"
+                        onClick={() => {
                           const arr = [...(content.liensUtilesContacts || [])];
-                          // Déplacer vers le haut si ce n'est pas le premier élément
                           if (i > 0) {
-                            const temp = arr[i];
-                            arr[i] = arr[i - 1];
-                            arr[i - 1] = temp;
+                            [arr[i], arr[i-1]] = [arr[i-1], arr[i]];
                             setContent({ ...content, liensUtilesContacts: arr });
                           }
-                        }} disabled={i === 0}>↑ Monter</button>
-                      </div>
-                      
-                      <div className="control">
-                        <button type="button" className="button is-info is-small" onClick={() => {
+                        }} 
+                        disabled={i === 0}
+                      >
+                        ▲
+                      </button>
+                      <button 
+                        type="button" 
+                        className="button is-small is-white"
+                        title="Descendre"
+                        onClick={() => {
                           const arr = [...(content.liensUtilesContacts || [])];
-                          // Déplacer vers le bas si ce n'est pas le dernier élément
                           if (i < arr.length - 1) {
-                            const temp = arr[i];
-                            arr[i] = arr[i + 1];
-                            arr[i + 1] = temp;
+                            [arr[i], arr[i+1]] = [arr[i+1], arr[i]];
                             setContent({ ...content, liensUtilesContacts: arr });
                           }
-                        }} disabled={i === (content.liensUtilesContacts || []).length - 1}>↓ Descendre</button>
-                      </div>
+                        }} 
+                        disabled={i === (content.liensUtilesContacts || []).length - 1}
+                      >
+                        ▼
+                      </button>
                     </div>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light" onClick={() => {
-                  const liensUtilesContacts = [...(content.liensUtilesContacts || []), { 
-                    titre: "", 
-                    description: "", 
-                    url: "", 
-                    type: "urgence" 
-                  }];
-                  setContent({ ...content, liensUtilesContacts });
-                }}>Ajouter un lien utile</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light" onClick={() => {
+                    const liensUtilesContacts = [...(content.liensUtilesContacts || []), { 
+                      titre: "", 
+                      description: "", 
+                      url: "", 
+                      type: "urgence" 
+                    }];
+                    setContent({ ...content, liensUtilesContacts });
+                  }}>
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un lien utile</span>
+                  </button>
+                </div>
+
+                {/* AJOUT DU BOUTON ENREGISTRER */}
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'liensUtilesContacts' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('liensUtilesContacts')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -671,25 +864,25 @@ export default function EditeurInfosPratiques() {
           {activeTab === 'dechets' && (
             <>
               {/* Titre et introduction de la collecte des déchets */}
-                <div className="box mb-6">
-                  <h2 className="title is-4 has-text-success mb-4">📝 Introduction - Collecte des déchets</h2>
-                  <label className="label">Titre de la section</label>
-                  <input 
-                    className="input mb-3" 
-                    value={content.collecteDechets?.titre || "Collecte des déchets à Friesen"} 
-                    onChange={e => setContent({ 
-                      ...content, 
-                      collecteDechets: { 
-                        ...content.collecteDechets, 
-                        titre: e.target.value 
-                      } 
-                    })} 
-                    placeholder="Titre de la section"
-                  />
+              <div className="box mb-6">
+                <h2 className="title is-4 has-text-success mb-4">📝 Introduction - Collecte des déchets</h2>
+                <label className="label">Titre de la section</label>
+                <input 
+                  className="input mb-3" 
+                  value={content.collecteDechets?.titre || "Collecte des déchets à Friesen"} 
+                  onChange={e => setContent({ 
+                    ...content, 
+                    collecteDechets: { 
+                      ...content.collecteDechets, 
+                      titre: e.target.value 
+                    } 
+                  })} 
+                  placeholder="Titre de la section"
+                />
                 
                 <label className="label">Texte d'introduction</label>
                 <textarea 
-                  className="textarea mb-2" 
+                  className="textarea mb-3" 
                   value={content.collecteDechets?.introduction || "La collecte et le traitement des déchets sont gérés par la Communauté de Communes Sud Alsace Largue (CCSAL). Consultez ci-dessous les jours de collecte et les consignes de tri."} 
                   onChange={e => setContent({ 
                     ...content, 
@@ -701,9 +894,22 @@ export default function EditeurInfosPratiques() {
                   placeholder="Texte d'introduction"
                   rows={3}
                 />
+
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'collecteDechetsIntro' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('collecteDechetsIntro')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
-              {/* Collecte des déchets (CRUD adapté) */}
+              {/* Collecte des déchets */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-success mb-4">♻️ Collecte des déchets</h2>
                 
@@ -802,18 +1008,60 @@ export default function EditeurInfosPratiques() {
                   </div>
                 </div>
 
-                <button 
-                  className="button is-link mt-4" 
-                  onClick={() => handleSaveCollecteDechets()}
-                >
-                  Sauvegarder les modifications
-                </button>
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'collecteDechetsHoraires' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('collecteDechetsHoraires')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
+              {/* Déchetteries */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-success mb-4">♻️ Déchetteries</h2>
                 {(content.collecteDechets?.dechetteries || []).map((d, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-success is-light">Déchetterie #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => {
+                          toast.info(
+                            <div>
+                              <p className="mb-2">Supprimer <strong>{d.nom || 'cette déchetterie'}</strong> ?</p>
+                              <div className="buttons mt-3">
+                                <button
+                                  className="button is-danger is-small"
+                                  onClick={() => {
+                                    toast.dismiss();
+                                    const arr = content.collecteDechets.dechetteries.filter((_, idx) => idx !== i);
+                                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries: arr } });
+                                    toast.success('Déchetterie supprimée', { autoClose: 2000 });
+                                  }}
+                                >
+                                  Confirmer
+                                </button>
+                                <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>,
+                            { autoClose: false, closeButton: false }
+                          );
+                        }}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Nom</label>
                     <input className="input mb-2" value={d.nom} onChange={e => {
                       const arr = [...content.collecteDechets.dechetteries];
@@ -832,22 +1080,72 @@ export default function EditeurInfosPratiques() {
                       arr[i].horaires = e.target.value;
                       setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries: arr } });
                     }} placeholder="Horaires" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => {
-                      const arr = content.collecteDechets.dechetteries.filter((_, idx) => idx !== i);
-                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries: arr } });
-                    }}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => {
-                  const dechetteries = [...(content.collecteDechets.dechetteries || []), { nom: "", adresse: "", horaires: "", dechets: "" }];
-                  setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries } });
-                }}>Ajouter une déchetterie</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light" onClick={() => {
+                    const dechetteries = [...(content.collecteDechets.dechetteries || []), { nom: "", adresse: "", horaires: "" }];
+                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, dechetteries } });
+                  }} style={{ borderRadius: 8 }}>
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter une déchetterie</span>
+                  </button>
+                </div>
+
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'dechetteries' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('dechetteries')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
+              {/* Documents utiles */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-success mb-4">📄 Documents utiles</h2>
                 {(content.collecteDechets?.documents || []).map((doc, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-success is-light">Document #{i + 1}</span>
+                      <button
+                        type="button"
+                        className="button is-small is-danger"
+                        onClick={() => {
+                          toast.info(
+                            <div>
+                              <p className="mb-2">Supprimer <strong>{doc.titre || 'ce document'}</strong> ?</p>
+                              <div className="buttons mt-3">
+                                <button
+                                  className="button is-danger is-small"
+                                  onClick={() => {
+                                    toast.dismiss();
+                                    const arr = content.collecteDechets.documents.filter((_, idx) => idx !== i);
+                                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                                    toast.success('Document supprimé', { autoClose: 2000 });
+                                  }}
+                                >
+                                  Confirmer
+                                </button>
+                                <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>,
+                            { autoClose: false, closeButton: false }
+                          );
+                        }}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Titre</label>
                     <input
                       className="input mb-2"
@@ -867,81 +1165,161 @@ export default function EditeurInfosPratiques() {
                           className="input mb-2"
                           type="text"
                           value={doc.fichier || ""}
-                          readOnly
+                          onChange={e => {
+                            const arr = [...content.collecteDechets.documents];
+                            arr[i].fichier = e.target.value;
+                            setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                          }}
                           placeholder="Aucun fichier sélectionné"
                         />
                       </div>
                       <div className="control">
                         <button
                           type="button"
-                          className="button is-link"
+                          className="button is-info"
                           onClick={() => {
                             const fileInput = document.createElement("input");
                             fileInput.type = "file";
-                            fileInput.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg"; // Types de fichiers autorisés
+                            fileInput.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg";
                             fileInput.onchange = async e => {
                               const file = e.target.files[0];
                               if (file) {
+                                const toastId = toast.loading('Upload du fichier...');
                                 const formData = new FormData();
                                 formData.append("file", file);
 
                                 try {
-                                  const response = await fetch("/api/upload", {
+                                  const response = await fetch("/api/upload_doc", {
                                     method: "POST",
                                     body: formData,
                                   });
                                   const data = await response.json();
                                   if (response.ok) {
                                     const arr = [...content.collecteDechets.documents];
-                                    arr[i].fichier = data.fileUrl; // URL du fichier retournée par l'API
+                                    arr[i].fichier = data.fileUrl;
                                     setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                                    toast.update(toastId, {
+                                      render: '✅ Fichier uploadé !',
+                                      type: 'success',
+                                      isLoading: false,
+                                      autoClose: 2000
+                                    });
                                   } else {
-                                    alert("Erreur lors de l'upload du fichier.");
+                                    toast.update(toastId, {
+                                      render: '❌ Erreur lors de l\'upload',
+                                      type: 'error',
+                                      isLoading: false,
+                                      autoClose: 3000
+                                    });
                                   }
                                 } catch (error) {
                                   console.error("Erreur lors de l'upload :", error);
-                                  alert("Erreur lors de l'upload du fichier.");
+                                  toast.update(toastId, {
+                                    render: '❌ Erreur lors de l\'upload',
+                                    type: 'error',
+                                    isLoading: false,
+                                    autoClose: 3000
+                                  });
                                 }
                               }
                             };
                             fileInput.click();
                           }}
+                          title="Uploader un fichier"
                         >
-                          Ajouter un fichier
+                          📄
                         </button>
                       </div>
+                      {doc.fichier && (
+                        <div className="control">
+                          <button
+                            type="button"
+                            className="button is-danger"
+                            onClick={() => {
+                              const arr = [...content.collecteDechets.documents];
+                              arr[i].fichier = "";
+                              setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
+                              toast.success('Fichier retiré', { autoClose: 2000 });
+                            }}
+                            title="Retirer le fichier"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
                     </div>
-
-                    <button
-                      type="button"
-                      className="button is-danger is-small mt-2"
-                      onClick={() => {
-                        const arr = content.collecteDechets.documents.filter((_, idx) => idx !== i);
-                        setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents: arr } });
-                      }}
-                    >
-                      Supprimer
-                    </button>
                   </div>
                 ))}
 
-                <button
-                  type="button"
-                  className="button is-link is-light is-small"
-                  onClick={() => {
-                    const documents = [...(content.collecteDechets.documents || []), { titre: "", fichier: "" }];
-                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents } });
-                  }}
-                >
-                  Ajouter un document
-                </button>
+                <div className="has-text-centered">
+                  <button
+                    type="button"
+                    className="button is-link is-light"
+                    onClick={() => {
+                      const documents = [...(content.collecteDechets.documents || []), { titre: "", fichier: "" }];
+                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, documents } });
+                    }}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un document</span>
+                  </button>
+                </div>
+
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'documentsCollecte' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('documentsCollecte')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
+              {/* Questions fréquentes */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-success mb-4">❓ Questions fréquentes</h2>
                 {(content.collecteDechets?.faq || []).map((q, i) => (
-                  <div key={i} className="notification is-link is-light mb-4" style={{ borderRadius: 12 }}>
-                    <p className="has-text-weight-bold mb-2">Question {i + 1}</p>
+                  <div key={i} className="box mb-3" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-success is-light">Question #{i + 1}</span>
+                      <button
+                        type="button"
+                        className="button is-small is-danger"
+                        onClick={() => {
+                          toast.info(
+                            <div>
+                              <p className="mb-2">Supprimer <strong>{q.question || 'cette question'}</strong> ?</p>
+                              <div className="buttons mt-3">
+                                <button
+                                  className="button is-danger is-small"
+                                  onClick={() => {
+                                    toast.dismiss();
+                                    const arr = content.collecteDechets.faq.filter((_, idx) => idx !== i);
+                                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
+                                    toast.success('Question supprimée', { autoClose: 2000 });
+                                  }}
+                                >
+                                  Confirmer
+                                </button>
+                                <button className="button is-light is-small" onClick={() => toast.dismiss()}>
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>,
+                            { autoClose: false, closeButton: false }
+                          );
+                        }}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <div className="field">
                       <label className="label">Question</label>
                       <input
@@ -968,28 +1346,35 @@ export default function EditeurInfosPratiques() {
                         placeholder="Entrez la réponse"
                       />
                     </div>
-                    <button
-                      type="button"
-                      className="button is-danger is-small"
-                      onClick={() => {
-                        const arr = content.collecteDechets.faq.filter((_, idx) => idx !== i);
-                        setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq: arr } });
-                      }}
-                    >
-                      Supprimer
-                    </button>
                   </div>
                 ))}
-                <button
-                  type="button"
-                  className="button is-link is-light is-small"
-                  onClick={() => {
-                    const faq = [...(content.collecteDechets.faq || []), { question: "", reponse: "" }];
-                    setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq } });
-                  }}
-                >
-                  Ajouter une question
-                </button>
+                <div className="has-text-centered">
+                  <button
+                    type="button"
+                    className="button is-link is-light"
+                    onClick={() => {
+                      const faq = [...(content.collecteDechets.faq || []), { question: "", reponse: "" }];
+                      setContent({ ...content, collecteDechets: { ...content.collecteDechets, faq } });
+                    }}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter une question</span>
+                  </button>
+                </div>
+
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'faqCollecte' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('faqCollecte')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -999,7 +1384,19 @@ export default function EditeurInfosPratiques() {
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-warning mb-4">🏢 Salles communales</h2>
                 {content.salles.map((salle, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-warning is-light">Salle #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeListItem('salles', i, salle.nom || 'cette salle')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Nom de la salle</label>
                     <input className="input mb-2" value={salle.nom} onChange={e => handleListChange('salles', i, 'nom', e.target.value)} />
                     <label className="label">Capacité</label>
@@ -1010,30 +1407,44 @@ export default function EditeurInfosPratiques() {
                     <input className="input mb-2" value={salle.tarifs} onChange={e => handleListChange('salles', i, 'tarifs', e.target.value)} />
                     <label className="label">URL de l'image</label>
                     <input className="input mb-2" value={salle.image} onChange={e => handleListChange('salles', i, 'image', e.target.value)} />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('salles', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('salles', {
-                  nom: "", capacite: "", equipements: "", tarifs: "", image: ""
-                })}>Ajouter une salle</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('salles', {
+                    nom: "", capacite: "", equipements: "", tarifs: "", image: ""
+                  })}>Ajouter une salle</button>
+                </div>
               </div>
 
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">📅 Réservations existantes</h2>
                 {content.reservations.map((resa, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-link is-light">Réservation #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeListItem('reservations', i, resa.evenement || 'cette réservation')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Date</label>
                     <input className="input mb-2" type="date" value={resa.date} onChange={e => handleListChange('reservations', i, 'date', e.target.value)} />
                     <label className="label">Salle</label>
                     <input className="input mb-2" value={resa.salle} onChange={e => handleListChange('reservations', i, 'salle', e.target.value)} />
                     <label className="label">Événement</label>
                     <input className="input mb-2" value={resa.evenement} onChange={e => handleListChange('reservations', i, 'evenement', e.target.value)} />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('reservations', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('reservations', {
-                  date: "", salle: "", evenement: ""
-                })}>Ajouter une réservation</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('reservations', {
+                    date: "", salle: "", evenement: ""
+                  })}>Ajouter une réservation</button>
+                </div>
               </div>
             </>
           )}
@@ -1045,7 +1456,7 @@ export default function EditeurInfosPratiques() {
 
                 <h3 className="subtitle">Battues</h3>
                 {(content.chasse?.battues || []).map((b, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
                     <label className="label">Date</label>
                     <input className="input mb-2" value={b.date} onChange={e => {
                       const arr = [...content.chasse.battues];
@@ -1081,65 +1492,69 @@ export default function EditeurInfosPratiques() {
                     }}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small mb-4" onClick={() => {
-                  setContent({
-                    ...content,
-                    chasse: {
-                      ...content.chasse,
-                      battues: [...(content.chasse.battues || []), { date: "", secteur: "", type: "", horaires: "" }]
-                    }
-                  });
-                }}>Ajouter une battue</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light is-small mb-4" onClick={() => {
+                    setContent({
+                      ...content,
+                      chasse: {
+                        ...content.chasse,
+                        battues: [...(content.chasse.battues || []), { date: "", secteur: "", type: "", horaires: "" }]
+                      }
+                    });
+                  }}>Ajouter une battue</button>
 
-                <h3 className="subtitle mt-4">Règlementation</h3>
-                <textarea
-                  className="textarea mb-4"
-                  value={content.chasse?.reglementation || ""}
-                  onChange={e => setContent({ ...content, chasse: { ...content.chasse, reglementation: e.target.value } })}
-                  rows={4}
-                ></textarea>
+                  <h3 className="subtitle mt-4">Règlementation</h3>
+                  <textarea
+                    className="textarea mb-4"
+                    value={content.chasse?.reglementation || ""}
+                    onChange={e => setContent({ ...content, chasse: { ...content.chasse, reglementation: e.target.value } })}
+                    rows={4}
+                  ></textarea>
 
-                <h3 className="subtitle">Lots de chasse</h3>
-                {(content.chasse?.lots || []).map((lot, i) => (
-                  <div key={i} className="box mb-2">
-                    <label className="label">Numéro/Nom</label>
-                    <input className="input mb-2" value={lot.nom} onChange={e => {
-                      const arr = [...content.chasse.lots];
-                      arr[i].nom = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
-                    }} />
-                    <label className="label">Description</label>
-                    <input className="input mb-2" value={lot.description} onChange={e => {
-                      const arr = [...content.chasse.lots];
-                      arr[i].description = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
-                    }} />
-                    <label className="label">Adjudicataire</label>
-                    <input className="input mb-2" value={lot.adjudicataire} onChange={e => {
-                      const arr = [...content.chasse.lots];
-                      arr[i].adjudicataire = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
-                    }} />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => {
+                  <h3 className="subtitle">Lots de chasse</h3>
+                  {(content.chasse?.lots || []).map((lot, i) => (
+                    <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                      <label className="label">Numéro/Nom</label>
+                      <input className="input mb-2" value={lot.nom} onChange={e => {
+                        const arr = [...content.chasse.lots];
+                        arr[i].nom = e.target.value;
+                        setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
+                      }} />
+                      <label className="label">Description</label>
+                      <input className="input mb-2" value={lot.description} onChange={e => {
+                        const arr = [...content.chasse.lots];
+                        arr[i].description = e.target.value;
+                        setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
+                      }} />
+                      <label className="label">Adjudicataire</label>
+                      <input className="input mb-2" value={lot.adjudicataire} onChange={e => {
+                        const arr = [...content.chasse.lots];
+                        arr[i].adjudicataire = e.target.value;
+                        setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
+                      }} />
+                      <button type="button" className="button is-danger is-small mt-2" onClick={() => {
+                        setContent({
+                          ...content,
+                          chasse: {
+                            ...content.chasse,
+                            lots: content.chasse.lots.filter((_, idx) => idx !== i)
+                          }
+                        });
+                      }}>Supprimer</button>
+                    </div>
+                  ))}
+                  <div className="has-text-centered">
+                    <button type="button" className="button is-link is-light is-small" onClick={() => {
                       setContent({
                         ...content,
                         chasse: {
                           ...content.chasse,
-                          lots: content.chasse.lots.filter((_, idx) => idx !== i)
+                          lots: [...(content.chasse.lots || []), { nom: "", description: "", adjudicataire: "" }]
                         }
                       });
-                    }}>Supprimer</button>
+                    }}>Ajouter un lot</button>
                   </div>
-                ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => {
-                  setContent({
-                    ...content,
-                    chasse: {
-                      ...content.chasse,
-                      lots: [...(content.chasse.lots || []), { nom: "", description: "", adjudicataire: "" }]
-                    }
-                  });
-                }}>Ajouter un lot</button>
+                </div>
               </div>
             </>
           )}
@@ -1198,26 +1613,19 @@ export default function EditeurInfosPratiques() {
                       arr[i].email = e.target.value;
                       setContent({ ...content, eauPotable: { ...content.eauPotable, contacts: arr } });
                     }} placeholder="Email" />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => {
-                      setContent({
-                        ...content,
-                        eauPotable: {
-                          ...content.eauPotable,
-                          contacts: content.eauPotable.contacts.filter((_, idx) => idx !== i)
-                        }
-                      });
-                    }}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => {
-                  setContent({
-                    ...content,
-                    eauPotable: {
-                      ...content.eauPotable,
-                      contacts: [...(content.eauPotable.contacts || []), { service: "", numero: "", email: "" }]
-                    }
-                  });
-                }}>Ajouter un contact</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light" onClick={() => {
+                    setContent({
+                      ...content,
+                      eauPotable: {
+                        ...content.eauPotable,
+                        contacts: [...(content.eauPotable.contacts || []), { service: "", numero: "", email: "" }]
+                      }
+                    });
+                  }}>Ajouter un contact</button>
+                </div>
               </div>
             </>
           )}
@@ -1228,7 +1636,19 @@ export default function EditeurInfosPratiques() {
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">🔗 Liens utiles</h2>
                 {(content.liensUtiles || []).map((lien, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-link is-light">Lien #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeListItem('liensUtiles', i, lien.titre || 'ce lien')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Titre</label>
                     <input className="input mb-2" value={lien.titre} onChange={e => handleListChange('liensUtiles', i, 'titre', e.target.value)} />
                     <label className="label">Description</label>
@@ -1237,19 +1657,45 @@ export default function EditeurInfosPratiques() {
                     <input className="input mb-2" value={lien.url} onChange={e => handleListChange('liensUtiles', i, 'url', e.target.value)} />
                     <label className="label">Catégorie</label>
                     <input className="input mb-2" value={lien.categorie || ''} onChange={e => handleListChange('liensUtiles', i, 'categorie', e.target.value)} />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('liensUtiles', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('liensUtiles', {
-                  titre: "", description: "", url: "", categorie: ""
-                })}>Ajouter un lien</button>
+                <div className="has-text-centered">
+                  <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('liensUtiles', {
+                    titre: "", description: "", url: "", categorie: ""
+                  })}>Ajouter un lien</button>
+                </div>
+                
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'liensUtiles' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('liensUtiles')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
 
               {/* Manifestations (déplacées ici) */}
               <div className="box mb-6">
                 <h2 className="title is-4 has-text-link mb-4">🎉 Manifestations</h2>
                 {content.manifestations.map((m, i) => (
-                  <div key={i} className="box mb-2">
+                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-link is-light">Manifestation #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeListItem('manifestations', i, m.titre || 'cette manifestation')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Titre</label>
                     <input className="input mb-2" value={m.titre} onChange={e => handleListChange('manifestations', i, 'titre', e.target.value)} placeholder="Titre" />
                     <label className="label">Date</label>
@@ -1262,23 +1708,44 @@ export default function EditeurInfosPratiques() {
                       <input type="checkbox" checked={m.inscription} onChange={e => handleListChange('manifestations', i, 'inscription', e.target.checked)} />
                       Inscription requise
                     </label>
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => removeListItem('manifestations', i)}>Supprimer</button>
                   </div>
                 ))}
-                <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('manifestations', { titre: "", date: "", description: "", lieu: "", inscription: false })}>Ajouter une manifestation</button>
+                <div className="has-text-centered">
+                  <button 
+                    type="button" 
+                    className="button is-link is-light is-small" 
+                    onClick={() => addListItem('manifestations', { titre: "", date: "", description: "", lieu: "", inscription: false })}>Ajouter une manifestation</button>
+                </div>
+                
+                <div className="has-text-centered mt-3">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'manifestations' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('manifestations')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer cette section
+                  </button>
+                </div>
               </div>
             </>
           )}
 
-          <div className="field is-grouped is-grouped-centered mt-6">
+          {/* SUPPRIMEZ CETTE SECTION COMPLÈTE */}
+          {/* <div className="field is-grouped is-grouped-centered mt-6">
             <div className="control">
-              <button className={`button is-link is-medium${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>Enregistrer les modifications</button>
+              <button className={`button is-link is-medium${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                <span style={{ marginRight: 8 }}>💾</span>
+                Enregistrer tout
+              </button>
             </div>
-          </div>
-
-          {msg && <div className="notification is-info is-light py-2 px-3 mt-3 has-text-centered">{msg}</div>}
+          </div> */}
         </form>
       </div>
+
+      <ToastContainer position="top-right" autoClose={2500} newestOnTop />
     </div>
   );
 }
