@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
+import useHeroImage from '../hooks/useHeroImage';
 
 // Hook personnalisé pour les animations au défilement
 function useOnScreen(options) {

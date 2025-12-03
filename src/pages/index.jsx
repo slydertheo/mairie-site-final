@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 // import 'bulma/css/bulma.min.css'; // Bulma est déjà importé globalement dans _app.tsx
 import QuickBoxEcole from '../components/QuickBoxEcole';
 import ActualiteCarousel from '../components/CarrouselPublic';
+import useHeroImage from '../hooks/useHeroImage';
 
 // Hook personnalisé pour les animations au défilement
 function useOnScreen(options) {
@@ -76,6 +77,7 @@ function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration 
 }
 
 export default function PageAcceuil() {
+  const heroImage = useHeroImage();
   const [contact, setContact] = useState({ nom: '', email: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
   const [content, setContent] = useState({});
@@ -272,7 +274,7 @@ export default function PageAcceuil() {
     <div className="has-background-light" style={{ minHeight: '100vh', overflowX: 'hidden' }}>
       {/* Bandeau image + titre avec animation avancée */}
       <section className="hero is-primary is-medium" style={{
-        backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
+        backgroundImage: `linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("${heroImage}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

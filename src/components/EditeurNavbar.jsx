@@ -143,14 +143,14 @@ export default function EditeurNavbar() {
         padding: '32px 24px'
       }}>
         <h1 className="title is-4 has-text-link mb-5" style={{ textAlign: 'center', letterSpacing: 1 }}>
-          🖼️ Images de la Navbar par Page
+          🖼️ Images de fond (Hero) par Page
         </h1>
 
         <div className="notification is-info is-light mb-5">
-          <p className="has-text-weight-semibold mb-2">💡 Personnalisez l'image de la navbar pour chaque page</p>
+          <p className="has-text-weight-semibold mb-2">💡 Personnalisez l'image de fond du hero pour chaque page</p>
           <p className="is-size-7">
-            Vous pouvez uploader une image ou entrer une URL pour chaque page du site.
-            L'image apparaîtra dans la barre de navigation de la page correspondante.
+            L'image apparaîtra en arrière-plan de la section hero (sous la navbar) de chaque page du site.
+            Par défaut, toutes les pages utilisent "village.jpeg".
           </p>
         </div>
 

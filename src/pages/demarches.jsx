@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import useHeroImage from '../hooks/useHeroImage';
 
 // Hook personnalisé pour les animations au défilement
 function useOnScreen(options) {
@@ -166,6 +167,7 @@ function QuickBox({ icon, label, href, isFile, index = 0 }) {
 }
 
 export default function Demarches() {
+  const heroImage = useHeroImage();
   const [content, setContent] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -241,7 +243,7 @@ export default function Demarches() {
       <section
         className="hero is-primary is-medium hero-animated"
         style={{
-          backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
+          backgroundImage: `linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("${heroImage}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: '0 0 32px 32px',
