@@ -10,13 +10,13 @@ const LoginIcon = ({ color = "#fff" }) => (
 );
 
 const navLinks = [
-  { href: '/demarches', label: 'Démarches' },
-  { href: '/ecoles', label: 'École Evelyne Nirouet' },
-  { href: '/commerces', label: 'Commerces' },
-  { href: '/intercommunalite', label: 'Intercommunalité' },
-  { href: '/associations', label: 'Associations' },
-  { href: '/decouvrir_friesen', label: 'Découvrir Friesen' },
-  { href: '/infos_pratiques', label: 'Infos Pratiques' },
+  { href: '/demarches', label: 'Démarches', color: '#A8D8EA', hoverColor: '#7EC8E3' }, // Bleu pastel
+  { href: '/ecoles', label: 'École Evelyne Nirouet', color: '#C9B8E4', hoverColor: '#B39DDB' }, // Lavande pastel
+  { href: '/commerces', label: 'Commerces', color: '#FFB4B4', hoverColor: '#FF9898' }, // Rose pastel
+  { href: '/intercommunalite', label: 'Intercommunalité', color: '#A3D9C9', hoverColor: '#7DC7B6' }, // Turquoise pastel
+  { href: '/associations', label: 'Associations', color: '#B4E7B4', hoverColor: '#95DB95' }, // Vert pastel
+  { href: '/decouvrir_friesen', label: 'Découvrir Friesen', color: '#FFD4A3', hoverColor: '#FFC780' }, // Pêche pastel
+  { href: '/infos_pratiques', label: 'Infos Pratiques', color: '#C5DCFA', hoverColor: '#A3C7F2' }, // Bleu ciel pastel
 ];
 
 function getPasswordStrength(password) {
@@ -224,12 +224,12 @@ export default function Navbar() {
               src={getCurrentPageImage()}
               alt="Logo de la mairie de Friesen"
               style={{
-                height: 40,
-                width: 40,
+                height: 50,
+                width: 50,
                 objectFit: 'contain',
                 borderRadius: '50%',
                 boxShadow: '0 2px 8px #1277c620',
-                marginRight: 8,
+                marginRight: 12,
               }}
               onError={(e) => {
                 e.currentTarget.src = '/LogoFriesen.png';
@@ -238,11 +238,14 @@ export default function Navbar() {
             <span style={{
               fontWeight: 800,
               fontSize: 24,
-              color: 'inherit',
+              color: '#1277c6',
+              background: 'linear-gradient(135deg, #FFE66D 0%, #FFD93D 100%)',
+              padding: '8px 20px',
+              borderRadius: '12px',
               letterSpacing: 1.2,
               fontFamily: 'Segoe UI, Arial, sans-serif',
               userSelect: 'none',
-              textShadow: '0 2px 8px #1277c620',
+              boxShadow: '0 2px 8px rgba(255, 217, 61, 0.4)',
               whiteSpace: 'nowrap',
             }}>
               Mairie Friesen
@@ -262,89 +265,106 @@ export default function Navbar() {
           </a>
         </div>
 
-        <div id="navbarBasic" className={`navbar-menu ${active ? 'is-active' : ''}`}>
-          <div className="navbar-start">
+        <div id="navbarBasic" className={`navbar-menu ${active ? 'is-active' : ''}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', paddingLeft: '60px' }}>
+          <div className="navbar-start" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
             {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="navbar-item button is-link is-light is-rounded"
+                className="navbar-item"
                 onClick={() => setActive(false)}
                 style={{
-                  fontWeight: 600,
-                  color: '#1277c6',
-                  fontSize: 16,
-                  letterSpacing: 0.5,
-                  margin: '0 6px',
+                  fontWeight: 500,
+                  color: '#2d3748',
+                  fontSize: 15,
+                  letterSpacing: 0.3,
+                  margin: '0',
+                  padding: '8px 16px',
+                  borderRadius: '12px',
                   border: 'none',
-                  boxShadow: '0 1px 6px #1277c610',
-                  transition: 'background 0.2s, color 0.2s',
-                  background: 'transparent',
+                  boxShadow: `0 1px 4px ${link.color}30`,
+                  transition: 'all 0.25s ease',
+                  background: link.color,
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = '#d1e6fa';
-                  e.currentTarget.style.color = '#0a3970';
+                  e.currentTarget.style.background = link.hoverColor;
+                  e.currentTarget.style.boxShadow = `0 3px 10px ${link.hoverColor}50`;
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.color = '#1a202c';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#1277c6';
+                  e.currentTarget.style.background = link.color;
+                  e.currentTarget.style.boxShadow = `0 1px 4px ${link.color}30`;
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.color = '#2d3748';
                 }}
               >
                 {link.label}
               </Link>
             ))}
           </div>
-          <div className="navbar-end">
+          <div className="navbar-end" style={{ position: 'absolute', right: '20px', display: 'flex', gap: '12px' }}>
             {/* Lien Admin visible pour tous */}
-            <div className="navbar-item">
-              <Link
-                href="/Interface_admin"
-                className="button is-warning is-rounded"
-                style={{
-                  fontWeight: 700,
-                  fontSize: 17,
-                  marginRight: 10,
-                  boxShadow: '0 2px 12px #f7b50040',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '8px 18px',
-                  transition: 'background 0.2s, box-shadow 0.2s',
-                }}
-              >
-                <span>Admin</span>
-              </Link>
-            </div>
-            <div className="navbar-item">
-              <a
-                href="/login"
-                className="button is-link is-rounded"
-                style={{
-                  fontWeight: 700,
-                  fontSize: 17,
-                  boxShadow: '0 2px 12px #1277c640',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '8px 18px',
-                  transition: 'background 0.2s, box-shadow 0.2s',
-                }}
-                onClick={handleLoginClick}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#0a3970';
-                  e.currentTarget.style.boxShadow = '0 4px 16px #0a397060';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = '';
-                  e.currentTarget.style.boxShadow = '0 2px 12px #1277c640';
-                }}
-              >
-                <LoginIcon />
-                <span>Connexion</span>
-              </a>
-            </div>
+            <Link
+              href="/Interface_admin"
+              style={{
+                fontWeight: 600,
+                fontSize: 16,
+                background: '#FFB4D5',
+                color: '#2d3748',
+                boxShadow: '0 1px 4px #FFB4D530',
+                border: 'none',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 22px',
+                padding: '8px 18px',
+                transition: 'all 0.25s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#FF99C8';
+                e.currentTarget.style.boxShadow = '0 3px 10px #FF99C850';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = '#FFB4D5';
+                e.currentTarget.style.boxShadow = '0 1px 4px #FFB4D530';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>⚙️ Admin</span>
+            </Link>
+            <a
+              href="/login"
+              style={{
+                fontWeight: 600,
+                fontSize: 16,
+                background: '#B4E7FF',
+                color: '#2d3748',
+                boxShadow: '0 1px 4px #B4E7FF30',
+                border: 'none',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 22px',
+                transition: 'all 0.25s ease',
+              }}
+              onClick={handleLoginClick}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#8ED9FF';
+                e.currentTarget.style.boxShadow = '0 3px 10px #8ED9FF50';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = '#B4E7FF';
+                e.currentTarget.style.boxShadow = '0 1px 4px #B4E7FF30';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>🔐 Connexion</span>
+            </a>
           </div>
         </div>
       </nav>

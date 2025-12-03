@@ -91,6 +91,7 @@ function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration 
 }
 
 export default function Ecoles() {
+  const heroImage = useHeroImage();
   const [formData, setFormData] = useState({
     nomEnfant: '',
     prenomEnfant: '',
@@ -214,7 +215,7 @@ export default function Ecoles() {
       <section
         className="hero is-primary is-medium hero-animated"
         style={{
-          backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
+          backgroundImage: `linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("${heroImage}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: '0 0 32px 32px',

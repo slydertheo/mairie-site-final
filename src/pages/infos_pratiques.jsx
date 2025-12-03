@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
+import useHeroImage from '../hooks/useHeroImage';
 
 export default function InfosPratiques() {
+  const heroImage = useHeroImage();
   const [activeTab, setActiveTab] = useState('contacts');
   const [reservationForm, setReservationForm] = useState({
     nom: '',
@@ -1515,7 +1517,7 @@ export default function InfosPratiques() {
       <section
         class="hero is-primary is-medium"
         style={{
-          backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
+          backgroundImage: `linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("${heroImage}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: '0 0 32px 32px',

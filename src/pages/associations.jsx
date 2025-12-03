@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bulma/css/bulma.min.css';
 import Link from 'next/link';
+import useHeroImage from '../hooks/useHeroImage';
 
 // Hook personnalisé pour les animations au défilement
 function useOnScreen(options) {
@@ -70,6 +71,7 @@ function AnimateOnScroll({ children, animation = "fade-up", delay = 0, duration 
 }
 
 export default function Associations() {
+  const heroImage = useHeroImage();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [content, setContent] = useState({});
@@ -119,7 +121,7 @@ export default function Associations() {
       <section
         className="hero is-primary is-medium"
         style={{
-          backgroundImage: 'linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("village.jpeg")',
+          backgroundImage: `linear-gradient(180deg,rgba(10,37,64,0.55),rgba(10,37,64,0.25)),url("${heroImage}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: '0 0 32px 32px',
