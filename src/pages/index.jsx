@@ -92,7 +92,6 @@ export default function PageAcceuil() {
   const [selectedPanneauItem, setSelectedPanneauItem] = useState(null); // Ajout
   const [showPanneauDetailModal, setShowPanneauDetailModal] = useState(false); // Ajout
   const [elus, setElus] = useState([]); // Ajouter cet état
-  const [liensUtiles, setLiensUtiles] = useState([]); // AJOUTER cet état
   const [showAllElus, setShowAllElus] = useState(false); // AJOUTER cet état
 
   useEffect(() => {
@@ -189,23 +188,23 @@ export default function PageAcceuil() {
             const elusData = typeof pageContentData.elus_json === 'string'
               ? JSON.parse(pageContentData.elus_json)
               : pageContentData.elus_json;
-            setElus(Array.isArray(elusData) ? elusData : []);
+            
+            // Trier par nom de famille (ordre alphabétique)
+            const elusSorted = Array.isArray(elusData) 
+              ? elusData.sort((a, b) => {
+                  const nomA = (a.nom || '').toLowerCase();
+                  const nomB = (b.nom || '').toLowerCase();
+                  return nomA.localeCompare(nomB, 'fr');
+                })
+              : [];
+            
+            setElus(elusSorted);
           } catch (e) {
             console.error('Erreur parsing elus_json:', e);
           }
         }
 
-        // Charger les liens utiles - AJOUTER ICI
-        if (pageContentData.liensUtiles_json) {
-          try {
-            const liensData = typeof pageContentData.liensUtiles_json === 'string'
-              ? JSON.parse(pageContentData.liensUtiles_json)
-              : pageContentData.liensUtiles_json;
-            setLiensUtiles(Array.isArray(liensData) ? liensData : []);
-          } catch (e) {
-            console.error('Erreur parsing liensUtiles_json:', e);
-          }
-        }
+
       })
       .catch(error => {
         console.error('Erreur lors du chargement des données:', error);
@@ -248,7 +247,8 @@ export default function PageAcceuil() {
     'mariage': { label: "Bancs mariages", icon: '💒', bg: "#f0f9ff", border: "2px solid #1b9bd7", color: "#1b9bd7", shadow: "#1b9bd730" },
     'convocation': { label: "Convocations CM+", icon: '📢', bg: "#fef3c7", border: "2px solid #eab308", color: "#eab308", shadow: "#eab30830" },
     'urbanisme': { label: "Urbanisme / Permis", icon: '🏗️', bg: "#e0ffe6", border: "2px dashed #22c55e", color: "#22c55e", shadow: "#22c55e30" },
-    'eau': { label: "Analyses d'eau, divers", icon: '💧', bg: "#e0f2fe", border: "2px solid #0ea5e9", color: "#0ea5e9", shadow: "#0ea5e930" },
+    'eau': { label: "Analyses d'eau", icon: '💧', bg: "#e0f2fe", border: "2px solid #0ea5e9", color: "#0ea5e9", shadow: "#0ea5e930" },
+    'divers': { label: "Divers", icon: '📌', bg: "#f3e8ff", border: "2px solid #a855f7", color: "#a855f7", shadow: "#a855f730" },
   };
 
   // AJOUTER cette fonction helper pour filtrer les élus
@@ -534,22 +534,42 @@ export default function PageAcceuil() {
                             }}>📌</span>
                             
                             {item.image && (
-                              <img
-                                src={item.image}
-                                alt={item.titre}
-                                style={{
+                              item.image.toLowerCase().endsWith('.pdf') ? (
+                                // Miniature pour PDF
+                                <div style={{
                                   width: 54,
                                   height: 54,
-                                  objectFit: 'cover',
                                   margin: '0 auto 12px auto',
-                                  display: 'block',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
                                   borderRadius: 12,
                                   background: '#fff',
                                   boxShadow: `0 2px 8px ${cat.shadow}`,
-                                  border: `1.5px solid ${cat.color}22`
-                                }}
-                                onError={e => { e.currentTarget.src = "https://via.placeholder.com/54?text=Doc"; }}
-                              />
+                                  border: `1.5px solid ${cat.color}22`,
+                                  fontSize: 32
+                                }}>
+                                  📄
+                                </div>
+                              ) : (
+                                // Miniature image normale
+                                <img
+                                  src={item.image}
+                                  alt={item.titre}
+                                  style={{
+                                    width: 54,
+                                    height: 54,
+                                    objectFit: 'cover',
+                                    margin: '0 auto 12px auto',
+                                    display: 'block',
+                                    borderRadius: 12,
+                                    background: '#fff',
+                                    boxShadow: `0 2px 8px ${cat.shadow}`,
+                                    border: `1.5px solid ${cat.color}22`
+                                  }}
+                                  onError={e => { e.currentTarget.src = "https://via.placeholder.com/54?text=Doc"; }}
+                                />
+                              )
                             )}
                             
                             <div style={{
@@ -702,93 +722,6 @@ export default function PageAcceuil() {
                 <div className="mb-3"><span style={infoIcon}>✉️</span>
                   {content.email}
                 </div>
-              </div>
-            </AnimateOnScroll>
-
-            {/* Liens utiles - REMPLACER LA SECTION EXISTANTE */}
-            <AnimateOnScroll animation="fade-left" delay={350}>
-              <h2 className="title is-5 has-text-primary mb-2" style={{
-                fontFamily: 'Merriweather, serif',
-                fontWeight: 700,
-                color: '#1277c6'
-              }}>Liens utiles</h2>
-              <div className="box" style={{
-                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
-                padding: '18px',
-                borderRadius: 14,
-                marginBottom: 24,
-                boxShadow: '0 2px 8px #1277c610'
-              }}>
-                {liensUtiles.length === 0 ? (
-                  <div className="notification is-light has-text-centered">
-                    <p className="is-size-7">Aucun lien disponible pour le moment</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {liensUtiles
-                      .sort((a, b) => a.ordre - b.ordre)
-                      .map((lien, idx) => (
-                        <a
-                          key={lien.id || idx}
-                          href={lien.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="is-link"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            padding: '10px 12px',
-                            background: 'white',
-                            borderRadius: 10,
-                            border: '1px solid #e0e7ef',
-                            transition: 'all 0.3s ease',
-                            textDecoration: 'none',
-                            fontWeight: 600,
-                            color: '#1277c6',
-                            fontSize: 15
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.background = '#f0f7ff';
-                            e.currentTarget.style.transform = 'translateX(5px)';
-                            e.currentTarget.style.borderColor = '#1277c6';
-                            e.currentTarget.style.boxShadow = '0 2px 8px #1277c620';
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.background = 'white';
-                            e.currentTarget.style.transform = 'translateX(0)';
-                            e.currentTarget.style.borderColor = '#e0e7ef';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        >
-                          <span style={{
-                            fontSize: 22,
-                            width: 36,
-                            height: 36,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'linear-gradient(135deg, #1277c6 0%, #1b9bd7 100%)',
-                            borderRadius: '50%',
-                            flexShrink: 0,
-                            boxShadow: '0 2px 6px #1277c630'
-                          }}>
-                            {lien.icone || '📄'}
-                          </span>
-                          <span style={{ flex: 1 }}>
-                            {lien.titre}
-                          </span>
-                          <span style={{
-                            fontSize: 14,
-                            opacity: 0.6,
-                            transition: 'opacity 0.3s ease'
-                          }}>
-                            →
-                          </span>
-                        </a>
-                      ))}
-                  </div>
-                )}
               </div>
             </AnimateOnScroll>
             
@@ -1503,39 +1436,57 @@ export default function PageAcceuil() {
             </header>
             
             <section className="modal-card-body">
-              {/* IMAGE EN GRAND */}
+              {/* IMAGE OU PDF EN GRAND */}
               {selectedPanneauItem.image && selectedPanneauItem.image.trim() !== '' ? (
-                <figure className="image mb-4" style={{ 
-                  maxHeight: '500px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  background: '#f8fafc',
-                  borderRadius: 12,
-                  padding: 20,
-                  border: `3px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color}44`,
-                  boxShadow: `0 4px 16px ${CATEGORIES[selectedPanneauItem.categorie]?.shadow}`
-                }}>
-                  <img 
-                    src={selectedPanneauItem.image} 
-                    alt={selectedPanneauItem.titre}
-                    style={{ 
-                      maxHeight: '460px',
-                      maxWidth: '100%',
-                      width: 'auto',
-                      height: 'auto',
-                      objectFit: 'contain',
-                      borderRadius: 8,
-                      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => window.open(selectedPanneauItem.image, '_blank')}
-                    onError={e => { 
-                      console.error('Erreur chargement image:', selectedPanneauItem.image);
-                      e.currentTarget.src = "https://via.placeholder.com/400x300?text=Document+non+disponible"; 
-                    }}
-                  />
-                </figure>
+                selectedPanneauItem.image.toLowerCase().endsWith('.pdf') ? (
+                  // Affichage PDF avec iframe
+                  <div className="mb-4">
+                    <iframe
+                      src={selectedPanneauItem.image}
+                      style={{
+                        width: '100%',
+                        height: '600px',
+                        border: `3px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color}44`,
+                        borderRadius: 12,
+                        boxShadow: `0 4px 16px ${CATEGORIES[selectedPanneauItem.categorie]?.shadow}`
+                      }}
+                      title={selectedPanneauItem.titre}
+                    />
+                  </div>
+                ) : (
+                  // Affichage image normal
+                  <figure className="image mb-4" style={{ 
+                    maxHeight: '500px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    background: '#f8fafc',
+                    borderRadius: 12,
+                    padding: 20,
+                    border: `3px solid ${CATEGORIES[selectedPanneauItem.categorie]?.color}44`,
+                    boxShadow: `0 4px 16px ${CATEGORIES[selectedPanneauItem.categorie]?.shadow}`
+                  }}>
+                    <img 
+                      src={selectedPanneauItem.image} 
+                      alt={selectedPanneauItem.titre}
+                      style={{ 
+                        maxHeight: '460px',
+                        maxWidth: '100%',
+                        width: 'auto',
+                        height: 'auto',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => window.open(selectedPanneauItem.image, '_blank')}
+                      onError={e => { 
+                        console.error('Erreur chargement image:', selectedPanneauItem.image);
+                        e.currentTarget.src = "https://via.placeholder.com/400x300?text=Document+non+disponible"; 
+                      }}
+                    />
+                  </figure>
+                )
               ) : (
                 <div className="notification is-light" style={{ 
                   textAlign: 'center',

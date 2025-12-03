@@ -109,6 +109,8 @@ export default function PageAcceuil() {
 
   // AJOUTER ces états après panneauForm (ligne ~108)
   const [showCreatePanneauModal, setShowCreatePanneauModal] = useState(false);
+  const [editPanneauMode, setEditPanneauMode] = useState(false);
+  const [editPanneauIndex, setEditPanneauIndex] = useState(null);
   const [createPanneauForm, setCreatePanneauForm] = useState({
     titre: '',
     description: '',
@@ -144,6 +146,7 @@ export default function PageAcceuil() {
   const [editLienIndex, setEditLienIndex] = useState(null);
 
   const formRef = useRef(null);
+  const elusSectionRef = useRef(null);
 
   // Utilitaires
   const normalizeEvents = (pageContentData) => {
@@ -276,7 +279,17 @@ export default function PageAcceuil() {
             const elusData = typeof pageContentData.elus_json === 'string'
               ? JSON.parse(pageContentData.elus_json)
               : pageContentData.elus_json;
-            setElus(Array.isArray(elusData) ? elusData : []);
+            
+            // Trier par nom de famille (ordre alphabétique)
+            const elusSorted = Array.isArray(elusData) 
+              ? elusData.sort((a, b) => {
+                  const nomA = (a.nom || '').toLowerCase();
+                  const nomB = (b.nom || '').toLowerCase();
+                  return nomA.localeCompare(nomB, 'fr');
+                })
+              : [];
+            
+            setElus(elusSorted);
           } catch (e) {
             console.error('Erreur parsing elus_json:', e);
           }
@@ -300,17 +313,6 @@ export default function PageAcceuil() {
   // Handlers "comme Actualité"
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const compressImage = (file, options = {}) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = event => {
-        resolve(event.target.result);
-      };
-      reader.onerror = reject;
-    });
-  };
-
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -322,14 +324,26 @@ export default function PageAcceuil() {
       toast.error('Image trop volumineuse (max 5MB).');
       return;
     }
-    const loadingId = toast.loading("Traitement de l'image...");
+    const loadingId = toast.loading("Envoi de l'image...");
     try {
-      const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.7 });
-      setPreviewImage(compressed);
-      setForm(prev => ({ ...prev, image: compressed }));
-      toast.update(loadingId, { render: 'Image optimisée', type: 'success', isLoading: false, autoClose: 2000 });
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/upload_doc', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const { fileUrl } = await uploadRes.json();
+      setPreviewImage(fileUrl);
+      setForm(prev => ({ ...prev, image: fileUrl }));
+      toast.update(loadingId, { render: '✅ Image envoyée !', type: 'success', isLoading: false, autoClose: 2000 });
     } catch (err) {
-      toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
+      toast.update(loadingId, { render: "❌ Erreur lors de l'upload", type: 'error', isLoading: false, autoClose: 3000 });
     }
   };
 
@@ -344,14 +358,26 @@ export default function PageAcceuil() {
       toast.error('Image trop volumineuse (max 10MB).');
       return;
     }
-    const loadingId = toast.loading("Traitement de l'image...");
+    const loadingId = toast.loading("Envoi de l'image...");
     try {
-      const compressed = await compressImage(file, { quality: 0.9 }); // Qualité plus élevée pour l'original
-      setMairePreviewImage(compressed);
-      setContent({ ...content, motMaire_photo: compressed });
-      toast.update(loadingId, { render: 'Image chargée', type: 'success', isLoading: false, autoClose: 2000 });
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/upload_doc', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const { fileUrl } = await uploadRes.json();
+      setMairePreviewImage(fileUrl);
+      setContent({ ...content, motMaire_photo: fileUrl });
+      toast.update(loadingId, { render: '✅ Image envoyée !', type: 'success', isLoading: false, autoClose: 2000 });
     } catch (err) {
-      toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
+      toast.update(loadingId, { render: "❌ Erreur lors de l'upload", type: 'error', isLoading: false, autoClose: 3000 });
     }
   };
 
@@ -499,7 +525,8 @@ export default function PageAcceuil() {
     { value: 'mariage', label: 'Bancs mariages', icon: '💒', color: '#1b9bd7' },
     { value: 'convocation', label: 'Convocations CM+', icon: '📢', color: '#eab308' },
     { value: 'urbanisme', label: 'Urbanisme / Permis', icon: '🏗️', color: '#22c55e' },
-    { value: 'eau', label: 'Analyses d\'eau, divers', icon: '💧', color: '#0ea5e9' },
+    { value: 'eau', label: 'Analyses d\'eau', icon: '💧', color: '#0ea5e9' },
+    { value: 'divers', label: 'Divers', icon: '�', color: '#a855f7' },
   ];
 
   // Ajouter après le useEffect existant (ligne ~160)
@@ -634,22 +661,46 @@ export default function PageAcceuil() {
   const handlePanneauImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.includes('image/')) {
-      toast.error('Veuillez sélectionner une image.');
+    
+    // Accepter images ET PDF
+    const isImage = file.type.includes('image/');
+    const isPDF = file.type === 'application/pdf';
+    
+    if (!isImage && !isPDF) {
+      toast.error('Veuillez sélectionner une image ou un PDF.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image trop volumineuse (max 5MB).');
+    
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Fichier trop volumineux (max 10MB).');
       return;
     }
-    const loadingId = toast.loading("Traitement de l'image...");
+    
+    const loadingId = toast.loading("Envoi du fichier...");
     try {
-      const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 600, quality: 0.8 });
-      setPreviewPanneauImage(compressed);
-      setCreatePanneauForm(prev => ({ ...prev, image: compressed }));
-      toast.update(loadingId, { render: 'Image optimisée', type: 'success', isLoading: false, autoClose: 2000 });
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/upload_doc', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const { fileUrl } = await uploadRes.json();
+      setPreviewPanneauImage(fileUrl);
+      setCreatePanneauForm(prev => ({ ...prev, image: fileUrl, isPDF: isPDF }));
+      toast.update(loadingId, { 
+        render: isPDF ? '✅ PDF envoyé !' : '✅ Image envoyée !', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 2000 
+      });
     } catch (err) {
-      toast.update(loadingId, { render: "Erreur d'image", type: 'error', isLoading: false, autoClose: 3000 });
+      toast.update(loadingId, { render: "❌ Erreur lors de l'upload", type: 'error', isLoading: false, autoClose: 3000 });
     }
   };
 
@@ -660,24 +711,39 @@ export default function PageAcceuil() {
       return;
     }
 
-    const loadingId = toast.loading('Ajout au panneau...');
+    const loadingId = toast.loading(editPanneauMode ? 'Modification en cours...' : 'Ajout au panneau...');
     try {
       const dateFin = new Date(createPanneauForm.dateDebut);
       dateFin.setDate(dateFin.getDate() + parseInt(createPanneauForm.dureeAffichage));
 
-      const newItem = {
-        id: `panneau-custom-${Date.now()}`,
+      const itemData = {
         titre: createPanneauForm.titre,
         description: createPanneauForm.description,
         image: createPanneauForm.image,
+        isPDF: createPanneauForm.isPDF || false,
         categorie: createPanneauForm.categorie,
         dateDebut: createPanneauForm.dateDebut,
         dateFin: dateFin.toISOString().split('T')[0],
         date: new Date(createPanneauForm.dateDebut).toLocaleDateString('fr-FR'),
-        isCustom: true // Marqueur pour distinguer des actualités du carrousel
+        isCustom: true
       };
 
-      const updatedItems = [...panneauItems, newItem];
+      let updatedItems;
+      if (editPanneauMode && editPanneauIndex !== null) {
+        // Mode édition : mettre à jour l'élément existant
+        updatedItems = [...panneauItems];
+        updatedItems[editPanneauIndex] = {
+          ...updatedItems[editPanneauIndex],
+          ...itemData
+        };
+      } else {
+        // Mode création : ajouter un nouvel élément
+        updatedItems = [...panneauItems, {
+          id: `panneau-custom-${Date.now()}`,
+          ...itemData
+        }];
+      }
+
       setPanneauItems(updatedItems);
 
       const res = await fetch('/api/pageContent', {
@@ -692,7 +758,7 @@ export default function PageAcceuil() {
       if (!res.ok) throw new Error('Erreur serveur');
 
       toast.update(loadingId, { 
-        render: 'Document ajouté au panneau', 
+        render: editPanneauMode ? '✅ Document modifié' : '✅ Document ajouté au panneau', 
         type: 'success', 
         isLoading: false, 
         autoClose: 2000 
@@ -700,10 +766,13 @@ export default function PageAcceuil() {
 
       // Réinitialiser le formulaire
       setShowCreatePanneauModal(false);
+      setEditPanneauMode(false);
+      setEditPanneauIndex(null);
       setCreatePanneauForm({
         titre: '',
         description: '',
         image: '',
+        isPDF: false,
         categorie: 'arrete',
         dateDebut: new Date().toISOString().split('T')[0],
         dureeAffichage: 7
@@ -718,6 +787,30 @@ export default function PageAcceuil() {
         autoClose: 3000 
       });
     }
+  };
+
+  const handleEditPanneau = (index) => {
+    const item = panneauItems[index];
+    if (!item) return;
+
+    // Calculer la durée d'affichage
+    const dateDebut = new Date(item.dateDebut);
+    const dateFin = new Date(item.dateFin);
+    const dureeAffichage = Math.ceil((dateFin - dateDebut) / (1000 * 60 * 60 * 24));
+
+    setEditPanneauMode(true);
+    setEditPanneauIndex(index);
+    setCreatePanneauForm({
+      titre: item.titre || '',
+      description: item.description || '',
+      image: item.image || '',
+      isPDF: item.isPDF || false,
+      categorie: item.categorie || 'arrete',
+      dateDebut: item.dateDebut || new Date().toISOString().split('T')[0],
+      dureeAffichage: dureeAffichage
+    });
+    setPreviewPanneauImage(item.image || null);
+    setShowCreatePanneauModal(true);
   };
 
   // Rendu adapté au style DemarchesEditor
@@ -766,7 +859,7 @@ export default function PageAcceuil() {
                   className="button is-danger is-small" 
                   onClick={() => { setMairePreviewImage(null); setContent({ ...content, motMaire_photo: null }); }}
                 >
-                  Supprimer l'image
+                  🗑️
                 </button>
               )}
             </div>
@@ -1036,10 +1129,10 @@ export default function PageAcceuil() {
                 <div className="is-flex is-justify-content-space-between mb-2">
                   <span className="tag is-info is-light">Événement #{idx + 1}</span>
                   <div className="buttons are-small">
-                    <button className="button is-info" onClick={() => handleEdit(idx)} disabled={loading}>
+                    <button className="button is-small is-info" onClick={() => handleEdit(idx)} disabled={loading}>
                       ✏️
                     </button>
-                    <button className="button is-danger" onClick={() => handleDelete(idx)} disabled={loading}>
+                    <button className="button is-small is-danger" onClick={() => handleDelete(idx)} disabled={loading}>
                       🗑️
                     </button>
                   </div>
@@ -1124,8 +1217,8 @@ export default function PageAcceuil() {
             </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {panneauItems.map(item => {
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+            {panneauItems.map((item, index) => {
               const cat = CATEGORIES.find(c => c.value === item.categorie);
               const today = new Date();
               today.setHours(0, 0, 0, 0);
@@ -1143,11 +1236,11 @@ export default function PageAcceuil() {
               
               let statusTag = null;
               if (isPending) {
-                statusTag = <span className="tag is-warning is-light">📅 Dans {joursAvantDebut}j</span>;
+                statusTag = <span className="tag is-warning">📅 Dans {joursAvantDebut}j</span>;
               } else if (isExpired) {
-                statusTag = <span className="tag is-danger is-light">❌ Expiré</span>;
+                statusTag = <span className="tag is-danger">❌ Expiré</span>;
               } else if (isActive) {
-                statusTag = <span className="tag is-success is-light">✅ Actif ({joursRestants}j)</span>;
+                statusTag = <span className="tag is-success">✅ Actif ({joursRestants}j)</span>;
               }
               
               return (
@@ -1155,11 +1248,12 @@ export default function PageAcceuil() {
                   key={item.id}
                   className="box"
                   style={{ 
-                    background: isExpired ? '#fafafa' : '#f9fbfd', 
-                    borderRadius: 12,
-                    borderLeft: `5px solid ${cat?.color || '#ccc'}`,
-                    opacity: isExpired ? 0.6 : 1,
+                    background: isExpired ? '#f5f5f5' : 'white', 
+                    borderRadius: 16,
+                    borderLeft: `6px solid ${cat?.color || '#ccc'}`,
+                    opacity: isExpired ? 0.7 : 1,
                     position: 'relative',
+                    boxShadow: isExpired ? '0 2px 8px rgba(0,0,0,0.05)' : '0 4px 12px rgba(0,0,0,0.08)',
                     transition: 'all 0.3s ease'
                   }}
                 >
@@ -1172,46 +1266,78 @@ export default function PageAcceuil() {
                         top: 8,
                         right: 8,
                         fontSize: 10,
-                        padding: '3px 8px'
+                        padding: '3px 8px',
+                        zIndex: 10
                       }}
                     >
-                      ✨ Créé manuellement
+                      ✨ Personnalisé
                     </span>
                   )}
 
-                  <div className="mb-2" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div className="mb-3" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start', 
+                    flexWrap: 'wrap', 
+                    gap: 8,
+                    paddingRight: item.isCustom ? '120px' : '0'
+                  }}>
                     <span 
                       className="tag is-medium" 
                       style={{ 
-                        backgroundColor: `${cat?.color}22`, 
+                        backgroundColor: `${cat?.color}33`, 
                         color: cat?.color,
-                        border: `1px solid ${cat?.color}`,
-                        fontWeight: 600
+                        border: `2px solid ${cat?.color}`,
+                        fontWeight: 700,
+                        fontSize: 13
                       }}
                     >
                       {cat?.icon} {cat?.label}
                     </span>
-                  </div>
-                  
-                  <div className="mb-3">
                     {statusTag}
                   </div>
                   
                   {item.image && (
-                    <figure className="image is-16by9 mb-3">
-                      <img 
-                        src={item.image} 
-                        alt={item.titre}
-                        style={{ 
-                          objectFit: 'cover', 
-                          borderRadius: 8,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                        }}
-                        onError={(e) => { 
-                          e.currentTarget.src = 'https://via.placeholder.com/400x225?text=Document'; 
-                        }}
-                      />
-                    </figure>
+                    item.isPDF ? (
+                      <div className="mb-3" style={{ textAlign: 'center' }}>
+                        <iframe
+                          src={item.image}
+                          style={{
+                            width: '100%',
+                            height: '400px',
+                            border: '2px solid #ddd',
+                            borderRadius: 8,
+                            marginBottom: 10
+                          }}
+                          title={item.titre}
+                        />
+                        <a 
+                          href={item.image} 
+                          download={`${item.titre}.pdf`}
+                          className="button is-info is-small"
+                        >
+                          <span className="icon">
+                            <i className="fas fa-download"></i>
+                          </span>
+                          <span>Télécharger le PDF</span>
+                        </a>
+                      </div>
+                    ) : (
+                      <figure className="image is-16by9 mb-3">
+                        <img 
+                          src={item.image} 
+                          alt={item.titre}
+                          style={{ 
+                            objectFit: 'cover', 
+                            borderRadius: 8,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          }}
+                          onError={(e) => { 
+                            e.currentTarget.src = 'https://via.placeholder.com/400x225?text=Document'; 
+                          }}
+                        />
+                      </figure>
+                    )
                   )}
                   
                   <p className="has-text-weight-bold mb-2" style={{ fontSize: 16, color: '#333' }}>
@@ -1263,15 +1389,23 @@ export default function PageAcceuil() {
                     )}
                   </div>
 
-                  <button 
-                    className="button is-danger is-light is-fullwidth mt-3" 
-                    onClick={() => handleRemoveFromPanneau(item.id)}
-                  >
-                    <span className="icon">
-                      <i className="fas fa-trash"></i>
-                    </span>
-                    <span>Retirer du panneau</span>
-                  </button>
+                  <div className="buttons mt-3">
+                    <button 
+                      className="button is-info is-light is-fullwidth" 
+                      onClick={() => handleEditPanneau(panneauItems.indexOf(item))}
+                    >
+                      <span className="icon">
+                        <i className="fas fa-edit"></i>
+                      </span>
+                      <span>Modifier</span>
+                    </button>
+                    <button 
+                      className="button is-danger is-fullwidth" 
+                      onClick={() => handleRemoveFromPanneau(item.id)}
+                    >
+                      <span className="icon">🗑️</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -1405,8 +1539,10 @@ export default function PageAcceuil() {
               color: 'white'
             }}>
               <p className="modal-card-title" style={{ color: 'white' }}>
-                <span className="icon"><i className="fas fa-plus-circle"></i></span>
-                <span>Créer un nouveau document</span>
+                <span className="icon">
+                  <i className={`fas fa-${editPanneauMode ? 'edit' : 'plus-circle'}`}></i>
+                </span>
+                <span>{editPanneauMode ? 'Modifier le document' : 'Créer un nouveau document'}</span>
               </p>
               <button 
                 className="delete" 
@@ -1471,24 +1607,24 @@ export default function PageAcceuil() {
                 </div>
 
                 <div className="field">
-                  <label className="label">Image du document (optionnel)</label>
+                  <label className="label">Image ou PDF du document (optionnel)</label>
                   
                   <div className="file has-name is-fullwidth mb-2">
                     <label className="file-label">
                       <input
                         className="file-input"
                         type="file"
-                        accept="image/*"
+                        accept="image/*,application/pdf"
                         onChange={handlePanneauImageUpload}
                       />
                       <span className="file-cta">
                         <span className="file-icon">
                           <i className="fas fa-upload"></i>
                         </span>
-                        <span className="file-label">Choisir une image...</span>
+                        <span className="file-label">Choisir image ou PDF...</span>
                       </span>
                       <span className="file-name">
-                        {previewPanneauImage ? 'Image sélectionnée' : 'Aucune image'}
+                        {previewPanneauImage ? (createPanneauForm.isPDF ? '📄 PDF sélectionné' : '🖼️ Image sélectionnée') : 'Aucun fichier'}
                       </span>
                     </label>
                   </div>
@@ -1497,32 +1633,42 @@ export default function PageAcceuil() {
                     <input
                       className="input"
                       name="image"
-                      value={createPanneauForm.image}
+                      value={createPanneauForm.image && !createPanneauForm.isPDF ? createPanneauForm.image : ''}
                       onChange={(e) => {
                         handleCreatePanneauChange(e);
                         setPreviewPanneauImage(e.target.value || null);
+                        setCreatePanneauForm(prev => ({ ...prev, isPDF: false }));
                       }}
                       placeholder="Ou entrez l'URL d'une image"
+                      disabled={createPanneauForm.isPDF}
                     />
                   </div>
 
                   {previewPanneauImage && (
                     <div className="mt-2">
                       <p className="is-size-7 mb-1">Aperçu :</p>
-                      <figure className="image is-16by9">
-                        <img
-                          src={previewPanneauImage}
-                          alt="Aperçu"
-                          style={{ 
-                            objectFit: 'cover', 
-                            borderRadius: 8,
-                            border: '2px solid #22c55e'
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/400x225?text=Document';
-                          }}
-                        />
-                      </figure>
+                      {createPanneauForm.isPDF ? (
+                        <div className="notification is-info is-light" style={{ textAlign: 'center', padding: '2rem' }}>
+                          <p style={{ fontSize: 48 }}>📄</p>
+                          <p className="has-text-weight-bold">Fichier PDF chargé</p>
+                          <p className="is-size-7 has-text-grey mt-2">Le PDF sera disponible au téléchargement</p>
+                        </div>
+                      ) : (
+                        <figure className="image is-16by9">
+                          <img
+                            src={previewPanneauImage}
+                            alt="Aperçu"
+                            style={{ 
+                              objectFit: 'cover', 
+                              borderRadius: 8,
+                              border: '2px solid #22c55e'
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/400x225?text=Document';
+                            }}
+                          />
+                        </figure>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1605,7 +1751,21 @@ export default function PageAcceuil() {
             <footer className="modal-card-foot" style={{ justifyContent: 'space-between' }}>
               <button 
                 className="button" 
-                onClick={() => setShowCreatePanneauModal(false)}
+                onClick={() => {
+                  setShowCreatePanneauModal(false);
+                  setEditPanneauMode(false);
+                  setEditPanneauIndex(null);
+                  setCreatePanneauForm({
+                    titre: '',
+                    description: '',
+                    image: '',
+                    isPDF: false,
+                    categorie: 'arrete',
+                    dateDebut: new Date().toISOString().split('T')[0],
+                    dureeAffichage: 7
+                  });
+                  setPreviewPanneauImage(null);
+                }}
               >
                 Annuler
               </button>
@@ -1616,7 +1776,7 @@ export default function PageAcceuil() {
                 <span className="icon">
                   <i className="fas fa-check"></i>
                 </span>
-                <span>Créer et ajouter au panneau</span>
+                <span>{editPanneauMode ? 'Enregistrer les modifications' : 'Créer et ajouter au panneau'}</span>
               </button>
             </footer>
           </div>
@@ -1624,6 +1784,353 @@ export default function PageAcceuil() {
       )}
 
       {/* ...existing code pour les autres sections... */}
+
+      {/* Section Gestion des Élus */}
+      <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
+        <h3 className="subtitle is-5 mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>👥</span> Gestion des Élus
+        </h3>
+
+        <div className="notification is-info is-light mb-3" style={{ padding: '0.75rem 1rem' }}>
+          <p className="is-size-7">
+            ℹ️ <strong>Tri automatique :</strong> Les élus seront automatiquement triés par ordre alphabétique du nom de famille lors de l'enregistrement.
+          </p>
+        </div>
+
+        <button 
+          className="button is-link mb-4" 
+          onClick={() => {
+            setElus([...elus, { nom: '', prenom: '', fonction: '', photo: '', email: '', telephone: '' }]);
+            toast.info('➕ Nouvel élu ajouté à la liste');
+            // Scroll vers le nouvel élu après un court délai
+            setTimeout(() => {
+              if (elusSectionRef.current) {
+                const lastElu = elusSectionRef.current.lastElementChild;
+                if (lastElu) {
+                  lastElu.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }, 100);
+          }}
+        >
+          <span className="icon"><i className="fas fa-plus"></i></span>
+          <span>Ajouter un élu</span>
+        </button>
+
+        {elus.length === 0 ? (
+          <div className="notification is-light is-info">
+            <p className="has-text-centered">
+              <span style={{ fontSize: 48, opacity: 0.3 }}>👥</span>
+            </p>
+            <p className="has-text-centered">
+              Aucun élu ajouté. Cliquez sur "Ajouter un élu" pour commencer.
+            </p>
+          </div>
+        ) : (
+          <div ref={elusSectionRef}>
+            {elus.map((elu, index) => (
+              <div key={index} className="box mb-3" style={{ background: '#f9fbfd', borderRadius: 8 }}>
+                <div className="is-flex is-justify-content-space-between mb-3">
+                  <span className="tag is-info">Élu #{index + 1}</span>
+                  <button 
+                    className="button is-danger is-small" 
+                    onClick={() => {
+                      toast.info(
+                        <div>
+                          <p>Voulez-vous vraiment supprimer cet élu ?</p>
+                          <div className="buttons mt-3">
+                            <button
+                              className="button is-danger is-small"
+                              onClick={() => {
+                                toast.dismiss();
+                                const newElus = elus.filter((_, i) => i !== index);
+                                setElus(newElus);
+                                toast.success('🗑️ Élu supprimé');
+                              }}
+                            >
+                              Confirmer
+                            </button>
+                            <button
+                              className="button is-light is-small"
+                              onClick={() => toast.dismiss()}
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        </div>,
+                        {
+                          autoClose: false,
+                          closeButton: false,
+                          closeOnClick: false,
+                        }
+                      );
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </div>
+
+                <div className="columns">
+                  <div className="column is-one-third">
+                    <label className="label is-small">Photo de l'élu</label>
+                    <figure className="image is-128x128" style={{ margin: '0 auto 1rem' }}>
+                      <img
+                        src={elu.photo || 'https://via.placeholder.com/128x128?text=Photo'}
+                        alt={`${elu.prenom} ${elu.nom}`}
+                        style={{ 
+                          borderRadius: '50%', 
+                          objectFit: 'cover',
+                          border: '3px solid #1277c6',
+                          width: '100%',
+                          height: '100%'
+                        }}
+                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/128x128?text=Photo'; }}
+                      />
+                    </figure>
+
+                    <div className="file has-name is-fullwidth mb-2">
+                      <label className="file-label">
+                        <input 
+                          className="file-input" 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (!file.type.includes('image/')) {
+                              toast.error('❌ Veuillez sélectionner une image.');
+                              return;
+                            }
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast.error('❌ Image trop volumineuse (max 5MB).');
+                              return;
+                            }
+                            
+                            const loadingId = toast.loading("🖼️ Envoi de l'image...");
+                            
+                            // Utiliser l'API d'upload au lieu de base64
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            
+                            try {
+                              const uploadRes = await fetch('/api/upload_doc', {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              
+                              if (!uploadRes.ok) {
+                                throw new Error('Upload failed');
+                              }
+                              
+                              const { fileUrl } = await uploadRes.json();
+                              
+                              const newElus = [...elus];
+                              newElus[index].photo = fileUrl;
+                              setElus(newElus);
+                              
+                              toast.update(loadingId, { 
+                                render: '✅ Image chargée avec succès', 
+                                type: 'success', 
+                                isLoading: false, 
+                                autoClose: 2000 
+                              });
+                            } catch (err) {
+                              console.error('Upload error:', err);
+                              toast.update(loadingId, { 
+                                render: "❌ Erreur lors de l'upload de l'image", 
+                                type: 'error', 
+                                isLoading: false, 
+                                autoClose: 3000 
+                              });
+                            }
+                          }}
+                        />
+                        <span className="file-cta">
+                          <span className="file-icon">
+                            <i className="fas fa-upload"></i>
+                          </span>
+                          <span className="file-label">Choisir une image...</span>
+                        </span>
+                        <span className="file-name">
+                          {elu.photo ? 'Image sélectionnée' : 'Aucune image'}
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="field">
+                      <div className="control">
+                        <input
+                          className="input is-small"
+                          type="text"
+                          placeholder="Ou URL de la photo"
+                          value={elu.photo || ''}
+                          onChange={(e) => {
+                            const newElus = [...elus];
+                            newElus[index].photo = e.target.value;
+                            setElus(newElus);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {elu.photo && (
+                      <button 
+                        className="button is-danger is-small is-fullwidth mt-2" 
+                        onClick={() => {
+                          const newElus = [...elus];
+                          newElus[index].photo = '';
+                          setElus(newElus);
+                          toast.info('🖼️ Photo supprimée');
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="column">
+                    <div className="columns">
+                      <div className="column">
+                        <div className="field">
+                          <label className="label is-small">Prénom</label>
+                          <div className="control">
+                            <input
+                              className="input"
+                              type="text"
+                              placeholder="Prénom"
+                              value={elu.prenom || ''}
+                              onChange={(e) => {
+                                const newElus = [...elus];
+                                newElus[index].prenom = e.target.value;
+                                setElus(newElus);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="column">
+                        <div className="field">
+                          <label className="label is-small">Nom</label>
+                          <div className="control">
+                            <input
+                              className="input"
+                              type="text"
+                              placeholder="Nom"
+                              value={elu.nom || ''}
+                              onChange={(e) => {
+                                const newElus = [...elus];
+                                newElus[index].nom = e.target.value;
+                                setElus(newElus);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="field">
+                      <label className="label is-small">Fonction</label>
+                      <div className="control">
+                        <input
+                          className="input"
+                          type="text"
+                          placeholder="Maire, Adjoint au Maire, Conseiller municipal..."
+                          value={elu.fonction || ''}
+                          onChange={(e) => {
+                            const newElus = [...elus];
+                            newElus[index].fonction = e.target.value;
+                            setElus(newElus);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div className="field is-grouped mt-4">
+              <div className="control">
+                <button 
+                  className="button is-link" 
+                  onClick={async () => {
+                    // Validation avant enregistrement
+                    const invalidElus = elus.filter(e => !e.nom || !e.prenom || !e.fonction);
+                    if (invalidElus.length > 0) {
+                      toast.error('⚠️ Veuillez remplir au minimum le nom, prénom et fonction pour tous les élus');
+                      return;
+                    }
+
+                    // Trier par nom de famille avant enregistrement
+                    const elusSorted = [...elus].sort((a, b) => {
+                      const nomA = (a.nom || '').toLowerCase();
+                      const nomB = (b.nom || '').toLowerCase();
+                      return nomA.localeCompare(nomB, 'fr');
+                    });
+
+                    const loadingId = toast.loading('💾 Enregistrement en cours...');
+                    try {
+                      console.log('Enregistrement des élus (triés par nom):', elusSorted);
+                      
+                      const res = await fetch('/api/pageContent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          page: 'accueil',
+                          elus_json: elusSorted // Liste triée par nom de famille
+                        })
+                      });
+
+                      console.log('Réponse serveur:', res.status);
+                      
+                      if (res.ok) {
+                        const data = await res.json();
+                        console.log('Données enregistrées:', data);
+                        
+                        // Mettre à jour l'état local avec la liste triée
+                        setElus(elusSorted);
+                        
+                        toast.update(loadingId, {
+                          render: '✅ Élus enregistrés avec succès (triés par nom) !',
+                          type: 'success',
+                          isLoading: false,
+                          autoClose: 2000
+                        });
+                      } else {
+                        const errorText = await res.text();
+                        console.error('Erreur serveur:', errorText);
+                        toast.update(loadingId, {
+                          render: `❌ Erreur: ${errorText.substring(0, 50)}`,
+                          type: 'error',
+                          isLoading: false,
+                          autoClose: 3000
+                        });
+                      }
+                    } catch (err) {
+                      console.error('Erreur lors de l\'enregistrement:', err);
+                      toast.update(loadingId, {
+                        render: `❌ Erreur: ${err.message}`,
+                        type: 'error',
+                        isLoading: false,
+                        autoClose: 3000
+                      });
+                    }
+                  }}
+                >
+                  <span className="icon"><i className="fas fa-save"></i></span>
+                  <span>Enregistrer tous les élus</span>
+                </button>
+              </div>
+              <div className="control">
+                <p className="help mt-2">
+                  💡 N'oubliez pas de cliquer sur "Enregistrer" après vos modifications
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <ToastContainer position="top-right" autoClose={3000} newestOnTop />
     </div>

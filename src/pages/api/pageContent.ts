@@ -3,6 +3,15 @@ import Database from 'better-sqlite3';
 
 const db = new Database('./database/mairie.sqlite');
 
+// Augmenter la limite du body à 10MB
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const { page } = req.query;
