@@ -172,22 +172,32 @@ export default function EditeurNavbar() {
 
                 <div className="field">
                   <label className="label is-small">Image actuelle</label>
-                  <figure className="image is-128x128 mb-3" style={{ margin: '0 auto' }}>
+                  <div style={{ 
+                    width: '100%', 
+                    height: 200, 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    marginBottom: 12,
+                    borderRadius: 8,
+                    border: '2px solid #e0e7ef',
+                    background: 'white',
+                    overflow: 'hidden'
+                  }}>
                     <img
                       src={navbarImages[page.slug] || page.defaultImage}
                       alt={page.title}
                       style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
                         objectFit: 'contain',
-                        borderRadius: 8,
-                        border: '2px solid #e0e7ef',
-                        background: 'white',
-                        padding: 8
+                        display: 'block'
                       }}
                       onError={(e) => {
                         e.currentTarget.src = page.defaultImage;
                       }}
                     />
-                  </figure>
+                  </div>
                 </div>
 
                 <div className="field">

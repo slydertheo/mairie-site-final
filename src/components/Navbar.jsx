@@ -221,7 +221,7 @@ export default function Navbar() {
             }}
           >
             <img
-              src={getCurrentPageImage()}
+              src="/LogoFriesen.png"
               alt="Logo de la mairie de Friesen"
               style={{
                 height: 50,
@@ -230,9 +230,6 @@ export default function Navbar() {
                 borderRadius: '50%',
                 boxShadow: '0 2px 8px #1277c620',
                 marginRight: 12,
-              }}
-              onError={(e) => {
-                e.currentTarget.src = '/LogoFriesen.png';
               }}
             />
             <span style={{

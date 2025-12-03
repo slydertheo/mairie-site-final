@@ -179,34 +179,6 @@ export default function Commerces() {
         }}></div>
 
         <div className="hero-body" style={{ position: 'relative', zIndex: 1 }}>
-          <div className="container has-text-centered">
-            <h1 className="title is-1 has-text-weight-bold" style={{ 
-              color: '#fff', 
-              textShadow: '0 4px 24px rgba(10,37,64,0.6)', 
-              letterSpacing: 1.2, 
-              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-              marginBottom: 20,
-              animation: 'fadeInUp 0.8s ease-out'
-            }}>
-              {content.hero_titre || <>🏪 Commerces & Artisans</>}
-            </h1>
-            <p className="subtitle is-4" style={{ 
-              color: '#e0e7ef', 
-              marginTop: 20,
-              textShadow: '0 2px 8px rgba(10,37,64,0.4)',
-              animation: 'fadeInUp 0.8s ease-out 0.2s both'
-            }}>
-              Découvrez nos commerces et artisans locaux
-            </p>
-            <div style={{
-              width: 80,
-              height: 4,
-              background: 'linear-gradient(90deg, transparent, #ffd700, transparent)',
-              margin: '20px auto',
-              borderRadius: 2,
-              animation: 'fadeInUp 0.8s ease-out 0.4s both'
-            }}></div>
-          </div>
         </div>
       </section>
 

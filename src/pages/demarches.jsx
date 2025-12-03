@@ -267,34 +267,6 @@ export default function Demarches() {
         }}></div>
 
         <div className="hero-body" style={{ position: 'relative', zIndex: 1 }}>
-          <div className="container has-text-centered">
-            <AnimateOnScroll animation="fade-up" duration={1000}>
-              <h1 className="title is-2 has-text-weight-bold" style={{ 
-                color: '#fff', 
-                textShadow: '0 4px 24px #0a2540a0', 
-                letterSpacing: 1,
-                marginBottom: 20
-              }}>
-                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px #1277c6' }}>Friesen</span></>}
-              </h1>
-            </AnimateOnScroll>
-            {content.intro && (
-              <AnimateOnScroll animation="fade-up" delay={200} duration={1000}>
-                <p className="subtitle is-5" style={{ color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-                  {content.intro}
-                </p>
-              </AnimateOnScroll>
-            )}
-            <AnimateOnScroll animation="zoom-in" delay={400}>
-              <div style={{
-                width: 80,
-                height: 4,
-                background: 'linear-gradient(90deg, transparent, #ffd700, transparent)',
-                margin: '20px auto',
-                borderRadius: 2
-              }}></div>
-            </AnimateOnScroll>
-          </div>
         </div>
       </section>
 

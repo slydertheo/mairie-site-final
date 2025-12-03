@@ -130,16 +130,6 @@ export default function Associations() {
         }}
       >
         <div className="hero-body">
-          <div className="container has-text-centered">
-            <h1 className="title is-2 has-text-weight-bold" style={{ 
-              color: '#fff', 
-              textShadow: '0 4px 24px #0a2540a0', 
-              letterSpacing: 1,
-              fontFamily: 'Merriweather, serif'
-            }}>
-              {content.hero_titre || "Les associations de Friesen"}
-            </h1>
-          </div>
         </div>
       </section>
 

@@ -309,7 +309,7 @@ export default function PageAcceuil() {
                 fontSize: 44,
                 marginBottom: 8
               }}>
-                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8pxrgb(255, 255, 255)' }}>Friesen</span></>}
+                {content.hero_titre || <>Bienvenue sur le site officiel de<br />la Mairie de <span style={{ color: '#ffd700', textShadow: '0 2px 8px rgb(255, 255, 255)' }}>Friesen</span></>}
               </h1>
             </AnimateOnScroll>
           </div>
