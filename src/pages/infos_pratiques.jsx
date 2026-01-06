@@ -6,6 +6,7 @@ import useHeroImage from '../hooks/useHeroImage';
 export default function InfosPratiques() {
   const heroImage = useHeroImage();
   const [activeTab, setActiveTab] = useState('contacts');
+  const [archiveAnneeActive, setArchiveAnneeActive] = useState(null);
   const [reservationForm, setReservationForm] = useState({
     nom: '',
     email: '',
@@ -42,6 +43,7 @@ export default function InfosPratiques() {
 
   useEffect(() => {
     const fetchPageData = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch('/api/pageContent?page=infos_pratiques');
         const data = await response.json();
@@ -60,63 +62,25 @@ export default function InfosPratiques() {
         }
       } catch (error) {
         console.error("Erreur lors du chargement des données :", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchPageData();
   }, []);
 
-  // Bulletins communaux
-  const bulletins = [
-    { id: 1, titre: "Bulletin municipal - Été 2025", date: "Juin 2025", fichier: "bulletin-ete-2025.pdf" },
-    { id: 2, titre: "Bulletin municipal - Printemps 2025", date: "Mars 2025", fichier: "bulletin-printemps-2025.pdf" },
-    { id: 3, titre: "Bulletin municipal - Hiver 2024-2025", date: "Décembre 2024", fichier: "bulletin-hiver-2024.pdf" },
-    { id: 4, titre: "Bulletin municipal - Automne 2024", date: "Septembre 2024", fichier: "bulletin-automne-2024.pdf" }
-  ];
+  // Initialiser l'année active pour les archives
+  useEffect(() => {
+    if (pageData.archivesBulletinsAnnees && pageData.archivesBulletinsAnnees.length > 0 && !archiveAnneeActive) {
+      setArchiveAnneeActive(pageData.archivesBulletinsAnnees[0]);
+    }
+  }, [pageData.archivesBulletinsAnnees, archiveAnneeActive]);
 
-  // Manifestations
-  const manifestations = [
-    { 
-      id: 1, 
-      titre: "Fête du village", 
-      date: "10-12 juillet 2025", 
-      description: "Le grand rendez-vous estival avec animations, marché artisanal, concert et feu d'artifice.",
-      lieu: "Place de la Mairie et salle polyvalente",
-      inscription: true
-    },
-    { 
-      id: 2, 
-      titre: "Journée citoyenne", 
-      date: "24 mai 2025", 
-      description: "Journée de mobilisation des habitants pour réaliser ensemble des projets d'amélioration du cadre de vie.",
-      lieu: "Différents points de la commune",
-      inscription: true
-    },
-    { 
-      id: 3, 
-      titre: "Marché de Noël", 
-      date: "6-7 décembre 2025", 
-      description: "Artisans, producteurs locaux et animations de Noël au cœur du village.",
-      lieu: "Place de l'Église",
-      inscription: false
-    },
-    { 
-      id: 4, 
-      titre: "Théâtre alsacien", 
-      date: "21-22 et 28-29 février 2025", 
-      description: "Représentations de la troupe locale de théâtre alsacien.",
-      lieu: "Salle polyvalente",
-      inscription: false
-    },
-    { 
-      id: 5, 
-      titre: "Course nature du Sundgau", 
-      date: "14 septembre 2025", 
-      description: "Courses de 5, 10 et 21 km à travers les chemins forestiers et les villages du Sundgau.",
-      lieu: "Départ : stade municipal",
-      inscription: true
-    },
-  ];
+  // Bulletins communaux (chargés dynamiquement depuis pageData)
+  const bulletins = pageData.bulletins || [];
+  const archivesAnnees = pageData.archivesBulletinsAnnees || [];
+  const archivesBulletins = pageData.archivesBulletins || {};
 
   // Gestion du formulaire de réservation
   const handleReservationChange = (e) => {
@@ -591,118 +555,143 @@ export default function InfosPratiques() {
               </div>
             </div>
             
-            <div className="columns is-multiline">
-              {bulletins.map((bulletin) => (
-                <div key={bulletin.id} className="column is-half">
-                  <div className="box" style={{ 
-                    borderRadius: 16, 
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 12px #1277c620',
-                    background: '#f8fafc',
-                  }}>
-                    <div className="columns is-vcentered">
-                      <div className="column is-4 has-text-centered">
-                        <div style={{ 
-                          background: '#f0f7fd',
-                          padding: '20px',
-                          borderRadius: '12px',
-                          maxWidth: '150px',
-                          margin: '0 auto'
-                        }}>
-                          <span style={{ fontSize: 48 }}>📰</span>
-                          <p className="is-size-7 mt-2">{bulletin.date}</p>
+            {isLoading ? (
+              <div className="has-text-centered p-6">
+                <span className="icon is-large">
+                  <i className="fas fa-spinner fa-pulse fa-3x has-text-primary"></i>
+                </span>
+                <p className="mt-4 is-size-5 has-text-weight-semibold">Chargement des bulletins...</p>
+              </div>
+            ) : bulletins.length > 0 ? (
+              <div className="columns is-multiline">
+                {bulletins.map((bulletin, index) => (
+                  <div key={bulletin.id || index} className="column is-half">
+                    <div className="box" style={{ 
+                      borderRadius: 16, 
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 12px #1277c620',
+                      background: '#f8fafc',
+                    }}>
+                      <div className="columns is-vcentered">
+                        <div className="column is-4 has-text-centered">
+                          <div style={{ 
+                            background: '#f0f7fd',
+                            padding: '20px',
+                            borderRadius: '12px',
+                            maxWidth: '150px',
+                            margin: '0 auto'
+                          }}>
+                            <span style={{ fontSize: 48 }}>📰</span>
+                            <p className="is-size-7 mt-2">{bulletin.date}</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="column">
-                        <h3 className="title is-5 has-text-link mb-3">{bulletin.titre}</h3>
-                        <div className="buttons">
-                          <a href={`/bulletins/${bulletin.fichier}`} className="button is-link is-light">
-                            <span className="icon"><i className="fas fa-eye"></i></span>
-                            <span>Consulter</span>
-                          </a>
-                          <a href={`/bulletins/${bulletin.fichier}`} download className="button is-link">
-                            <span className="icon"><i className="fas fa-download"></i></span>
-                            <span>Télécharger</span>
-                          </a>
+                        <div className="column">
+                          <h3 className="title is-5 has-text-link mb-3">{bulletin.titre}</h3>
+                          <div className="buttons">
+                            <a 
+                              href={`/uploads/${bulletin.fichier}`}
+                              target="_blank"
+                              rel="noopener noreferrer" 
+                              className="button is-link is-light"
+                            >
+                              <span className="icon"><i className="fas fa-eye"></i></span>
+                              <span>Consulter</span>
+                            </a>
+                            <a 
+                              href={`/uploads/${bulletin.fichier}`} 
+                              download={bulletin.titre}
+                              className="button is-link"
+                            >
+                              <span className="icon"><i className="fas fa-download"></i></span>
+                              <span>Télécharger</span>
+                            </a>
+                          </div>
+                          <p className="help has-text-grey mt-2">
+                            <span className="icon is-small"><i className="fas fa-info-circle"></i></span>
+                            Si le téléchargement ne fonctionne pas, contactez la mairie.
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="notification is-warning has-text-centered">
+                <p className="is-size-5 mb-3">
+                  <span className="icon is-large">
+                    <i className="fas fa-exclamation-triangle fa-2x"></i>
+                  </span>
+                </p>
+                <p className="is-size-5 has-text-weight-semibold mb-2">Aucun bulletin disponible</p>
+                <p>Les bulletins municipaux seront publiés prochainement.</p>
+              </div>
+            )}
 
-            <div className="box mt-6" style={{ 
-              borderRadius: 16, 
-              boxShadow: '0 2px 12px #1277c620',
-              background: '#f8fafc',
-            }}>
-              <h2 className="title is-5 has-text-primary mb-3">Archives des bulletins</h2>
-              
-              <div className="tabs">
-                <ul>
-                  <li className="is-active"><a>2024</a></li>
-                  <li><a>2023</a></li>
-                  <li><a>2022</a></li>
-                  <li><a>2021</a></li>
-                  <li><a>2020</a></li>
-                </ul>
+            {archivesAnnees.length > 0 && (
+              <div className="box mt-6" style={{ 
+                borderRadius: 16, 
+                boxShadow: '0 2px 12px #1277c620',
+                background: '#f8fafc',
+              }}>
+                <h2 className="title is-5 has-text-primary mb-3">Archives des bulletins</h2>
+                
+                <div className="tabs">
+                  <ul>
+                    {archivesAnnees.map((annee) => (
+                      <li key={annee} className={archiveAnneeActive === annee ? 'is-active' : ''}>
+                        <a onClick={() => setArchiveAnneeActive(annee)}>{annee}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {archiveAnneeActive && archivesBulletins[archiveAnneeActive] && archivesBulletins[archiveAnneeActive].length > 0 ? (
+                  <div className="table-container">
+                    <table className="table is-fullwidth">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Titre</th>
+                          <th width="180">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {archivesBulletins[archiveAnneeActive].map((bulletin, index) => (
+                          <tr key={index}>
+                            <td>{bulletin.date}</td>
+                            <td>{bulletin.titre}</td>
+                            <td>
+                              <div className="buttons are-small">
+                                <a 
+                                  href={`/uploads/${bulletin.fichier}`} 
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="button is-link is-light"
+                                >
+                                  Consulter
+                                </a>
+                                <a 
+                                  href={`/uploads/${bulletin.fichier}`} 
+                                  download={bulletin.titre}
+                                  className="button is-link"
+                                >
+                                  Télécharger
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="notification is-light has-text-centered">
+                    <p>Aucun bulletin disponible pour l'année {archiveAnneeActive}.</p>
+                  </div>
+                )}
               </div>
-              
-              <div className="table-container">
-                <table className="table is-fullwidth">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Titre</th>
-                      <th width="180">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Décembre 2024</td>
-                      <td>Bulletin municipal - Hiver 2024-2025</td>
-                      <td>
-                        <div className="buttons are-small">
-                          <a href="#" className="button is-link is-light">Consulter</a>
-                          <a href="#" className="button is-link">Télécharger</a>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Septembre 2024</td>
-                      <td>Bulletin municipal - Automne 2024</td>
-                      <td>
-                        <div className="buttons are-small">
-                          <a href="#" className="button is-link is-light">Consulter</a>
-                          <a href="#" className="button is-link">Télécharger</a>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Juin 2024</td>
-                      <td>Bulletin municipal - Été 2024</td>
-                      <td>
-                        <div className="buttons are-small">
-                          <a href="#" className="button is-link is-light">Consulter</a>
-                          <a href="#" className="button is-link">Télécharger</a>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Mars 2024</td>
-                      <td>Bulletin municipal - Printemps 2024</td>
-                      <td>
-                        <div className="buttons are-small">
-                          <a href="#" className="button is-link is-light">Consulter</a>
-                          <a href="#" className="button is-link">Télécharger</a>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            )}
           </div>
         );
 
@@ -1189,152 +1178,6 @@ export default function InfosPratiques() {
             </div>
           </div>
         );
-
-      case 'evenements':
-        return (
-          <div>
-            <div className="content mb-5">
-              <div className="notification is-info is-light">
-                <p className="is-size-5 mb-3">
-                  <strong>Manifestations et événements</strong>
-                </p>
-                <p>
-                  Découvrez les prochaines manifestations organisées à Friesen et inscrivez-vous aux événements qui nécessitent une réservation.
-                </p>
-              </div>
-            </div>
-            
-            <div className="columns is-multiline">
-              {manifestations.map((event) => (
-                <div key={event.id} className="column is-half">
-                  <div className="card" style={{ 
-                    borderRadius: 16, 
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 12px #1277c620',
-                    height: '100%'
-                  }}>
-                    <div className="card-content">
-                      <div className="columns is-vcentered">
-                        <div className="column is-3 has-text-centered">
-                          <div style={{ 
-                            background: '#f0f7fd',
-                            padding: '15px',
-                            borderRadius: '12px'
-                          }}>
-                            <p className="is-size-3 has-text-weight-bold has-text-link mb-1">
-                              {event.date.split(' ')[0]}
-                            </p>
-                            <p className="is-size-7 has-text-grey">
-                              {event.date.includes('-') ? event.date.split('-')[1] : ''}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="column">
-                          <h3 className="title is-5 has-text-link mb-2">{event.titre}</h3>
-                          <p className="mb-3">{event.description}</p>
-                          <p className="has-text-grey mb-3">
-                            <span style={{ fontSize: 16, marginRight: 8 }}>📍</span> {event.lieu}
-                          </p>
-                          {event.inscription && (
-                            <a href="#" className="button is-link is-small">
-                              S'inscrire / Réserver
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="box mt-6" style={{ 
-              borderRadius: 16, 
-              boxShadow: '0 2px 12px #1277c620',
-              background: '#f0f7fd',
-            }}>
-              <h3 className="title is-5 mb-3">Vous organisez une manifestation ?</h3>
-              <div className="columns is-vcentered">
-                <div className="column is-9">
-                  <p className="mb-3">
-                    Les associations et organisateurs d'événements sont invités à communiquer leurs manifestations pour qu'elles soient intégrées au calendrier communal.
-                  </p>
-                  <a href="#" className="button is-link">
-                    Déclarer un événement
-                  </a>
-                </div>
-                <div className="column has-text-centered">
-                  <span style={{ fontSize: 64 }}>📅</span>
-                </div>
-              </div>
-            </div>
-            
-            <h2 className="title is-4 has-text-primary mb-4 mt-6">Calendrier annuel</h2>
-            
-            <div className="box" style={{ borderRadius: 12 }}>
-              <div className="tabs">
-                <ul>
-                  <li className="is-active"><a>2025</a></li>
-                  <li><a>2024</a></li>
-                </ul>
-              </div>
-              
-              <div className="table-container">
-                <table className="table is-fullwidth">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Événement</th>
-                      <th>Organisateur</th>
-                      <th>Lieu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>10-12 juillet</td>
-                      <td>Fête du village</td>
-                      <td>Commune de Friesen</td>
-                      <td>Place de la Mairie</td>
-                    </tr>
-                    <tr>
-                      <td>24 mai</td>
-                      <td>Journée citoyenne</td>
-                      <td>Commune de Friesen</td>
-                      <td>Divers lieux</td>
-                    </tr>
-                    <tr>
-                      <td>6-7 décembre</td>
-                      <td>Marché de Noël</td>
-                      <td>Association des commerçants</td>
-                      <td>Place de l'Église</td>
-                    </tr>
-                    <tr>
-                      <td>21-22 février</td>
-                      <td>Théâtre alsacien</td>
-                      <td>Théâtre Alsacien de Friesen</td>
-                      <td>Salle polyvalente</td>
-                    </tr>
-                    <tr>
-                      <td>14 septembre</td>
-                      <td>Course nature du Sundgau</td>
-                      <td>Club d'athlétisme</td>
-                      <td>Départ stade municipal</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="notification is-warning is-light mt-5" style={{ borderRadius: 12 }}>
-              <p className="has-text-weight-bold mb-2">Information importante</p>
-              <p>
-                L'organisation d'un événement public sur la commune nécessite des autorisations préalables.
-                Veuillez contacter la mairie au moins 2 mois avant la date prévue pour accomplir toutes les démarches nécessaires.
-              </p>
-            </div>
-          </div>
-        );
-
       case 'chasse':
         return (
           <div>
@@ -1574,12 +1417,6 @@ export default function InfosPratiques() {
                 <a onClick={() => setActiveTab('eau')}>
                   <span class="icon"><i class="fas fa-tint"></i></span>
                   <span>Service des eaux</span>
-                </a>
-              </li>
-              <li class={activeTab === 'evenements' ? 'is-active' : ''}>
-                <a onClick={() => setActiveTab('evenements')}>
-                  <span class="icon"><i class="fas fa-calendar-check"></i></span>
-                  <span>Événements</span>
                 </a>
               </li>
               <li class={activeTab === 'chasse' ? 'is-active' : ''}>

@@ -230,9 +230,6 @@ export default function EditeurInfosPratiques() {
             <li className={activeTab === 'eau' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('eau')}>Service des eaux</a>
             </li>
-            <li className={activeTab === 'liens' ? 'is-active' : ''}>
-              <a onClick={() => setActiveTab('liens')}>Événements & Liens</a>
-            </li>
             <li className={activeTab === 'chasse' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('chasse')}>Chasse</a>
             </li>
@@ -329,13 +326,89 @@ export default function EditeurInfosPratiques() {
                       </div>
                     </div>
                     
-                    <label className="label">Nom du fichier</label>
-                    <input 
-                      className="input mb-2" 
-                      value={bulletin.fichier || ""} 
-                      onChange={e => handleListChange('bulletins', i, 'fichier', e.target.value)} 
-                      placeholder="Ex: bulletin-ete-2025.pdf"
-                    />
+                    <div className="columns">
+                      <div className="column">
+                        <label className="label">Nom du fichier</label>
+                        <div className="field has-addons">
+                          <div className="control is-expanded">
+                            <input 
+                              className="input" 
+                              value={bulletin.fichier || ""} 
+                              onChange={e => handleListChange('bulletins', i, 'fichier', e.target.value)} 
+                              placeholder="Ex: bulletin-ete-2025.pdf"
+                            />
+                          </div>
+                          <div className="control">
+                            <button
+                              type="button"
+                              className="button is-info"
+                              onClick={() => {
+                                const fileInput = document.createElement("input");
+                                fileInput.type = "file";
+                                fileInput.accept = ".pdf";
+                                fileInput.onchange = async e => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    const toastId = toast.loading('Upload du bulletin PDF...');
+                                    const formData = new FormData();
+                                    formData.append("file", file);
+
+                                    try {
+                                      const response = await fetch("/api/upload_doc", {
+                                        method: "POST",
+                                        body: formData,
+                                      });
+                                      const data = await response.json();
+                                      if (response.ok) {
+                                        // Extraire juste le nom du fichier depuis l'URL
+                                        const fileName = data.fileUrl.split('/').pop();
+                                        handleListChange('bulletins', i, 'fichier', fileName);
+                                        toast.update(toastId, {
+                                          render: '✅ Bulletin PDF uploadé !',
+                                          type: 'success',
+                                          isLoading: false,
+                                          autoClose: 2000
+                                        });
+                                      } else {
+                                        toast.update(toastId, {
+                                          render: '❌ Erreur lors de l\'upload',
+                                          type: 'error',
+                                          isLoading: false,
+                                          autoClose: 3000
+                                        });
+                                      }
+                                    } catch (error) {
+                                      console.error("Erreur lors de l'upload :", error);
+                                      toast.update(toastId, {
+                                        render: '❌ Erreur lors de l\'upload',
+                                        type: 'error',
+                                        isLoading: false,
+                                        autoClose: 3000
+                                      });
+                                    }
+                                  }
+                                };
+                                fileInput.click();
+                              }}
+                              title="Uploader un fichier PDF"
+                            >
+                              <span className="icon">
+                                <i className="fas fa-upload"></i>
+                              </span>
+                              <span>Upload PDF</span>
+                            </button>
+                          </div>
+                        </div>
+                        {bulletin.fichier && (
+                          <p className="help has-text-success">
+                            <span className="icon is-small">
+                              <i className="fas fa-check-circle"></i>
+                            </span>
+                            Fichier: {bulletin.fichier}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 
@@ -472,16 +545,80 @@ export default function EditeurInfosPratiques() {
                                   />
                                 </td>
                                 <td>
-                                  <input 
-                                    className="input is-small" 
-                                    value={bulletin.fichier || ""} 
-                                    onChange={e => {
-                                      const newArchives = {...content.archivesBulletins};
-                                      newArchives[content.archiveAnneeActive][i].fichier = e.target.value;
-                                      setContent({...content, archivesBulletins: newArchives});
-                                    }} 
-                                    placeholder="Nom du fichier"
-                                  />
+                                  <div className="field has-addons mb-0">
+                                    <div className="control is-expanded">
+                                      <input 
+                                        className="input is-small" 
+                                        value={bulletin.fichier || ""} 
+                                        onChange={e => {
+                                          const newArchives = {...content.archivesBulletins};
+                                          newArchives[content.archiveAnneeActive][i].fichier = e.target.value;
+                                          setContent({...content, archivesBulletins: newArchives});
+                                        }} 
+                                        placeholder="Nom du fichier"
+                                      />
+                                    </div>
+                                    <div className="control">
+                                      <button
+                                        type="button"
+                                        className="button is-info is-small"
+                                        onClick={() => {
+                                          const fileInput = document.createElement("input");
+                                          fileInput.type = "file";
+                                          fileInput.accept = ".pdf";
+                                          fileInput.onchange = async e => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                              const toastId = toast.loading('Upload du bulletin PDF...');
+                                              const formData = new FormData();
+                                              formData.append("file", file);
+
+                                              try {
+                                                const response = await fetch("/api/upload_doc", {
+                                                  method: "POST",
+                                                  body: formData,
+                                                });
+                                                const data = await response.json();
+                                                if (response.ok) {
+                                                  const fileName = data.fileUrl.split('/').pop();
+                                                  const newArchives = {...content.archivesBulletins};
+                                                  newArchives[content.archiveAnneeActive][i].fichier = fileName;
+                                                  setContent({...content, archivesBulletins: newArchives});
+                                                  toast.update(toastId, {
+                                                    render: '✅ Bulletin PDF uploadé !',
+                                                    type: 'success',
+                                                    isLoading: false,
+                                                    autoClose: 2000
+                                                  });
+                                                } else {
+                                                  toast.update(toastId, {
+                                                    render: '❌ Erreur lors de l\'upload',
+                                                    type: 'error',
+                                                    isLoading: false,
+                                                    autoClose: 3000
+                                                  });
+                                                }
+                                              } catch (error) {
+                                                console.error("Erreur lors de l'upload :", error);
+                                                toast.update(toastId, {
+                                                  render: '❌ Erreur lors de l\'upload',
+                                                  type: 'error',
+                                                  isLoading: false,
+                                                  autoClose: 3000
+                                                });
+                                              }
+                                            }
+                                          };
+                                          fileInput.click();
+                                        }}
+                                        title="Uploader un fichier PDF"
+                                      >
+                                        <span className="icon">
+                                          <i className="fas fa-upload"></i>
+                                        </span>
+                                      </button>
+                                    </div>
+                                  </div>
                                 </td>
                                 <td>
                                   <div className="buttons are-small">
@@ -493,8 +630,10 @@ export default function EditeurInfosPratiques() {
                                         newArchives[content.archiveAnneeActive].splice(i, 1);
                                         setContent({...content, archivesBulletins: newArchives});
                                       }}
+                                      title="Supprimer"
                                     >
-                                      <span className="icon"><i className="fas fa-trash"></i></span>
+                                      <span className="icon is-small"><i className="fas fa-trash"></i></span>
+                                      <span>🗑️</span>
                                     </button>
                                     <button 
                                       type="button" 
@@ -509,8 +648,10 @@ export default function EditeurInfosPratiques() {
                                         }
                                       }}
                                       disabled={i === 0}
+                                      title="Monter"
                                     >
-                                      <span className="icon"><i className="fas fa-arrow-up"></i></span>
+                                      <span className="icon is-small"><i className="fas fa-arrow-up"></i></span>
+                                      <span>⬆️</span>
                                     </button>
                                     <button 
                                       type="button" 
@@ -525,8 +666,10 @@ export default function EditeurInfosPratiques() {
                                         }
                                       }}
                                       disabled={i === ((content.archivesBulletins || {})[content.archiveAnneeActive] || []).length - 1}
+                                      title="Descendre"
                                     >
-                                      <span className="icon"><i className="fas fa-arrow-down"></i></span>
+                                      <span className="icon is-small"><i className="fas fa-arrow-down"></i></span>
+                                      <span>⬇️</span>
                                     </button>
                                   </div>
                                 </td>
@@ -561,6 +704,19 @@ export default function EditeurInfosPratiques() {
                     )}
                   </div>
                 )}
+
+                <div className="has-text-centered mt-4">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'archivesBulletins' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('archivesBulletins')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer les archives
+                  </button>
+                </div>
               </div>
 
               {/* Paramètres d'affichage */}
@@ -596,6 +752,19 @@ export default function EditeurInfosPratiques() {
                     />
                   </div>
                   <p className="help">Nombre de bulletins à afficher en haut de la page (recommandé: 4)</p>
+                </div>
+
+                <div className="has-text-centered mt-4">
+                  <button 
+                    type="button" 
+                    className={`button is-link${savingSection === 'parametresAffichage' ? ' is-loading' : ''}`}
+                    onClick={() => saveSection('parametresAffichage')}
+                    disabled={savingSection !== null}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <span style={{ marginRight: 8 }}>💾</span>
+                    Enregistrer les paramètres
+                  </button>
                 </div>
               </div>
             </>
@@ -1625,109 +1794,6 @@ export default function EditeurInfosPratiques() {
                       }
                     });
                   }}>Ajouter un contact</button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'liens' && (
-            <>
-              {/* Liens utiles (section existante) */}
-              <div className="box mb-6">
-                <h2 className="title is-4 has-text-link mb-4">🔗 Liens utiles</h2>
-                {(content.liensUtiles || []).map((lien, i) => (
-                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
-                    <div className="is-flex is-justify-content-space-between mb-2">
-                      <span className="tag is-link is-light">Lien #{i + 1}</span>
-                      <button 
-                        type="button" 
-                        className="button is-small is-danger"
-                        onClick={() => removeListItem('liensUtiles', i, lien.titre || 'ce lien')}
-                        disabled={savingSection !== null}
-                        title="Supprimer"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    <label className="label">Titre</label>
-                    <input className="input mb-2" value={lien.titre} onChange={e => handleListChange('liensUtiles', i, 'titre', e.target.value)} />
-                    <label className="label">Description</label>
-                    <input className="input mb-2" value={lien.description} onChange={e => handleListChange('liensUtiles', i, 'description', e.target.value)} />
-                    <label className="label">URL</label>
-                    <input className="input mb-2" value={lien.url} onChange={e => handleListChange('liensUtiles', i, 'url', e.target.value)} />
-                    <label className="label">Catégorie</label>
-                    <input className="input mb-2" value={lien.categorie || ''} onChange={e => handleListChange('liensUtiles', i, 'categorie', e.target.value)} />
-                  </div>
-                ))}
-                <div className="has-text-centered">
-                  <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('liensUtiles', {
-                    titre: "", description: "", url: "", categorie: ""
-                  })}>Ajouter un lien</button>
-                </div>
-                
-                <div className="has-text-centered mt-3">
-                  <button 
-                    type="button" 
-                    className={`button is-link${savingSection === 'liensUtiles' ? ' is-loading' : ''}`}
-                    onClick={() => saveSection('liensUtiles')}
-                    disabled={savingSection !== null}
-                    style={{ borderRadius: 8 }}
-                  >
-                    <span style={{ marginRight: 8 }}>💾</span>
-                    Enregistrer cette section
-                  </button>
-                </div>
-              </div>
-
-              {/* Manifestations (déplacées ici) */}
-              <div className="box mb-6">
-                <h2 className="title is-4 has-text-link mb-4">🎉 Manifestations</h2>
-                {content.manifestations.map((m, i) => (
-                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
-                    <div className="is-flex is-justify-content-space-between mb-2">
-                      <span className="tag is-link is-light">Manifestation #{i + 1}</span>
-                      <button 
-                        type="button" 
-                        className="button is-small is-danger"
-                        onClick={() => removeListItem('manifestations', i, m.titre || 'cette manifestation')}
-                        disabled={savingSection !== null}
-                        title="Supprimer"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    <label className="label">Titre</label>
-                    <input className="input mb-2" value={m.titre} onChange={e => handleListChange('manifestations', i, 'titre', e.target.value)} placeholder="Titre" />
-                    <label className="label">Date</label>
-                    <input className="input mb-2" value={m.date} onChange={e => handleListChange('manifestations', i, 'date', e.target.value)} placeholder="Date" />
-                    <label className="label">Description</label>
-                    <textarea className="textarea mb-2" value={m.description} onChange={e => handleListChange('manifestations', i, 'description', e.target.value)} placeholder="Description" />
-                    <label className="label">Lieu</label>
-                    <input className="input mb-2" value={m.lieu} onChange={e => handleListChange('manifestations', i, 'lieu', e.target.value)} placeholder="Lieu" />
-                    <label className="checkbox">
-                      <input type="checkbox" checked={m.inscription} onChange={e => handleListChange('manifestations', i, 'inscription', e.target.checked)} />
-                      Inscription requise
-                    </label>
-                  </div>
-                ))}
-                <div className="has-text-centered">
-                  <button 
-                    type="button" 
-                    className="button is-link is-light is-small" 
-                    onClick={() => addListItem('manifestations', { titre: "", date: "", description: "", lieu: "", inscription: false })}>Ajouter une manifestation</button>
-                </div>
-                
-                <div className="has-text-centered mt-3">
-                  <button 
-                    type="button" 
-                    className={`button is-link${savingSection === 'manifestations' ? ' is-loading' : ''}`}
-                    onClick={() => saveSection('manifestations')}
-                    disabled={savingSection !== null}
-                    style={{ borderRadius: 8 }}
-                  >
-                    <span style={{ marginRight: 8 }}>💾</span>
-                    Enregistrer cette section
-                  </button>
                 </div>
               </div>
             </>

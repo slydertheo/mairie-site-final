@@ -316,20 +316,29 @@ export default function PageAcceuil() {
         </div>
       </section>
 
-      <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 10px' }}>
-        <AnimateOnScroll animation="fade-up">
-          <h2 className="title is-4 has-text-primary mb-5" style={{
+      {/* Carrousel des actualités */}
+      <div className="container" style={{ maxWidth: 1200, margin: '0 auto 48px auto', padding: '0 20px' }}>
+        <AnimateOnScroll animation="fade-up" delay={100}>
+          <h2 className="title is-4 has-text-primary mb-4" style={{
             fontFamily: 'Merriweather, serif',
-            fontWeight: 800,
-            letterSpacing: 1,
-            color: '#1277c6'
-          }}>{content.actualites_titre || "Dernières actualités"}</h2>
+            fontWeight: 700,
+            color: '#1277c6',
+            textAlign: 'center'
+          }}>
+            <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>📰</span>
+            Actualités de Friesen
+          </h2>
+          <div style={{ 
+            borderRadius: 16,
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(18, 119, 198, 0.15)'
+          }}>
+            <ActualiteCarousel actualites={actualites} />
+          </div>
         </AnimateOnScroll>
-        
-        <AnimateOnScroll animation="zoom-in" threshold={0.2}>
-          <ActualiteCarousel actualites={actualites} />
-        </AnimateOnScroll>
+      </div>
 
+      <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 10px' }}>
         <div className="columns is-variable is-5" style={{ margin: '0 -0.75rem' }}>
           {/* Colonne 1 : Mot du Maire + Panneau d'affichage + Calendrier */}
           <div className="column is-two-thirds" style={{ padding: '0 0.75rem' }}>
@@ -1211,36 +1220,6 @@ export default function PageAcceuil() {
                   🚓 Police : <b>{content.urgence_police}</b><br />
                   🚑 SAMU : <b>{content.urgence_samu}</b>
                 </div>
-              </div>
-            </AnimateOnScroll>
-          </div>
-          <div className="column is-3">
-            <AnimateOnScroll animation="zoom-in" delay={500} threshold={0.2}>
-              <div className="box has-text-centered" style={{
-                background: 'linear-gradient(120deg, #f0f9ff 80%, #f8fafc 100%)',
-                padding: '24px',
-                borderRadius: 14,
-                boxShadow: '0 2px 8px #1b9bd710'
-              }}>
-                <span style={{ fontSize: 40 }}>📰</span>
-                <div className="has-text-link has-text-weight-bold mt-2" style={{ fontSize: 18 }}>Actualités</div>
-                <div style={{ fontSize: 15 }}>Consultez les dernières nouvelles</div>
-                <a href="#" className="button is-small is-link mt-3">Voir plus</a>
-              </div>
-            </AnimateOnScroll>
-          </div>
-          <div className="column is-3">
-            <AnimateOnScroll animation="zoom-in" delay={600} threshold={0.2}>
-              <div className="box has-text-centered" style={{
-                background: 'linear-gradient(120deg, #fef3c7 80%, #f8fafc 100%)',
-                padding: '24px',
-                borderRadius: 14,
-                boxShadow: '0 2px 8px #eab30810'
-              }}>
-                <span style={{ fontSize: 40 }}>🏛️</span>
-                <div className="has-text-link has-text-weight-bold mt-2" style={{ fontSize: 18 }}>Services</div>
-                <div style={{ fontSize: 15 }}>Accès aux démarches administratives</div>
-                <a href="#" className="button is-small is-link mt-3">Accéder</a>
               </div>
             </AnimateOnScroll>
           </div>

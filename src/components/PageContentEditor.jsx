@@ -88,6 +88,7 @@ export default function PageAcceuil() {
 
   // Formulaire style "Actualité"
   const [form, setForm] = useState({ titre: '', date: '', description: '', image: '', lieu: '' });
+  const [selectedDates, setSelectedDates] = useState([]); // Pour gérer les dates multiples
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
@@ -394,6 +395,7 @@ export default function PageAcceuil() {
 
   const resetForm = () => {
     setForm({ titre: '', date: '', description: '', image: '', lieu: '' });
+    setSelectedDates([]);
     setPreviewImage(null);
     setEditMode(false);
     setEditIndex(null);
@@ -401,10 +403,15 @@ export default function PageAcceuil() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.titre.trim() || !form.date.trim()) {
-      toast.error('Titre et date sont obligatoires.');
+    
+    // Validation : si des dates multiples sont sélectionnées, on les utilise, sinon on utilise la date unique
+    const datesToUse = selectedDates.length > 0 ? selectedDates : (form.date.trim() ? [form.date] : []);
+    
+    if (!form.titre.trim() || datesToUse.length === 0) {
+      toast.error('Titre et au moins une date sont obligatoires.');
       return;
     }
+    
     // Base64 guard (optionnel)
     if (form.image && form.image.length > 800000) {
       toast.error("L'image est trop volumineuse après compression.");
@@ -419,11 +426,19 @@ export default function PageAcceuil() {
         const id = next[editIndex]?.id;
         next[editIndex] = { id, ...form };
       } else {
-        next.push({ id: `event-${crypto?.randomUUID?.() || Date.now()}`, ...form });
+        // Créer un événement pour chaque date sélectionnée
+        datesToUse.forEach(date => {
+          next.push({ 
+            id: `event-${crypto?.randomUUID?.() || Date.now()}-${date}`, 
+            ...form,
+            date: date 
+          });
+        });
       }
       setEvents(next);
       await persistEvents(next);
-      toast.update(toastId, { render: editMode ? 'Événement modifié' : 'Événement ajouté', type: 'success', isLoading: false, autoClose: 2000 });
+      const message = editMode ? 'Événement modifié' : (datesToUse.length > 1 ? `${datesToUse.length} événements ajoutés` : 'Événement ajouté');
+      toast.update(toastId, { render: message, type: 'success', isLoading: false, autoClose: 2000 });
       resetForm();
     } catch (err) {
       console.error(err);
@@ -438,6 +453,7 @@ export default function PageAcceuil() {
     if (!ev) return;
     setEditMode(true);
     setEditIndex(idx);
+    setSelectedDates([]); // Réinitialiser les dates multiples en mode édition
     setForm({
       titre: ev.titre || '',
       date: ev.date || '',
@@ -1005,18 +1021,41 @@ export default function PageAcceuil() {
 
               <div className="field is-grouped mb-3">
                 <div className="control is-expanded">
-                  <label className="label is-small">Date</label>
+                  <label className="label is-small">
+                    {editMode ? 'Date' : 'Date (ou ajoutez plusieurs dates ci-dessous)'}
+                  </label>
                   <input 
                     className="input" 
                     type="date" 
                     name="date" 
                     value={formatDateForInput(form.date)} 
                     onChange={handleChange} 
-                    required 
+                    required={editMode || selectedDates.length === 0}
                     readOnly={loading}
                     style={{ background: loading ? "#f5f5f5" : "white" }}
                   />
                 </div>
+                {!editMode && (
+                  <div className="control">
+                    <label className="label is-small">&nbsp;</label>
+                    <button 
+                      type="button"
+                      className="button is-success"
+                      onClick={() => {
+                        if (form.date && !selectedDates.includes(form.date)) {
+                          setSelectedDates([...selectedDates, form.date].sort());
+                          toast.success(`Date ajoutée : ${new Date(form.date).toLocaleDateString('fr-FR')}`);
+                        } else if (selectedDates.includes(form.date)) {
+                          toast.warning('Cette date est déjà ajoutée');
+                        }
+                      }}
+                      disabled={!form.date || loading}
+                      title="Ajouter cette date"
+                    >
+                      ➕ Ajouter
+                    </button>
+                  </div>
+                )}
                 <div className="control is-expanded">
                   <label className="label is-small">Lieu</label>
                   <input 
@@ -1030,6 +1069,32 @@ export default function PageAcceuil() {
                   />
                 </div>
               </div>
+
+              {/* Affichage des dates sélectionnées */}
+              {!editMode && selectedDates.length > 0 && (
+                <div className="field mb-3">
+                  <label className="label is-small">Dates sélectionnées ({selectedDates.length})</label>
+                  <div className="tags">
+                    {selectedDates.map((date, idx) => (
+                      <span key={idx} className="tag is-success is-medium">
+                        {new Date(date).toLocaleDateString('fr-FR')}
+                        <button
+                          type="button"
+                          className="delete is-small"
+                          onClick={() => {
+                            setSelectedDates(selectedDates.filter(d => d !== date));
+                            toast.info('Date retirée');
+                          }}
+                          disabled={loading}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                  <p className="help is-success">
+                    Un événement sera créé pour chaque date sélectionnée
+                  </p>
+                </div>
+              )}
 
               <div className="field mb-3">
                 <label className="label is-small">Description</label>

@@ -10,13 +10,13 @@ const LoginIcon = ({ color = "#fff" }) => (
 );
 
 const navLinks = [
-  { href: '/demarches', label: 'Démarches', color: '#A8D8EA', hoverColor: '#7EC8E3' }, // Bleu pastel
-  { href: '/ecoles', label: 'École Evelyne Nirouet', color: '#C9B8E4', hoverColor: '#B39DDB' }, // Lavande pastel
-  { href: '/commerces', label: 'Commerces', color: '#FFB4B4', hoverColor: '#FF9898' }, // Rose pastel
-  { href: '/intercommunalite', label: 'Intercommunalité', color: '#A3D9C9', hoverColor: '#7DC7B6' }, // Turquoise pastel
-  { href: '/associations', label: 'Associations', color: '#B4E7B4', hoverColor: '#95DB95' }, // Vert pastel
-  { href: '/decouvrir_friesen', label: 'Découvrir Friesen', color: '#FFD4A3', hoverColor: '#FFC780' }, // Pêche pastel
-  { href: '/infos_pratiques', label: 'Infos Pratiques', color: '#C5DCFA', hoverColor: '#A3C7F2' }, // Bleu ciel pastel
+  { href: '/demarches', label: 'Démarches' },
+  { href: '/ecoles', label: 'École Evelyne Nirouet' },
+  { href: '/commerces', label: 'Commerces' },
+  { href: '/intercommunalite', label: 'Intercommunalité' },
+  { href: '/associations', label: 'Associations' },
+  { href: '/decouvrir_friesen', label: 'Découvrir Friesen' },
+  { href: '/infos_pratiques', label: 'Infos Pratiques' },
 ];
 
 function getPasswordStrength(password) {
@@ -53,36 +53,6 @@ export default function Navbar() {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotMsg, setForgotMsg] = useState('');
-  const [navbarImages, setNavbarImages] = useState({});
-
-  // Charger les images de navbar
-  useEffect(() => {
-    fetch('/api/navbar-images')
-      .then(res => res.json())
-      .then(data => {
-        if (data.images) {
-          setNavbarImages(data.images);
-        }
-      })
-      .catch(err => console.error('Erreur chargement images navbar:', err));
-  }, []);
-
-  // Déterminer l'image à afficher selon la page
-  const getCurrentPageImage = () => {
-    const path = router.pathname;
-    let pageSlug = 'accueil';
-
-    if (path === '/') pageSlug = 'accueil';
-    else if (path === '/demarches') pageSlug = 'demarches';
-    else if (path === '/ecoles') pageSlug = 'ecoles';
-    else if (path === '/commerces') pageSlug = 'commerces';
-    else if (path === '/intercommunalite') pageSlug = 'intercommunalite';
-    else if (path === '/associations') pageSlug = 'associations';
-    else if (path === '/decouvrir_friesen') pageSlug = 'decouvrir_friesen';
-    else if (path === '/infos_pratiques') pageSlug = 'infos_pratiques';
-
-    return navbarImages[pageSlug] || '/LogoFriesen.png';
-  };
 
   // Pour empêcher la navigation lors du clic sur Connexion
   const handleLoginClick = (e) => {
@@ -112,7 +82,6 @@ export default function Navbar() {
         else setError("Une erreur technique est survenue. Veuillez réessayer plus tard.");
         setErrorType('danger');
       } else {
-        // Stocke le JWT et l'utilisateur
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         setSuccess("Connexion réussie !");
@@ -121,7 +90,7 @@ export default function Navbar() {
         setTimeout(() => {
           setShowModal(false);
           window.location.reload();
-        }, 1200); // Laisse le temps d'afficher le message
+        }, 1200);
       }
     } catch (err) {
       setError("Impossible de se connecter au serveur.");
@@ -170,11 +139,6 @@ export default function Navbar() {
     setForgotMsg('');
     setError('');
     try {
-      // Ici tu pourrais appeler une API réelle, ici on simule juste la réponse
-      // const res = await fetch('/api/forgot', { ... });
-      // const data = await res.json();
-      // if (!res.ok) setForgotMsg("Aucun compte trouvé avec cet email.");
-      // else setForgotMsg("Un email de réinitialisation a été envoyé.");
       setTimeout(() => {
         setForgotMsg("Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.");
         setLoading(false);
@@ -187,184 +151,337 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="navbar is-fixed-top has-shadow" style={{
-        background: 'rgba(248,250,252,0.97)',
-        borderRadius: '0 0 18px 18px',
-        backdropFilter: 'blur(6px)',
-        padding: 0,
+      <nav style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 40px',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%)',
+        borderBottom: '1px solid rgba(18,119,198,0.08)',
+        boxShadow: '0 4px 20px rgba(10,37,64,0.06)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        backdropFilter: 'blur(12px)',
+        flexWrap: 'wrap',
       }}>
-        <div className="navbar-brand">
-          <Link
-            href="/"
-            className="navbar-item button is-link is-light is-rounded"
+        {/* Logo à gauche */}
+        <Link href="/" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          textDecoration: 'none',
+          flex: '0 0 auto',
+          transition: 'transform 0.3s ease',
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <img
+            src="/LogoFriesen.png"
+            alt="Logo de la mairie de Friesen"
             style={{
-              gap: 12,
-              display: 'flex',
-              alignItems: 'center',
-              fontWeight: 600,
-              color: '#1277c6',
-              fontSize: 16,
-              letterSpacing: 0.5,
-              margin: '0 6px',
-              border: 'none',
-              boxShadow: '0 1px 6px #1277c610',
-              transition: 'background 0.2s, color 0.2s',
-              background: 'transparent',
+              height: 55,
+              width: 55,
+              objectFit: 'contain',
+              borderRadius: '50%',
+              boxShadow: '0 4px 16px rgba(18,119,198,0.25)',
+              border: '3px solid rgba(255,230,109,0.5)',
+              background: 'white',
+              padding: 2,
             }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#d1e6fa';
-              e.currentTarget.style.color = '#0a3970';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#1277c6';
-            }}
-          >
-            <img
-              src="/LogoFriesen.png"
-              alt="Logo de la mairie de Friesen"
-              style={{
-                height: 50,
-                width: 50,
-                objectFit: 'contain',
-                borderRadius: '50%',
-                boxShadow: '0 2px 8px #1277c620',
-                marginRight: 12,
-              }}
-            />
-            <span style={{
-              fontWeight: 800,
-              fontSize: 24,
-              color: '#1277c6',
-              background: 'linear-gradient(135deg, #FFE66D 0%, #FFD93D 100%)',
-              padding: '8px 20px',
-              borderRadius: '12px',
-              letterSpacing: 1.2,
-              fontFamily: 'Segoe UI, Arial, sans-serif',
-              userSelect: 'none',
-              boxShadow: '0 2px 8px rgba(255, 217, 61, 0.4)',
-              whiteSpace: 'nowrap',
-            }}>
-              Mairie Friesen
-            </span>
-          </Link>
-          <a
-            role="button"
-            className={`navbar-burger ${active ? 'is-active' : ''}`}
-            aria-label="menu"
-            aria-expanded={active ? "true" : "false"}
-            data-target="navbarBasic"
-            onClick={() => setActive(!active)}
-          >
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-          </a>
-        </div>
+          />
+          <span style={{
+            fontWeight: 900,
+            fontSize: 22,
+            background: 'linear-gradient(135deg, #FFE66D 0%, #FFC837 50%, #FFD93D 100%)',
+            color: '#1277c6',
+            padding: '10px 24px',
+            borderRadius: 14,
+            letterSpacing: 1.5,
+            fontFamily: 'Segoe UI, Arial, sans-serif',
+            userSelect: 'none',
+            boxShadow: '0 4px 12px rgba(255, 200, 55, 0.35), inset 0 2px 4px rgba(255,255,255,0.4)',
+            whiteSpace: 'nowrap',
+            position: 'relative',
+          }}>
+            Mairie Friesen
+          </span>
+        </Link>
 
-        <div id="navbarBasic" className={`navbar-menu ${active ? 'is-active' : ''}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', paddingLeft: '60px' }}>
-          <div className="navbar-start" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            {navLinks.map(link => (
+        {/* Menu burger pour mobile */}
+        <button
+          className={`navbar-burger ${active ? 'is-active' : ''}`}
+          onClick={() => setActive(!active)}
+          aria-label="Menu"
+          style={{
+            display: 'none',
+            background: active ? 'rgba(18,119,198,0.1)' : 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '10px',
+            borderRadius: 8,
+            transition: 'all 0.3s ease',
+          }}
+        >
+          <span style={{ 
+            display: 'block', 
+            width: 26, 
+            height: 3, 
+            background: '#1277c6', 
+            margin: '5px 0', 
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            transform: active ? 'rotate(45deg) translateY(8px)' : 'none',
+          }}></span>
+          <span style={{ 
+            display: 'block', 
+            width: 26, 
+            height: 3, 
+            background: '#1277c6', 
+            margin: '5px 0', 
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            opacity: active ? 0 : 1,
+          }}></span>
+          <span style={{ 
+            display: 'block', 
+            width: 26, 
+            height: 3, 
+            background: '#1277c6', 
+            margin: '5px 0', 
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            transform: active ? 'rotate(-45deg) translateY(-8px)' : 'none',
+          }}></span>
+        </button>
+
+        {/* Liens au centre */}
+        <div className={`navbar-links ${active ? 'is-active' : ''}`} style={{
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: '1 1 auto',
+          flexWrap: 'wrap',
+        }}>
+          {navLinks.map((link) => {
+            const isActive = router.pathname === link.href;
+            return (
               <Link
                 key={link.href}
                 href={link.href}
-                className="navbar-item"
                 onClick={() => setActive(false)}
                 style={{
-                  fontWeight: 500,
-                  color: '#2d3748',
-                  fontSize: 15,
-                  letterSpacing: 0.3,
-                  margin: '0',
-                  padding: '8px 16px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  boxShadow: `0 1px 4px ${link.color}30`,
-                  transition: 'all 0.25s ease',
-                  background: link.color,
+                  color: isActive ? '#fff' : '#1277c6',
+                  background: isActive ? 'linear-gradient(135deg, #1277c6 0%, #0a5ea8 100%)' : 'rgba(18,119,198,0.05)',
+                  textDecoration: 'none',
+                  fontWeight: isActive ? 700 : 500,
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  fontSize: 14.5,
+                  letterSpacing: 0.4,
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: isActive ? '0 4px 12px rgba(18,119,198,0.25)' : '0 2px 6px rgba(18,119,198,0.08)',
+                  whiteSpace: 'nowrap',
+                  border: isActive ? 'none' : '1px solid rgba(18,119,198,0.15)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = link.hoverColor;
-                  e.currentTarget.style.boxShadow = `0 3px 10px ${link.hoverColor}50`;
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.color = '#1a202c';
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(18,119,198,0.12)';
+                    e.currentTarget.style.color = '#0a5ea8';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(18,119,198,0.15)';
+                  }
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = link.color;
-                  e.currentTarget.style.boxShadow = `0 1px 4px ${link.color}30`;
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.color = '#2d3748';
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(18,119,198,0.05)';
+                    e.currentTarget.style.color = '#1277c6';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(18,119,198,0.08)';
+                  }
                 }}
               >
                 {link.label}
               </Link>
-            ))}
-          </div>
-          <div className="navbar-end" style={{ position: 'absolute', right: '20px', display: 'flex', gap: '12px' }}>
-            {/* Lien Admin visible pour tous */}
-            <Link
-              href="/Interface_admin"
-              style={{
-                fontWeight: 600,
-                fontSize: 16,
-                background: '#FFB4D5',
-                color: '#2d3748',
-                boxShadow: '0 1px 4px #FFB4D530',
-                border: 'none',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '10px 22px',
-                padding: '8px 18px',
-                transition: 'all 0.25s ease',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = '#FF99C8';
-                e.currentTarget.style.boxShadow = '0 3px 10px #FF99C850';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = '#FFB4D5';
-                e.currentTarget.style.boxShadow = '0 1px 4px #FFB4D530';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <span>⚙️ Admin</span>
-            </Link>
-            <a
-              href="/login"
-              style={{
-                fontWeight: 600,
-                fontSize: 16,
-                background: '#B4E7FF',
-                color: '#2d3748',
-                boxShadow: '0 1px 4px #B4E7FF30',
-                border: 'none',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '10px 22px',
-                transition: 'all 0.25s ease',
-              }}
-              onClick={handleLoginClick}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = '#8ED9FF';
-                e.currentTarget.style.boxShadow = '0 3px 10px #8ED9FF50';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = '#B4E7FF';
-                e.currentTarget.style.boxShadow = '0 1px 4px #B4E7FF30';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <span>🔐 Connexion</span>
-            </a>
-          </div>
+            );
+          })}
+        </div>
+
+        {/* Boutons Admin & Connexion à droite */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          flex: '0 0 auto',
+        }}>
+          <Link
+            href="/Interface_admin"
+            onClick={() => setActive(false)}
+            style={{
+              fontWeight: 600,
+              fontSize: 14.5,
+              background: 'linear-gradient(135deg, #FFB4D5 0%, #FF99C8 100%)',
+              color: '#fff',
+              boxShadow: '0 4px 12px rgba(255,153,200,0.3)',
+              border: 'none',
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #FF99C8 0%, #FF6FB5 100%)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,111,181,0.4)';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #FFB4D5 0%, #FF99C8 100%)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,153,200,0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <span style={{ fontSize: 18 }}>⚙️</span>
+            <span>Admin</span>
+          </Link>
+          
+          <a
+            href="/login"
+            onClick={(e) => {
+              e.preventDefault();
+              setActive(false);
+              handleLoginClick(e);
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #1277c6 0%, #0a5ea8 100%)',
+              color: '#fff',
+              borderRadius: 10,
+              padding: '10px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontWeight: 600,
+              fontSize: 14.5,
+              boxShadow: '0 4px 12px rgba(18,119,198,0.35)',
+              border: 'none',
+              textDecoration: 'none',
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              whiteSpace: 'nowrap',
+              textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #0a5ea8 0%, #084785 100%)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(10,57,112,0.5)';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #1277c6 0%, #0a5ea8 100%)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(18,119,198,0.35)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <LoginIcon />
+            <span>Connexion</span>
+          </a>
         </div>
       </nav>
+
+      {/* Styles pour le responsive */}
+      <style jsx>{`
+        @media (max-width: 1200px) {
+          nav {
+            padding: 10px 24px !important;
+          }
+          .navbar-links {
+            gap: 8px !important;
+          }
+          .navbar-links a {
+            font-size: 13.5px !important;
+            padding: 8px 14px !important;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          nav {
+            padding: 10px 20px !important;
+          }
+          .navbar-links {
+            gap: 6px !important;
+          }
+          .navbar-links a {
+            font-size: 13px !important;
+            padding: 7px 12px !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .navbar-burger {
+            display: block !important;
+          }
+          .navbar-links {
+            display: none !important;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.96) 100%);
+            backdrop-filter: blur(16px);
+            flex-direction: column;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(10,37,64,0.12);
+            border-radius: 0 0 16px 16px;
+            gap: 12px !important;
+            animation: slideDown 0.3s ease;
+          }
+          .navbar-links.is-active {
+            display: flex !important;
+          }
+          .navbar-links a {
+            width: 100%;
+            text-align: center;
+            padding: 14px 20px !important;
+            font-size: 15px !important;
+          }
+          nav {
+            flex-wrap: wrap;
+          }
+          nav > div:last-child {
+            gap: 8px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          nav {
+            padding: 8px 16px !important;
+          }
+          nav > div:last-child a {
+            font-size: 13px !important;
+            padding: 8px 12px !important;
+          }
+          nav > div:last-child a span:last-child {
+            display: none;
+          }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
 
       {/* Modal de connexion */}
       <div className={`modal ${showModal ? 'is-active' : ''}`}>
@@ -390,7 +507,7 @@ export default function Navbar() {
               position: 'relative',
             }}
           >
-            <figure className="image is-10000x10000" style={{ margin: '0 auto' }}>
+            <figure className="image is-96x96" style={{ margin: '0 auto' }}>
               <img
                 src="/LogoFriesen.png"
                 alt="Logo Friesen"

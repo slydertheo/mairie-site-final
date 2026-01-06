@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import UserCrud from './UserCrud';
 import PageContentEditor from '../components/PageContentEditor';
-import EvenementAdmin from '../components/CalendrierAdmin';
 import ActualiteAdmin from '../components/CarrouselAdmin.jsx';
 import DemarchesEditor from '../components/DemarchesEditor';
 import EcolesEditor from '../components/EcolesEditor';
@@ -86,7 +85,6 @@ export default function InterfaceAdmin() {
             {selectedPage === 'accueil' && (
               <>
                 <PageContentEditor />
-                <EvenementAdmin />
                 <ActualiteAdmin />
               </>
             )}
