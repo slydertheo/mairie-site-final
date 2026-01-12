@@ -1574,104 +1574,178 @@ export default function EditeurInfosPratiques() {
 
                 <h3 className="subtitle">Battues</h3>
                 {(content.chasse?.battues || []).map((b, i) => (
-                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
+                  <div key={i} className="box mb-3" style={{ background: "#f9fbfd", borderRadius: 12, border: '1.5px solid #e0e7ef' }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-warning is-light">Battue #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeNestedListItem('chasse', 'battues', i, 'cette battue')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                     <label className="label">Date</label>
-                    <input className="input mb-2" value={b.date} onChange={e => {
-                      const arr = [...content.chasse.battues];
-                      arr[i].date = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, battues: arr } });
-                    }} />
+                    <input 
+                      className="input mb-2" 
+                      type="date"
+                      value={b.date || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'battues', i, 'date', e.target.value)}
+                      placeholder="Date de la battue"
+                    />
                     <label className="label">Secteur</label>
-                    <input className="input mb-2" value={b.secteur} onChange={e => {
-                      const arr = [...content.chasse.battues];
-                      arr[i].secteur = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, battues: arr } });
-                    }} />
+                    <input 
+                      className="input mb-2" 
+                      value={b.secteur || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'battues', i, 'secteur', e.target.value)}
+                      placeholder="Ex: Forêt communale"
+                    />
                     <label className="label">Type de chasse</label>
-                    <input className="input mb-2" value={b.type} onChange={e => {
-                      const arr = [...content.chasse.battues];
-                      arr[i].type = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, battues: arr } });
-                    }} />
+                    <input 
+                      className="input mb-2" 
+                      value={b.type || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'battues', i, 'type', e.target.value)}
+                      placeholder="Ex: Sanglier, Chevreuil..."
+                    />
                     <label className="label">Horaires</label>
-                    <input className="input mb-2" value={b.horaires} onChange={e => {
-                      const arr = [...content.chasse.battues];
-                      arr[i].horaires = e.target.value;
-                      setContent({ ...content, chasse: { ...content.chasse, battues: arr } });
-                    }} />
-                    <button type="button" className="button is-danger is-small mt-2" onClick={() => {
-                      setContent({
-                        ...content,
-                        chasse: {
-                          ...content.chasse,
-                          battues: content.chasse.battues.filter((_, idx) => idx !== i)
-                        }
-                      });
-                    }}>Supprimer</button>
+                    <input 
+                      className="input mb-2" 
+                      value={b.horaires || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'battues', i, 'horaires', e.target.value)}
+                      placeholder="Ex: 8h00 - 12h00"
+                    />
                   </div>
                 ))}
-                <div className="has-text-centered">
-                  <button type="button" className="button is-link is-light is-small mb-4" onClick={() => {
-                    setContent({
-                      ...content,
-                      chasse: {
-                        ...content.chasse,
-                        battues: [...(content.chasse.battues || []), { date: "", secteur: "", type: "", horaires: "" }]
-                      }
-                    });
-                  }}>Ajouter une battue</button>
-
-                  <h3 className="subtitle mt-4">Règlementation</h3>
-                  <textarea
-                    className="textarea mb-4"
-                    value={content.chasse?.reglementation || ""}
-                    onChange={e => setContent({ ...content, chasse: { ...content.chasse, reglementation: e.target.value } })}
-                    rows={4}
-                  ></textarea>
-
-                  <h3 className="subtitle">Lots de chasse</h3>
-                  {(content.chasse?.lots || []).map((lot, i) => (
-                    <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
-                      <label className="label">Numéro/Nom</label>
-                      <input className="input mb-2" value={lot.nom} onChange={e => {
-                        const arr = [...content.chasse.lots];
-                        arr[i].nom = e.target.value;
-                        setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
-                      }} />
-                      <label className="label">Description</label>
-                      <input className="input mb-2" value={lot.description} onChange={e => {
-                        const arr = [...content.chasse.lots];
-                        arr[i].description = e.target.value;
-                        setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
-                      }} />
-                      <label className="label">Adjudicataire</label>
-                      <input className="input mb-2" value={lot.adjudicataire} onChange={e => {
-                        const arr = [...content.chasse.lots];
-                        arr[i].adjudicataire = e.target.value;
-                        setContent({ ...content, chasse: { ...content.chasse, lots: arr } });
-                      }} />
-                      <button type="button" className="button is-danger is-small mt-2" onClick={() => {
-                        setContent({
-                          ...content,
-                          chasse: {
-                            ...content.chasse,
-                            lots: content.chasse.lots.filter((_, idx) => idx !== i)
-                          }
-                        });
-                      }}>Supprimer</button>
+                <div className="has-text-centered mb-5">
+                  <button 
+                    type="button" 
+                    className="button is-link is-light is-small" 
+                    onClick={() => addNestedListItem('chasse', 'battues', { date: "", secteur: "", type: "", horaires: "" })}
+                  >
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter une battue</span>
+                  </button>
+                </div>
+                <h3 className="subtitle mt-5">Lots de chasse</h3>
+                {(content.chasse?.lots || []).map((lot, i) => (
+                  <div key={i} className="box mb-3" style={{ background: "#f9fbfd", borderRadius: 12, border: '1.5px solid #e0e7ef' }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-info is-light">Lot #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeNestedListItem('chasse', 'lots', i, 'ce lot')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
                     </div>
-                  ))}
-                  <div className="has-text-centered">
-                    <button type="button" className="button is-link is-light is-small" onClick={() => {
-                      setContent({
-                        ...content,
-                        chasse: {
-                          ...content.chasse,
-                          lots: [...(content.chasse.lots || []), { nom: "", description: "", adjudicataire: "" }]
-                        }
-                      });
-                    }}>Ajouter un lot</button>
+                    <label className="label">Numéro/Nom du lot</label>
+                    <input 
+                      className="input mb-2" 
+                      value={lot.nom || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'lots', i, 'nom', e.target.value)}
+                      placeholder="Ex: Lot n°1, Secteur Est..."
+                    />
+                    <label className="label">Description</label>
+                    <textarea
+                      className="textarea mb-2"
+                      value={lot.description || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'lots', i, 'description', e.target.value)}
+                      placeholder="Description du lot (superficie, espèces, etc.)"
+                      rows={3}
+                    />
+                    <label className="label">Adjudicataire</label>
+                    <input 
+                      className="input mb-2" 
+                      value={lot.adjudicataire || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'lots', i, 'adjudicataire', e.target.value)}
+                      placeholder="Nom de l'adjudicataire"
+                    />
                   </div>
+                ))}
+                <div className="has-text-centered mb-5">
+                  <button 
+                    type="button" 
+                    className="button is-link is-light is-small" 
+                    onClick={() => addNestedListItem('chasse', 'lots', { nom: "", description: "", adjudicataire: "" })}
+                  >
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un lot</span>
+                  </button>
+                </div>
+
+                <h3 className="subtitle mt-5">Contacts</h3>
+                {(content.chasse?.contacts || []).map((contact, i) => (
+                  <div key={i} className="box mb-3" style={{ background: "#f9fbfd", borderRadius: 12, border: '1.5px solid #e0e7ef' }}>
+                    <div className="is-flex is-justify-content-space-between mb-2">
+                      <span className="tag is-success is-light">Contact #{i + 1}</span>
+                      <button 
+                        type="button" 
+                        className="button is-small is-danger"
+                        onClick={() => removeNestedListItem('chasse', 'contacts', i, 'ce contact')}
+                        disabled={savingSection !== null}
+                        title="Supprimer"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    <label className="label">Nom/Fonction</label>
+                    <input 
+                      className="input mb-2" 
+                      value={contact.nom || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'contacts', i, 'nom', e.target.value)}
+                      placeholder="Ex: Président de la société de chasse"
+                    />
+                    <label className="label">Téléphone</label>
+                    <input 
+                      className="input mb-2" 
+                      type="tel"
+                      value={contact.telephone || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'contacts', i, 'telephone', e.target.value)}
+                      placeholder="06 XX XX XX XX"
+                    />
+                    <label className="label">Email (optionnel)</label>
+                    <input 
+                      className="input mb-2" 
+                      type="email"
+                      value={contact.email || ""} 
+                      onChange={e => handleNestedListChange('chasse', 'contacts', i, 'email', e.target.value)}
+                      placeholder="email@exemple.fr"
+                    />
+                  </div>
+                ))}
+                <div className="has-text-centered mb-5">
+                  <button 
+                    type="button" 
+                    className="button is-link is-light is-small" 
+                    onClick={() => addNestedListItem('chasse', 'contacts', { nom: "", telephone: "", email: "" })}
+                  >
+                    <span className="icon"><i className="fas fa-plus"></i></span>
+                    <span>Ajouter un contact</span>
+                  </button>
+                </div>
+
+                {/* Bouton Enregistrer */}
+                <div className="field mt-5">
+                  <div className="control">
+                    <button
+                      type="button"
+                      className={`button is-success is-medium ${savingSection === 'chasse' ? 'is-loading' : ''}`}
+                      onClick={() => saveSection('chasse')}
+                      disabled={savingSection !== null}
+                      style={{ borderRadius: 10, fontWeight: 600, padding: '12px 32px' }}
+                    >
+                      <span className="icon"><i className="fas fa-save"></i></span>
+                      <span>Enregistrer la section Chasse</span>
+                    </button>
+                  </div>
+                  <p className="help mt-2">
+                    💡 N'oubliez pas de cliquer sur "Enregistrer" après vos modifications
+                  </p>
                 </div>
               </div>
             </>

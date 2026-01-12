@@ -929,7 +929,10 @@ export default function InfosPratiques() {
             
             {/* Calendrier des battues */}
             <div className="box" style={{ borderRadius: 12 }}>
-              <h2 className="title is-4 has-text-primary mb-4">Calendrier des battues - Saison 2024-2025</h2>
+              <h2 className="title is-4 has-text-primary mb-4">
+                <span className="icon mr-2"><i className="fas fa-calendar-alt"></i></span>
+                Calendrier des battues
+              </h2>
               
               <div className="notification is-warning mb-4">
                 <span className="icon mr-2"><i className="fas fa-exclamation-triangle"></i></span>
@@ -937,135 +940,157 @@ export default function InfosPratiques() {
                 Respectez la signalisation et les consignes des chasseurs.
               </div>
               
-              <div className="table-container">
-                <table className="table is-fullwidth">
-                  <thead>
-                    <tr className="has-background-danger-light">
-                      <th>Date</th>
-                      <th>Secteur</th>
-                      <th>Type de chasse</th>
-                      <th>Horaires</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>24 octobre 2025</td>
-                      <td>Forêt Nord</td>
-                      <td>Battue grand gibier</td>
-                      <td>8h - 17h</td>
-                    </tr>
-                    <tr>
-                      <td>15 novembre 2025</td>
-                      <td>Forêt Est</td>
-                      <td>Battue grand gibier</td>
-                      <td>8h - 17h</td>
-                    </tr>
-                    <tr>
-                      <td>29 novembre 2025</td>
-                      <td>Forêt Sud</td>
-                      <td>Battue grand gibier</td>
-                      <td>8h - 17h</td>
-                    </tr>
-                    <tr>
-                      <td>20 décembre 2025</td>
-                      <td>Forêt Nord et Est</td>
-                      <td>Battue grand gibier</td>
-                      <td>8h - 17h</td>
-                    </tr>
-                    <tr>
-                      <td>10 janvier 2026</td>
-                      <td>Forêt Sud</td>
-                      <td>Battue grand gibier</td>
-                      <td>8h - 17h</td>
-                    </tr>
-                    <tr>
-                      <td>24 janvier 2026</td>
-                      <td>Ensemble du territoire</td>
-                      <td>Battue grands gibiers</td>
-                      <td>8h - 17h</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {(pageData.chasse?.battues || []).length > 0 ? (
+                <div className="table-container">
+                  <table className="table is-fullwidth is-striped is-hoverable">
+                    <thead>
+                      <tr className="has-background-danger-light">
+                        <th>Date</th>
+                        <th>Secteur</th>
+                        <th>Type de chasse</th>
+                        <th>Horaires</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageData.chasse.battues.map((battue, index) => (
+                        <tr key={index}>
+                          <td>
+                            <strong>
+                              {battue.date ? new Date(battue.date).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              }) : 'Date non définie'}
+                            </strong>
+                          </td>
+                          <td>{battue.secteur || '-'}</td>
+                          <td>{battue.type || '-'}</td>
+                          <td>{battue.horaires || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="notification is-light has-text-centered">
+                  <span style={{ fontSize: 48, opacity: 0.3 }}>📅</span>
+                  <p className="mt-3">Aucune battue programmée pour le moment</p>
+                </div>
+              )}
             </div>
             
-            {/* Carte des lots de chasse */}
-            <div className="columns mt-5">
-              <div className="column">
-                <div className="box" style={{ borderRadius: 12 }}>
-                  <h2 className="title is-4 has-text-primary mb-4">Lots de chasse</h2>
-                  
-                  <figure className="image is-16by9 mb-4">
-                    <img 
-                      src="https://images.unsplash.com/photo-1506260408121-e353d10b87c7?auto=format&fit=crop&w=1000&q=80" 
-                      alt="Carte des lots de chasse" 
-                      style={{ borderRadius: 8, objectFit: 'cover' }}
-                    />
-                  </figure>
-                  
-                  <div className="content">
-                    <p>Le territoire de chasse de la commune est divisé en 3 lots :</p>
-                    <ul>
-                      <li><strong>Lot 1 - Nord :</strong> 450 hectares, principalement forestiers</li>
-                      <li><strong>Lot 2 - Est :</strong> 320 hectares, mixte (forêt et plaine)</li>
-                      <li><strong>Lot 3 - Sud :</strong> 380 hectares, principalement plaine</li>
-                    </ul>
-                    <p>
-                      Pour consulter la carte détaillée des lots de chasse, veuillez vous adresser à la mairie 
-                      ou télécharger le document ci-dessous.
-                    </p>
-                    
-                    <a href="#" className="button is-link is-light mt-2">
-                      <span className="icon"><i className="fas fa-download"></i></span>
-                      <span>Télécharger la carte des lots (PDF)</span>
-                    </a>
-                  </div>
+            {/* Règlementation */}
+            {pageData.chasse?.reglementation && (
+              <div className="box mt-5" style={{ borderRadius: 12 }}>
+                <h2 className="title is-4 has-text-primary mb-4">
+                  <span className="icon mr-2"><i className="fas fa-gavel"></i></span>
+                  Règlementation
+                </h2>
+                <div className="content" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
+                  {pageData.chasse.reglementation}
                 </div>
               </div>
-              
-              <div className="column">
-                <div className="box" style={{ borderRadius: 12 }}>
-                  <h2 className="title is-4 has-text-primary mb-4">Règlementation et contacts</h2>
-                  
-                  <div className="content">
-                    <p><strong>Période d'ouverture générale de la chasse :</strong></p>
-                    <p>Du 15 septembre 2025 au 28 février 2026</p>
-                    
-                    <p className="mt-4"><strong>Adjudicataires des lots de chasse :</strong></p>
-                    <ul>
-                      <li><strong>Lot 1 :</strong> Association des chasseurs du Nord - M. François Meyer</li>
-                      <li><strong>Lot 2 :</strong> Société de chasse Saint-Hubert - M. Jean-Paul Schmitt</li>
-                      <li><strong>Lot 3 :</strong> Groupement des chasseurs du Sundgau - M. Thomas Klein</li>
-                    </ul>
-                    
-                    <p className="mt-4"><strong>Règles à respecter pour les promeneurs :</strong></p>
-                    <ul>
-                      <li>Rester sur les sentiers balisés</li>
-                      <li>Porter des vêtements visibles (de préférence orange ou rouge vif)</li>
-                      <li>Tenir les chiens en laisse</li>
-                      <li>Respecter la signalisation temporaire lors des battues</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="buttons mt-4">
-                    <a href="https://www.chasseurdefrance.com/" target="_blank" rel="noopener noreferrer" className="button is-link is-light">
-                      <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                      <span>Fédération des Chasseurs</span>
-                    </a>
-                    <a href="https://www.fdc68.fr/" target="_blank" rel="noopener noreferrer" className="button is-link is-light">
-                      <span className="icon"><i className="fas fa-external-link-alt"></i></span>
-                      <span>Fédération du Haut-Rhin</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
             
-            {/* Signaler un problème lié à la chasse */}
+            {/* Lots de chasse */}
+            {(pageData.chasse?.lots || []).length > 0 && (
+              <div className="box mt-5" style={{ borderRadius: 12 }}>
+                <h2 className="title is-4 has-text-primary mb-4">
+                  <span className="icon mr-2"><i className="fas fa-map-marked-alt"></i></span>
+                  Lots de chasse
+                </h2>
+                
+                <div className="columns is-multiline">
+                  {pageData.chasse.lots.map((lot, index) => (
+                    <div key={index} className="column is-half">
+                      <div className="box has-background-light" style={{ 
+                        borderRadius: 12, 
+                        height: '100%',
+                        border: '2px solid #48c774'
+                      }}>
+                        <h3 className="title is-5 has-text-success mb-3">
+                          <span className="icon mr-2"><i className="fas fa-map-marker-alt"></i></span>
+                          {lot.nom || `Lot #${index + 1}`}
+                        </h3>
+                        {lot.description && (
+                          <p className="mb-3" style={{ whiteSpace: 'pre-wrap' }}>
+                            {lot.description}
+                          </p>
+                        )}
+                        {lot.adjudicataire && (
+                          <p className="has-text-weight-semibold">
+                            <span className="icon mr-1"><i className="fas fa-user"></i></span>
+                            Adjudicataire : {lot.adjudicataire}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Contacts */}
+            {(pageData.chasse?.contacts || []).length > 0 && (
+              <div className="box mt-5" style={{ borderRadius: 12 }}>
+                <h2 className="title is-4 has-text-primary mb-4">
+                  <span className="icon mr-2"><i className="fas fa-address-book"></i></span>
+                  Contacts
+                </h2>
+                
+                <div className="columns is-multiline">
+                  {pageData.chasse.contacts.map((contact, index) => (
+                    <div key={index} className="column is-half">
+                      <div className="box has-background-light" style={{ borderRadius: 12, height: '100%' }}>
+                        <p className="title is-5 mb-3">{contact.nom || 'Contact'}</p>
+                        {contact.telephone && (
+                          <p className="mb-2">
+                            <span className="icon mr-2"><i className="fas fa-phone"></i></span>
+                            <a href={`tel:${contact.telephone.replace(/\s/g, '')}`} className="has-text-link">
+                              <strong>{contact.telephone}</strong>
+                            </a>
+                          </p>
+                        )}
+                        {contact.email && (
+                          <p>
+                            <span className="icon mr-2"><i className="fas fa-envelope"></i></span>
+                            <a href={`mailto:${contact.email}`} className="has-text-link">
+                              {contact.email}
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Message d'information si aucune donnée */}
+            {(!pageData.chasse || 
+              ((!pageData.chasse.battues || pageData.chasse.battues.length === 0) && 
+               !pageData.chasse.reglementation && 
+               (!pageData.chasse.lots || pageData.chasse.lots.length === 0) && 
+               (!pageData.chasse.contacts || pageData.chasse.contacts.length === 0))) && (
+              <div className="notification is-warning has-text-centered mt-5">
+                <span style={{ fontSize: 48, opacity: 0.3 }}>🎯</span>
+                <p className="mt-3 is-size-5 has-text-weight-semibold">
+                  Aucune information disponible pour le moment
+                </p>
+                <p className="mt-2">
+                  Les informations sur la chasse seront publiées prochainement.
+                </p>
+              </div>
+            )}
+            
+            {/* Signaler un problème */}
             <div className="notification is-info is-light mt-5" style={{ borderRadius: 12 }}>
               <div className="columns is-vcentered">
                 <div className="column is-9">
-                  <p className="has-text-weight-bold mb-2">Signaler un problème lié à la chasse</p>
+                  <p className="has-text-weight-bold mb-2">
+                    <span className="icon mr-2"><i className="fas fa-flag"></i></span>
+                    Signaler un problème lié à la chasse
+                  </p>
                   <p>
                     Pour toute question ou problème concernant la pratique de la chasse sur la commune 
                     (non-respect des règles, comportement dangereux, etc.), veuillez contacter la mairie 
@@ -1073,7 +1098,7 @@ export default function InfosPratiques() {
                   </p>
                 </div>
                 <div className="column">
-                  <a href="/contact" className="button is-info">
+                  <a href="#" onClick={() => setActiveTab('contacts')} className="button is-info">
                     <span className="icon"><i className="fas fa-envelope"></i></span>
                     <span>Nous contacter</span>
                   </a>

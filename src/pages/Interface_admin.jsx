@@ -128,8 +128,8 @@ export default function InterfaceAdmin() {
             </div>
             {selectedPage === 'accueil' && (
               <>
-                <PageContentEditor />
                 <ActualiteAdmin />
+                <PageContentEditor />
               </>
             )}
             {selectedPage === 'demarches' && <DemarchesEditor />}
