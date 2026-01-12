@@ -107,6 +107,7 @@ export default function PageAcceuil() {
     dureeAffichage: 7, // en jours
     dateDebut: new Date().toISOString().split('T')[0],
   });
+  const [showArchived, setShowArchived] = useState(false); // Nouvel état pour afficher/masquer les archives
 
   // AJOUTER ces états après panneauForm (ligne ~108)
   const [showCreatePanneauModal, setShowCreatePanneauModal] = useState(false);
@@ -249,22 +250,85 @@ export default function PageAcceuil() {
 
   // Charger les items du panneau
   useEffect(() => {
-    fetch('/api/pageContent?page=accueil')
-      .then(res => res.ok ? res.json() : Promise.reject())
-      .then(pageContent => {
+    // Charger les items du panneau depuis pageContent ET les actualités marquées pour le panneau
+    Promise.all([
+      fetch('/api/pageContent?page=accueil').then(res => res.ok ? res.json() : []),
+      fetch('/api/actualites?afficherDans=panneau').then(res => res.ok ? res.json() : [])
+    ])
+      .then(([pageContent, actualites]) => {
         const pageContentData = pageContent?.[0] || {};
+        let pageItems = [];
+        
+        // Récupérer les items existants de pageContent
         if (pageContentData.panneauItems_json) {
           try {
             const items = typeof pageContentData.panneauItems_json === 'string'
               ? JSON.parse(pageContentData.panneauItems_json)
               : pageContentData.panneauItems_json;
-            setPanneauItems(Array.isArray(items) ? items : []);
+            pageItems = Array.isArray(items) ? items.map(item => ({
+              ...item,
+              archived: item.archived || false // S'assurer que le champ archived existe
+            })) : [];
           } catch (e) {
             console.error('Erreur parsing panneauItems_json:', e);
           }
         }
+        
+        // Convertir les actualités en items de panneau
+        const actualitesAsPanneauItems = actualites.map(actu => ({
+          id: `actu-${actu.id}`,
+          titre: actu.title,
+          description: actu.description || '',
+          image: actu.imgSrc || actu.pdfUrl || '',
+          categorie: 'divers', // Catégorie par défaut, vous pouvez ajouter un champ dans actualites si besoin
+          dateDebut: actu.date,
+          dureeAffichage: 30, // Durée par défaut
+          source: 'actualite' // Marquer la source
+        }));
+        
+        // Auto-archiver les éléments expirés
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let itemsModified = false;
+        const itemsWithAutoArchive = pageItems.map(item => {
+          // Si l'item n'est pas déjà archivé et a une date de fin
+          if (!item.archived && item.dateFin) {
+            const dateFin = new Date(item.dateFin);
+            dateFin.setHours(0, 0, 0, 0);
+            
+            // Si la date de fin est dépassée, archiver automatiquement
+            if (dateFin < today) {
+              console.log(`🗄️ Auto-archivage de: ${item.titre} (expiré le ${item.dateFin})`);
+              itemsModified = true;
+              return { ...item, archived: true };
+            }
+          }
+          return item;
+        });
+        
+        // Si des items ont été archivés, sauvegarder automatiquement
+        if (itemsModified) {
+          fetch('/api/pageContent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              page: 'accueil',
+              panneauItems_json: JSON.stringify(itemsWithAutoArchive)
+            })
+          })
+          .then(res => res.json())
+          .then(() => {
+            console.log('✅ Éléments expirés archivés automatiquement');
+            toast.success('🗄️ Éléments expirés archivés automatiquement');
+          })
+          .catch(err => console.error('❌ Erreur sauvegarde auto-archivage:', err));
+        }
+        
+        // Fusionner les deux sources
+        setPanneauItems([...itemsWithAutoArchive, ...actualitesAsPanneauItems]);
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error('Erreur chargement panneau:', err));
   }, []);
 
   // Charger les élus
@@ -617,6 +681,19 @@ export default function PageAcceuil() {
   };
 
   const handleRemoveFromPanneau = async (itemId) => {
+    // Vérifier si c'est un item partagé depuis une actualité
+    const item = panneauItems.find(i => i.id === itemId);
+    if (item && item.source === 'actualite') {
+      toast.warning(
+        <div>
+          <p className="mb-2">❌ Cet élément provient du carrousel</p>
+          <p className="is-size-7">Pour le retirer du panneau, modifiez l'actualité depuis la <strong>Gestion du carrousel</strong> et décochez "Panneau d'affichage".</p>
+        </div>,
+        { autoClose: 5000 }
+      );
+      return;
+    }
+    
     toast.info(
       <div>
         <p>Retirer cet élément du panneau d'affichage ?</p>
@@ -626,7 +703,12 @@ export default function PageAcceuil() {
             onClick={async () => {
               toast.dismiss();
               const loadingId = toast.loading('Suppression...');
-              const updatedItems = panneauItems.filter(item => item.id !== itemId);
+              
+              // Filtrer seulement les items qui ne viennent pas des actualités
+              const updatedItems = panneauItems.filter(item => 
+                item.id !== itemId && (!item.source || item.source !== 'actualite')
+              );
+              
               setPanneauItems(updatedItems);
 
               try {
@@ -638,6 +720,35 @@ export default function PageAcceuil() {
                     panneauItems_json: JSON.stringify(updatedItems)
                   })
                 });
+                
+                // Recharger tous les items (pageContent + actualités)
+                const [pageContent, actualites] = await Promise.all([
+                  fetch('/api/pageContent?page=accueil').then(res => res.json()),
+                  fetch('/api/actualites?afficherDans=panneau').then(res => res.json())
+                ]);
+                
+                const pageContentData = pageContent?.[0] || {};
+                let pageItems = [];
+                if (pageContentData.panneauItems_json) {
+                  const items = typeof pageContentData.panneauItems_json === 'string'
+                    ? JSON.parse(pageContentData.panneauItems_json)
+                    : pageContentData.panneauItems_json;
+                  pageItems = Array.isArray(items) ? items : [];
+                }
+                
+                const actualitesAsPanneauItems = actualites.map(actu => ({
+                  id: `actu-${actu.id}`,
+                  titre: actu.title,
+                  description: actu.description || '',
+                  pimage: actu.imgSrc || actu.pdfUrl || '',
+                  categorie: 'divers',
+                  dateDebut: actu.date,
+                  dureeAffichage: 30,
+                  source: 'actualite'
+                }));
+                
+                setPanneauItems([...pageItems, ...actualitesAsPanneauItems]);
+                
                 toast.update(loadingId, {
                   render: 'Élément retiré',
                   type: 'success',
@@ -667,6 +778,59 @@ export default function PageAcceuil() {
         closeOnClick: false,
       }
     );
+  };
+
+  // Fonction pour archiver/désarchiver un item du panneau
+  const handleToggleArchive = async (itemId) => {
+    const item = panneauItems.find(i => i.id === itemId);
+    
+    if (!item) return;
+    
+    // Vérifier si c'est une actualité partagée (non modifiable)
+    if (item.source === 'actualite') {
+      toast.warning("⚠️ Impossible d'archiver une actualité partagée. Gérez-la depuis le carrousel.", {
+        position: "top-center",
+        autoClose: 4000,
+      });
+      return;
+    }
+    
+    const updatedItems = panneauItems.map(i => 
+      i.id === itemId ? { ...i, archived: !i.archived } : i
+    );
+    
+    // Filtrer les actualités (source = 'actualite') avant de sauvegarder
+    const itemsToSave = updatedItems.filter(i => i.source !== 'actualite');
+    
+    console.log('Items à sauvegarder:', itemsToSave);
+    
+    try {
+      const response = await fetch('/api/pageContent', {
+        method: 'POST',  // Utiliser POST au lieu de PUT
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: SELECTED_PAGE,
+          panneauItems_json: JSON.stringify(itemsToSave)
+        })
+      });
+      
+      const data = await response.json();
+      console.log('Réponse API:', data);
+      
+      if (response.ok && data.success) {
+        setPanneauItems(updatedItems);
+        toast.success(item.archived ? '📂 Élément désarchivé' : '📦 Élément archivé', {
+          position: "top-right",
+          autoClose: 2000,
+        });
+      } else {
+        console.error('Erreur API:', response.status, data);
+        throw new Error(data.error || 'Erreur lors de la mise à jour');
+      }
+    } catch (error) {
+      console.error('Erreur complète:', error);
+      toast.error(`❌ Erreur lors de l'archivage: ${error.message}`);
+    }
   };
 
   // AJOUTER ces handlers après handleRemoveFromPanneau (ligne ~590)
@@ -808,6 +972,18 @@ export default function PageAcceuil() {
   const handleEditPanneau = (index) => {
     const item = panneauItems[index];
     if (!item) return;
+    
+    // Ne pas permettre l'édition des items partagés depuis une actualité
+    if (item.source === 'actualite') {
+      toast.warning(
+        <div>
+          <p className="mb-2">❌ Cet élément provient du carrousel</p>
+          <p className="is-size-7">Modifiez-le depuis la <strong>Gestion du carrousel</strong>.</p>
+        </div>,
+        { autoClose: 5000 }
+      );
+      return;
+    }
 
     // Calculer la durée d'affichage
     const dateDebut = new Date(item.dateDebut);
@@ -1257,7 +1433,7 @@ export default function PageAcceuil() {
             <span className="icon">
               <i className="fas fa-newspaper"></i>
             </span>
-            <span>Ajouter depuis les actualités</span>
+            <span>Ajouter depuis le carrousel </span>
           </button>
           
           <button 
@@ -1269,21 +1445,36 @@ export default function PageAcceuil() {
             </span>
             <span>Créer un nouveau document</span>
           </button>
+          
+          {/* Bouton pour afficher/masquer les archives */}
+          <button 
+            className={`button ${showArchived ? 'is-warning' : 'is-light'}`}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            <span className="icon">
+              <i className={`fas fa-${showArchived ? 'eye' : 'archive'}`}></i>
+            </span>
+            <span>{showArchived ? 'Masquer les archives' : 'Afficher les archives'}</span>
+          </button>
         </div>
 
-        {panneauItems.length === 0 ? (
+        {panneauItems.filter(item => showArchived ? item.archived : !item.archived).length === 0 ? (
           <div className="notification is-light is-info">
             <p className="has-text-centered">
               <span style={{ fontSize: 48, opacity: 0.3 }}>📋</span>
             </p>
             <p className="has-text-centered">
-              Aucun élément sur le panneau d'affichage.<br />
-              Ajoutez des actualités existantes ou créez de nouveaux documents.
+              {showArchived 
+                ? 'Aucun élément archivé.'
+                : 'Aucun élément sur le panneau d\'affichage.'}<br />
+              {!showArchived && 'Ajoutez des actualités existantes ou créez de nouveaux documents.'}
             </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
-            {panneauItems.map((item, index) => {
+            {panneauItems
+              .filter(item => showArchived ? item.archived : !item.archived)
+              .map((item, index) => {
               const cat = CATEGORIES.find(c => c.value === item.categorie);
               const today = new Date();
               today.setHours(0, 0, 0, 0);
@@ -1313,17 +1504,34 @@ export default function PageAcceuil() {
                   key={item.id}
                   className="box"
                   style={{ 
-                    background: isExpired ? '#f5f5f5' : 'white', 
+                    background: item.archived ? '#f0f0f0' : (isExpired ? '#f5f5f5' : 'white'), 
                     borderRadius: 16,
-                    borderLeft: `6px solid ${cat?.color || '#ccc'}`,
-                    opacity: isExpired ? 0.7 : 1,
+                    borderLeft: `6px solid ${item.archived ? '#888' : (cat?.color || '#ccc')}`,
+                    opacity: item.archived ? 0.6 : (isExpired ? 0.7 : 1),
                     position: 'relative',
                     boxShadow: isExpired ? '0 2px 8px rgba(0,0,0,0.05)' : '0 4px 12px rgba(0,0,0,0.08)',
                     transition: 'all 0.3s ease'
                   }}
                 >
+                  {/* Badge "Archivé" */}
+                  {item.archived && (
+                    <span 
+                      className="tag is-dark"
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        fontSize: 11,
+                        padding: '4px 10px',
+                        zIndex: 10
+                      }}
+                    >
+                      📦 Archivé
+                    </span>
+                  )}
+                  
                   {/* Badge "Document personnalisé" */}
-                  {item.isCustom && (
+                  {item.isCustom && !item.archived && (
                     <span 
                       className="tag is-success is-light"
                       style={{
@@ -1407,6 +1615,11 @@ export default function PageAcceuil() {
                   
                   <p className="has-text-weight-bold mb-2" style={{ fontSize: 16, color: '#333' }}>
                     {item.titre}
+                    {item.source === 'actualite' && (
+                      <span className="tag is-warning is-light ml-2" style={{ verticalAlign: 'middle' }}>
+                        🎠 Carrousel
+                      </span>
+                    )}
                   </p>
                   
                   {item.description && (
@@ -1455,21 +1668,43 @@ export default function PageAcceuil() {
                   </div>
 
                   <div className="buttons mt-3">
-                    <button 
-                      className="button is-info is-light is-fullwidth" 
-                      onClick={() => handleEditPanneau(panneauItems.indexOf(item))}
-                    >
-                      <span className="icon">
-                        <i className="fas fa-edit"></i>
-                      </span>
-                      <span>Modifier</span>
-                    </button>
-                    <button 
-                      className="button is-danger is-fullwidth" 
-                      onClick={() => handleRemoveFromPanneau(item.id)}
-                    >
-                      <span className="icon">🗑️</span>
-                    </button>
+                    {item.source === 'actualite' ? (
+                      <div className="notification is-warning is-light p-3">
+                        <p className="is-size-7">
+                          🎠 <strong>Élément partagé depuis le carrousel</strong><br />
+                          Modifiez-le depuis la gestion du carrousel
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <button 
+                          className="button is-info is-light is-fullwidth" 
+                          onClick={() => handleEditPanneau(panneauItems.indexOf(item))}
+                        >
+                          <span className="icon">
+                            <i className="fas fa-edit"></i>
+                          </span>
+                          <span>Modifier</span>
+                        </button>
+                        
+                        <button 
+                          className={`button is-fullwidth ${item.archived ? 'is-success' : 'is-warning'}`}
+                          onClick={() => handleToggleArchive(item.id)}
+                        >
+                          <span className="icon">
+                            <i className={`fas fa-${item.archived ? 'box-open' : 'archive'}`}></i>
+                          </span>
+                          <span>{item.archived ? 'Désarchiver' : 'Archiver'}</span>
+                        </button>
+                        
+                        <button 
+                          className="button is-danger is-fullwidth" 
+                          onClick={() => handleRemoveFromPanneau(item.id)}
+                        >
+                          <span className="icon">🗑️</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );

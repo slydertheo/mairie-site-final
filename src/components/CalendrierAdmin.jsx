@@ -173,11 +173,27 @@ export default function EvenementAdmin() {
   const formRef = useRef(null);
 
   useEffect(() => {
-    fetch('/api/pageContent?page=accueil')
-      .then(res => res.ok ? res.json() : Promise.reject(new Error('Impossible de charger le contenu')))
-      .then(pageContent => {
+    // Charger les événements depuis pageContent ET les actualités marquées pour le calendrier
+    Promise.all([
+      fetch('/api/pageContent?page=accueil').then(res => res.ok ? res.json() : []),
+      fetch('/api/actualites?afficherDans=calendrier').then(res => res.ok ? res.json() : [])
+    ])
+      .then(([pageContent, actualites]) => {
         const pageContentData = pageContent?.[0] || {};
-        setEvents(normalizeEvents(pageContentData));
+        const pageEvents = normalizeEvents(pageContentData);
+        
+        // Convertir les actualités en événements
+        const actualitesAsEvents = actualites.map(actu => ({
+          id: `actu-${actu.id}`,
+          titre: actu.title,
+          date: actu.date,
+          description: actu.description || '',
+          lieu: '',
+          source: 'actualite' // Marquer la source pour affichage différencié
+        }));
+        
+        // Combiner les deux sources
+        setEvents([...pageEvents, ...actualitesAsEvents]);
       })
       .catch(error => console.error('Erreur lors du chargement des données:', error));
   }, []);
@@ -204,6 +220,13 @@ export default function EvenementAdmin() {
   const handleEdit = (id) => {
     const ev = events.find(e => e.id === id);
     if (!ev) return;
+    
+    // Ne pas permettre l'édition des événements venant des actualités
+    if (ev.source === 'actualite') {
+      toast.warning('Cet événement provient du carrousel. Modifiez-le depuis la gestion du carrousel.');
+      return;
+    }
+    
     setEditMode(true);
     setEditId(id);
     setForm({
@@ -228,9 +251,31 @@ export default function EvenementAdmin() {
       const newEvent = { id: `event-${Date.now()}`, ...form };
       updatedEvents = [...events, newEvent];
     }
+    
+    // Filtrer seulement les événements qui ne viennent pas des actualités
+    const pageEvents = updatedEvents.filter(ev => !ev.source || ev.source !== 'actualite');
+    
     try {
-      await persistEvents(updatedEvents);
-      setEvents(updatedEvents);
+      await persistEvents(pageEvents);
+      
+      // Recharger tous les événements (pageContent + actualités)
+      const [pageContent, actualites] = await Promise.all([
+        fetch('/api/pageContent?page=accueil').then(res => res.json()),
+        fetch('/api/actualites?afficherDans=calendrier').then(res => res.json())
+      ]);
+      
+      const pageContentData = pageContent?.[0] || {};
+      const pageEventsRefreshed = normalizeEvents(pageContentData);
+      const actualitesAsEvents = actualites.map(actu => ({
+        id: `actu-${actu.id}`,
+        titre: actu.title,
+        date: actu.date,
+        description: actu.description || '',
+        lieu: '',
+        source: 'actualite'
+      }));
+      
+      setEvents([...pageEventsRefreshed, ...actualitesAsEvents]);
       setForm({ titre: '', date: '', description: '', lieu: '' });
       setEditMode(false);
       setEditId(null);
@@ -243,6 +288,14 @@ export default function EvenementAdmin() {
   };
 
   const handleDelete = async id => {
+    const ev = events.find(e => e.id === id);
+    
+    // Ne pas permettre la suppression des événements venant des actualités
+    if (ev && ev.source === 'actualite') {
+      toast.warning('Cet événement provient du carrousel. Supprimez-le depuis la gestion du carrousel.');
+      return;
+    }
+    
     // Afficher toast de confirmation avec bouton
     toast.info(
       <div>
@@ -258,9 +311,27 @@ export default function EvenementAdmin() {
               setLoading(true);
               
               try {
-                const updatedEvents = events.filter(ev => ev.id !== id);
-                await persistEvents(updatedEvents);
-                setEvents(updatedEvents);
+                const pageEvents = events.filter(ev => (!ev.source || ev.source !== 'actualite') && ev.id !== id);
+                await persistEvents(pageEvents);
+                
+                // Recharger tous les événements
+                const [pageContent, actualites] = await Promise.all([
+                  fetch('/api/pageContent?page=accueil').then(res => res.json()),
+                  fetch('/api/actualites?afficherDans=calendrier').then(res => res.json())
+                ]);
+                
+                const pageContentData = pageContent?.[0] || {};
+                const pageEventsRefreshed = normalizeEvents(pageContentData);
+                const actualitesAsEvents = actualites.map(actu => ({
+                  id: `actu-${actu.id}`,
+                  titre: actu.title,
+                  date: actu.date,
+                  description: actu.description || '',
+                  lieu: '',
+                  source: 'actualite'
+                }));
+                
+                setEvents([...pageEventsRefreshed, ...actualitesAsEvents]);
                 
                 // Remplacer toast de chargement par toast de succès
                 toast.update(loadingToastId, { 
@@ -327,6 +398,22 @@ export default function EvenementAdmin() {
     <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
       <h2 className="title is-4 mb-4 has-text-link">🗓️ Gestion du calendrier des événements</h2>
       
+      {/* Notification d'information sur le partage */}
+      <div className="notification is-success is-light mb-4">
+        <div className="content">
+          <p className="has-text-weight-bold mb-2">
+            📅 Événements partagés depuis le carrousel
+          </p>
+          <p className="is-size-7 mb-2">
+            Les actualités marquées pour le <strong>calendrier</strong> s'affichent automatiquement ici.
+            Vous pouvez aussi créer des événements spécifiques au calendrier.
+          </p>
+          <p className="is-size-7">
+            <span className="tag is-warning is-light">🎠</span> = Événement partagé depuis le carrousel (modification uniquement depuis le carrousel)
+          </p>
+        </div>
+      </div>
+      
       {/* Modal pour afficher les événements du jour */}
       <div className={`modal ${showModal ? 'is-active' : ''}`}>
         <div className="modal-background" onClick={() => setShowModal(false)}></div>
@@ -340,7 +427,16 @@ export default function EvenementAdmin() {
               <p>Aucun événement pour ce jour.</p>
             ) : (
               selectedDayEvents.map(ev => (
-                <div key={ev.id} className="box mb-2" style={{ borderRadius: 8, background: '#f9fbfd' }}>
+                <div key={ev.id} className="box mb-2" style={{ 
+                  borderRadius: 8, 
+                  background: ev.source === 'actualite' ? '#fff3cd' : '#f9fbfd',
+                  borderLeft: ev.source === 'actualite' ? '4px solid #ffc107' : '4px solid #3273dc'
+                }}>
+                  {ev.source === 'actualite' && (
+                    <span className="tag is-warning is-light mb-2">
+                      🎠 Depuis le carrousel
+                    </span>
+                  )}
                   <h4 className="title is-6 has-text-link">{ev.titre}</h4>
                   <p className="is-size-7"><strong>Date:</strong> {ev.date}</p>
                   <p className="is-size-7"><strong>Lieu:</strong> {ev.lieu || 'N/A'}</p>
@@ -455,20 +551,33 @@ export default function EvenementAdmin() {
           </thead>
           <tbody>
             {events.map(ev => (
-              <tr key={ev.id}>
-                <td>{ev.date}</td>
+              <tr key={ev.id} style={{ 
+                background: ev.source === 'actualite' ? '#fffbf0' : 'transparent' 
+              }}>
+                <td>
+                  {ev.date}
+                  {ev.source === 'actualite' && (
+                    <span className="tag is-warning is-light is-small ml-2">🎠</span>
+                  )}
+                </td>
                 <td>{ev.titre}</td>
                 <td>{ev.description}</td>
                 <td>{ev.lieu}</td>
                 <td>
-                  <div className="buttons are-small">
-                    <button className="button is-info" onClick={() => handleEdit(ev.id)} disabled={loading}>
-                      ✏️
-                    </button>
-                    <button className="button is-danger" onClick={() => handleDelete(ev.id)} disabled={loading}>
-                      🗑️
-                    </button>
-                  </div>
+                  {ev.source === 'actualite' ? (
+                    <span className="tag is-light is-small" title="Événement partagé depuis le carrousel">
+                      📍 Partagé
+                    </span>
+                  ) : (
+                    <div className="buttons are-small">
+                      <button className="button is-info" onClick={() => handleEdit(ev.id)} disabled={loading}>
+                        ✏️
+                      </button>
+                      <button className="button is-danger" onClick={() => handleDelete(ev.id)} disabled={loading}>
+                        🗑️
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

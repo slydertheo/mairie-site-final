@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 // import 'bulma/css/bulma.min.css'; // Bulma est déjà importé globalement dans _app.tsx
 import QuickBoxEcole from '../components/QuickBoxEcole';
-import ActualiteCarousel from '../components/CarrouselPublic';
+import ActualiteCarousel from './CarrouselPublic';
 import useHeroImage from '../hooks/useHeroImage';
 
 // Hook personnalisé pour les animations au défilement
@@ -93,6 +93,9 @@ export default function PageAcceuil() {
   const [showPanneauDetailModal, setShowPanneauDetailModal] = useState(false); // Ajout
   const [elus, setElus] = useState([]); // Ajouter cet état
   const [showAllElus, setShowAllElus] = useState(false); // AJOUTER cet état
+  const [showArchivesModal, setShowArchivesModal] = useState(false); // Modale des archives
+  const [archivedItems, setArchivedItems] = useState([]); // Items archivés
+  const [showAllEvents, setShowAllEvents] = useState(false); // Afficher tous les événements ou limité à 5
 
   useEffect(() => {
     fetch('/api/pageContent?page=accueil')
@@ -153,7 +156,8 @@ export default function PageAcceuil() {
 
         setEvents(agendaEvents);
 
-        // Charger panneauItems avec toutes les propriétés
+        // Charger panneauItems depuis pageContent ET les actualités partagées
+        let pageItems = [];
         if (pageContentData.panneauItems_json) {
           try {
             const items = typeof pageContentData.panneauItems_json === 'string'
@@ -161,7 +165,7 @@ export default function PageAcceuil() {
               : pageContentData.panneauItems_json;
             
             // S'assurer que tous les champs sont présents
-            const normalizedItems = (Array.isArray(items) ? items : []).map(item => ({
+            pageItems = (Array.isArray(items) ? items : []).map(item => ({
               id: item.id,
               titre: item.titre || '',
               description: item.description || '',
@@ -171,16 +175,63 @@ export default function PageAcceuil() {
               categorie: item.categorie || 'arrete',
               dateDebut: item.dateDebut || '',
               dateFin: item.dateFin || '',
-              dureeAffichage: item.dureeAffichage || 7
+              dureeAffichage: item.dureeAffichage || 7,
+              archived: item.archived || false // Important: charger le statut archivé
             }));
             
-            setPanneauItems(normalizedItems);
-            console.log('PanneauItems chargés:', normalizedItems); // Debug
+            console.log('PanneauItems de pageContent:', pageItems); // Debug
           } catch (e) {
             console.error('Erreur parsing panneauItems_json:', e);
-            setPanneauItems([]);
           }
         }
+        
+        // Charger les actualités marquées pour le panneau
+        fetch('/api/actualites?afficherDans=panneau')
+          .then(res => res.ok ? res.json() : [])
+          .then(actualites => {
+            console.log('Actualités pour panneau:', actualites); // Debug
+            
+            // Convertir les actualités en items de panneau
+            const actualitesAsPanneauItems = actualites.map(actu => {
+              // Pour une actualité, on l'affiche à partir d'aujourd'hui jusqu'à la date de l'événement + 30 jours
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const dateEvenement = new Date(actu.date);
+              const dateFin = new Date(dateEvenement);
+              dateFin.setDate(dateFin.getDate() + 30);
+              
+              return {
+                id: `actu-${actu.id}`,
+                titre: actu.title,
+                description: actu.description || '',
+                image: actu.imgSrc || actu.pdfUrl || '',
+                date: actu.date,
+                lieu: '',
+                categorie: 'divers',
+                dateDebut: today.toISOString().split('T')[0],
+                dateFin: dateFin.toISOString().split('T')[0],
+                dureeAffichage: 30,
+                source: 'actualite'
+              };
+            });
+            
+            console.log('Actualités converties:', actualitesAsPanneauItems); // Debug
+            
+            // Fusionner les deux sources
+            const allPanneauItems = [...pageItems, ...actualitesAsPanneauItems];
+            setPanneauItems(allPanneauItems);
+            console.log('Total PanneauItems:', allPanneauItems); // Debug
+            
+            // Extraire les éléments archivés depuis toutes les sources
+            const archived = allPanneauItems.filter(item => item.archived);
+            setArchivedItems(archived);
+            console.log('Archives trouvées:', archived); // Debug
+          })
+          .catch(err => {
+            console.error('Erreur chargement actualités panneau:', err);
+            setPanneauItems(pageItems); // Utiliser au moins les items de pageContent
+          });
 
         // Charger les élus - AJOUTER APRÈS panneauItems
         if (pageContentData.elus_json) {
@@ -319,20 +370,36 @@ export default function PageAcceuil() {
       {/* Carrousel des actualités */}
       <div className="container" style={{ maxWidth: 1200, margin: '0 auto 48px auto', padding: '0 20px' }}>
         <AnimateOnScroll animation="fade-up" delay={100}>
-          <h2 className="title is-4 has-text-primary mb-4" style={{
+          <h2 className="title is-4 has-text-primary mb-5" style={{
             fontFamily: 'Merriweather, serif',
             fontWeight: 700,
             color: '#1277c6',
-            textAlign: 'center'
+            textAlign: 'center',
+            fontSize: '1.8rem',
+            textShadow: '0 2px 8px rgba(18, 119, 198, 0.1)'
           }}>
-            <span style={{ fontSize: '1.5rem', marginRight: '8px' }}>📰</span>
+            <span style={{ fontSize: '2rem', marginRight: '12px' }}>📰</span>
             Actualités de Friesen
           </h2>
           <div style={{ 
-            borderRadius: 16,
-            overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(18, 119, 198, 0.15)'
+            borderRadius: 20,
+            overflow: 'visible',
+            padding: '2rem',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eaf6ff 100%)',
+            boxShadow: '0 10px 40px rgba(18, 119, 198, 0.15), 0 2px 8px rgba(18, 119, 198, 0.1)',
+            border: '1px solid rgba(18, 119, 198, 0.1)',
+            position: 'relative'
           }}>
+            {/* Effet de brillance décoratif */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              background: 'linear-gradient(90deg, transparent, rgba(18, 119, 198, 0.5), transparent)',
+              borderRadius: '20px 20px 0 0'
+            }}></div>
             <ActualiteCarousel actualites={actualites} />
           </div>
         </AnimateOnScroll>
@@ -346,7 +413,7 @@ export default function PageAcceuil() {
               <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
                 fontFamily: 'Merriweather, serif',
                 fontWeight: 700,
-                color: '#a97c50'
+                color: '#1277c6'
               }}>{content.motMaire_titre || "Mot du Maire"}</h2>
               <div className="box p-5" style={{
                 background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
@@ -357,7 +424,7 @@ export default function PageAcceuil() {
                 <div className="columns is-vcentered">
                   {/* Colonne pour la photo */}
                   <div className="column is-narrow">
-                    <figure className="image is-128x128" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '4px solid #a97c50', boxShadow: '0 2px 12px #a97c5022' }}>
+                    <figure className="image is-128x128" style={{ margin: '0 auto', borderRadius: '50%', overflow: 'hidden', border: '4px solid #1277c6', boxShadow: '0 2px 12px rgba(18, 119, 198, 0.15)' }}>
                       <img
                         className="is-rounded"
                         src={content.motMaire_photo || "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=200&q=80"}
@@ -375,7 +442,8 @@ export default function PageAcceuil() {
                   <div className="column">
                     <div className="has-text-link has-text-weight-bold mb-3" style={{
                       fontSize: '1.15rem',
-                      fontFamily: 'Merriweather, serif'
+                      fontFamily: 'Merriweather, serif',
+                      color: '#1277c6'
                     }}>
                       {content.motMaire_accroche || "Chères habitantes, chers habitants"}
                     </div>
@@ -389,7 +457,7 @@ export default function PageAcceuil() {
                       {content.motMaire}
                     </div>
                     <div className="has-text-right mt-4">
-                      <div className="has-text-weight-bold" style={{ color: '#a97c50', fontSize: 17 }}>{content.motMaire_nom || "Pierre Durand"}</div>
+                      <div className="has-text-weight-bold" style={{ color: '#1277c6', fontSize: 17 }}>{content.motMaire_nom || "Pierre Durand"}</div>
                       <div className="is-italic" style={{ fontSize: '0.95rem', color: '#888' }}>{content.motMaire_titre_signature || "Maire de Friesen"}</div>
                     </div>
                   </div>
@@ -466,19 +534,61 @@ export default function PageAcceuil() {
                     <div style={{ width: 7, height: 7, background: '#bfa16b', borderRadius: '50%', opacity: 0.7 }} />
                   </div>
                   
-                  <h2 className="title is-4 has-text-primary mb-5" style={{
-                    textAlign: 'center',
-                    letterSpacing: 1,
-                    fontWeight: 800,
-                    textShadow: '0 2px 8px #fff, 0 1px 0 #bfa16b',
-                    color: '#a97c50',
-                    marginBottom: 32,
-                    textTransform: 'uppercase',
-                    letterSpacing: 2,
-                    fontFamily: 'serif'
-                  }}>
-                    🗂️ Panneau d'affichage du village
-                  </h2>
+                  <div style={{ marginBottom: 24 }}>
+                    <h2 className="title is-4 has-text-primary" style={{
+                      textAlign: 'center',
+                      letterSpacing: 1,
+                      fontWeight: 800,
+                      textShadow: '0 2px 8px #fff, 0 1px 0 #bfa16b',
+                      color: '#a97c50',
+                      textTransform: 'uppercase',
+                      letterSpacing: 2,
+                      fontFamily: 'serif',
+                      margin: 0,
+                      marginBottom: 16
+                    }}>
+                      🗂️ Panneau d'affichage du village
+                    </h2>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <a
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowArchivesModal(true);
+                        }}
+                        href="#"
+                        style={{
+                          background: 'linear-gradient(135deg, #d4af37 0%, #aa8b2c 100%)',
+                          color: 'white',
+                          padding: '8px 18px',
+                          borderRadius: 20,
+                          textDecoration: 'none',
+                          fontSize: 13,
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          boxShadow: '0 3px 10px rgba(212, 175, 55, 0.4)',
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                          border: '2px solid #bfa16b'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(212, 175, 55, 0.5)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #e5c158 0%, #bfa16b 100%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                          e.currentTarget.style.boxShadow = '0 3px 10px rgba(212, 175, 55, 0.4)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #d4af37 0%, #aa8b2c 100%)';
+                        }}
+                      >
+                        <span>📦</span>
+                        <span>Archives</span>
+                      </a>
+                    </div>
+                  </div>
                   
                   <div style={{
                     display: 'flex',
@@ -488,6 +598,9 @@ export default function PageAcceuil() {
                   }}>
                     {panneauItems
                       .filter(item => {
+                        // Exclure les éléments archivés
+                        if (item.archived) return false;
+                        
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         const dateDebut = new Date(item.dateDebut);
@@ -668,19 +781,84 @@ export default function PageAcceuil() {
                 color: '#1277c6'
               }}>{content.agenda_titre || "Agenda des événements"}</h2>
               <div className="mb-4">
-                {events.length > 0 ? (
-                  events.map((event, index) => (
-                    <AgendaItem
-                      key={event.id || index}
-                      title={event.titre || event.title}
-                      date={event.date}
-                      image={event.image}
-                      lieu={event.lieu}
-                    />
-                  ))
-                ) : (
-                  <p className="has-text-grey has-text-centered">Aucun événement à venir</p>
-                )}
+                {(() => {
+                  const uniqueEvents = [];
+                  const seenTitles = new Set();
+                  
+                  events.forEach(event => {
+                    const titre = event.titre || event.title;
+                    if (!seenTitles.has(titre)) {
+                      seenTitles.add(titre);
+                      uniqueEvents.push(event);
+                    }
+                  });
+                  
+                  const eventsToDisplay = showAllEvents ? uniqueEvents : uniqueEvents.slice(0, 5);
+                  
+                  return eventsToDisplay.length > 0 ? (
+                    <>
+                      {eventsToDisplay.map((event, index) => (
+                        <AgendaItem
+                          key={event.id || index}
+                          title={event.titre || event.title}
+                          date={event.date}
+                          image={event.image}
+                          lieu={event.lieu}
+                        />
+                      ))}
+                      
+                      {uniqueEvents.length > 5 && !showAllEvents && (
+                        <button
+                          onClick={() => setShowAllEvents(true)}
+                          className="button is-small is-light is-fullwidth mt-3"
+                          style={{
+                            borderRadius: 8,
+                            fontWeight: 600,
+                            border: '2px solid #1277c6',
+                            color: '#1277c6',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#1277c6';
+                            e.currentTarget.style.color = 'white';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#1277c6';
+                          }}
+                        >
+                          ⬇️ Afficher plus ({uniqueEvents.length - 5} de plus)
+                        </button>
+                      )}
+                      
+                      {showAllEvents && uniqueEvents.length > 5 && (
+                        <button
+                          onClick={() => setShowAllEvents(false)}
+                          className="button is-small is-light is-fullwidth mt-3"
+                          style={{
+                            borderRadius: 8,
+                            fontWeight: 600,
+                            border: '2px solid #1277c6',
+                            color: '#1277c6',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#1277c6';
+                            e.currentTarget.style.color = 'white';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#1277c6';
+                          }}
+                        >
+                          ⬆️ Afficher moins
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <p className="has-text-grey has-text-centered">Aucun événement à venir</p>
+                  );
+                })()}
                 <a
                   href="#"
                   className="is-link is-underlined ml-4"
@@ -978,13 +1156,13 @@ export default function PageAcceuil() {
               <h2 className="title is-5 has-text-primary mb-2 mt-5" style={{
                 fontFamily: 'Merriweather, serif',
                 fontWeight: 700,
-                color: '#a97c50'
+                color: '#1277c6'
               }}>La Municipalité</h2>
               <div className="box" style={{
-                background: 'linear-gradient(120deg, #fffbe6 80%, #f8fafc 100%)',
+                background: 'linear-gradient(120deg, #f8fafc 80%, #eaf6ff 100%)',
                 padding: '18px',
                 borderRadius: 14,
-                boxShadow: '0 2px 8px #a97c5010'
+                boxShadow: '0 2px 8px rgba(18, 119, 198, 0.1)'
               }}>
                 {elus.length === 0 ? (
                   <div className="notification is-light has-text-centered">
@@ -1077,27 +1255,27 @@ export default function PageAcceuil() {
                             fontWeight: 600,
                             fontSize: 16,
                             padding: '12px 32px',
-                            border: '2px solid #a97c50',
-                            color: '#a97c50',
+                            border: '2px solid #1277c6',
+                            color: '#1277c6',
                             background: 'transparent',
                             transition: 'all 0.3s ease',
-                            boxShadow: '0 2px 8px #a97c5020',
+                            boxShadow: '0 2px 8px rgba(18, 119, 198, 0.2)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 10,
                             margin: '0 auto'
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.background = '#a97c50';
+                            e.currentTarget.style.background = '#1277c6';
                             e.currentTarget.style.color = 'white';
                             e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.boxShadow = '0 6px 20px #a97c5040';
+                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(18, 119, 198, 0.4)';
                           }}
                           onMouseLeave={e => {
                             e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = '#a97c50';
+                            e.currentTarget.style.color = '#1277c6';
                             e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px #a97c5020';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(18, 119, 198, 0.2)';
                           }}
                         >
                           <span style={{ fontSize: 20 }}>👥</span>
@@ -1116,15 +1294,15 @@ export default function PageAcceuil() {
                         gap: 6,
                         padding: '8px 16px',
                         borderRadius: 8,
-                        background: '#a97c5010',
+                        background: 'rgba(18, 119, 198, 0.1)',
                         transition: 'all 0.3s ease'
                       }}
                       onMouseEnter={e => {
-                        e.currentTarget.style.background = '#a97c5020';
+                        e.currentTarget.style.background = 'rgba(18, 119, 198, 0.2)';
                         e.currentTarget.style.transform = 'translateX(5px)';
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.background = '#a97c5010';
+                        e.currentTarget.style.background = 'rgba(18, 119, 198, 0.1)';
                         e.currentTarget.style.transform = 'translateX(0)';
                       }}
                       >
@@ -1382,6 +1560,162 @@ export default function PageAcceuil() {
                   <span>Voir sur le site externe</span>
                 </a>
               )}
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Archives */}
+      {showArchivesModal && (
+        <div className="modal is-active">
+          <div className="modal-background" onClick={() => setShowArchivesModal(false)}></div>
+          <div className="modal-card" style={{ maxWidth: "1000px", width: "95%" }}>
+            <header className="modal-card-head" style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white'
+            }}>
+              <p className="modal-card-title" style={{ color: 'white' }}>
+                📦 Archives du panneau d'affichage
+              </p>
+              <button 
+                className="delete" 
+                aria-label="close" 
+                onClick={() => setShowArchivesModal(false)}
+              ></button>
+            </header>
+            <section className="modal-card-body">
+              {archivedItems.length > 0 ? (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: '1.5rem'
+                }}>
+                  {archivedItems.map(item => {
+                    const cat = CATEGORIES[item.categorie] || CATEGORIES['divers'];
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="box"
+                        style={{
+                          backgroundColor: cat.bg,
+                          border: cat.border,
+                          borderRadius: 12,
+                          boxShadow: `0 4px 12px ${cat.shadow}`,
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                        onClick={() => {
+                          setSelectedPanneauItem(item);
+                          setShowPanneauDetailModal(true);
+                          // On garde la modal des archives ouverte en arrière-plan
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.boxShadow = `0 8px 20px ${cat.shadow}`;
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = `0 4px 12px ${cat.shadow}`;
+                        }}
+                      >
+                        {/* Badge "Archivé" */}
+                        <span style={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          backgroundColor: '#6b7280',
+                          color: 'white',
+                          padding: '4px 10px',
+                          borderRadius: 12,
+                          fontSize: '0.75rem',
+                          fontWeight: 600
+                        }}>
+                          📦 Archivé
+                        </span>
+
+                        {/* Icône catégorie */}
+                        <div style={{
+                          fontSize: '2.5rem',
+                          marginBottom: '0.75rem',
+                          textAlign: 'center'
+                        }}>
+                          {cat.icon}
+                        </div>
+
+                        {/* Titre */}
+                        <h3 style={{
+                          fontSize: '1.1rem',
+                          fontWeight: 700,
+                          color: cat.color,
+                          marginBottom: '0.5rem',
+                          textAlign: 'center'
+                        }}>
+                          {item.titre}
+                        </h3>
+
+                        {/* Tag catégorie */}
+                        <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            backgroundColor: cat.color,
+                            color: 'white',
+                            padding: '4px 12px',
+                            borderRadius: 12,
+                            fontSize: '0.75rem',
+                            fontWeight: 600
+                          }}>
+                            {cat.label}
+                          </span>
+                        </div>
+
+                        {/* Description courte */}
+                        {item.description && (
+                          <p style={{
+                            fontSize: '0.9rem',
+                            color: '#4b5563',
+                            textAlign: 'center',
+                            marginBottom: '0.75rem',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            {item.description}
+                          </p>
+                        )}
+
+                        {/* Date */}
+                        {item.date && (
+                          <div style={{
+                            fontSize: '0.85rem',
+                            color: '#6b7280',
+                            textAlign: 'center',
+                            marginTop: '0.5rem'
+                          }}>
+                            📅 {new Date(item.date).toLocaleDateString('fr-FR')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="notification is-info is-light">
+                  <p className="has-text-centered">
+                    📦 Aucun élément archivé pour le moment.
+                  </p>
+                </div>
+              )}
+            </section>
+            <footer className="modal-card-foot" style={{ justifyContent: 'flex-end' }}>
+              <button 
+                className="button is-light" 
+                onClick={() => setShowArchivesModal(false)}
+              >
+                Fermer
+              </button>
             </footer>
           </div>
         </div>
@@ -1914,6 +2248,11 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay() || 7; // Lundi = 1
 
+  // Obtenir la date actuelle
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+  const currentDay = today.getDate();
+
   function getEventsForDay(day) {
     const d = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return events.filter(ev => ev.date === d);
@@ -1937,27 +2276,66 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
   for (let i = firstDay; i <= 7; i++) {
     if (dayNum <= daysInMonth) {
       const dayEvents = getEventsForDay(dayNum);
+      const isToday = isCurrentMonth && dayNum === currentDay;
+      
       cells.push(
         <td
           key={dayNum}
-          className={`has-text-centered ${dayEvents.length ? 'has-background-info-light' : ''}`}
+          className={`has-text-centered`}
           style={{
             cursor: dayEvents.length ? 'pointer' : 'default',
-            padding: '4px',
+            padding: '8px',
             border: '1px solid #e0e7ef',
-            borderRadius: 4,
-            fontSize: '0.85rem'
+            borderRadius: 8,
+            fontSize: '0.85rem',
+            background: isToday 
+              ? '#eaf6ff' 
+              : dayEvents.length 
+                ? '#eaf6ff' 
+                : 'transparent',
+            color: isToday ? '#1277c6' : 'inherit',
+            fontWeight: isToday ? 700 : 'normal',
+            boxShadow: isToday ? '0 2px 8px rgba(18, 119, 198, 0.2)' : 'none',
+            transform: isToday ? 'scale(1.05)' : 'scale(1)',
+            transition: 'all 0.3s ease',
+            position: 'relative'
           }}
           onClick={() => dayEvents.length && onDayClick(dayEvents)}
+          onMouseEnter={(e) => {
+            if (!isToday) {
+              e.currentTarget.style.background = dayEvents.length ? '#d4ebff' : '#f8fafc';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isToday) {
+              e.currentTarget.style.background = dayEvents.length ? '#eaf6ff' : 'transparent';
+            }
+          }}
         >
-          <div className="has-text-weight-bold" style={{ fontSize: '0.9rem' }}>{dayNum}</div>
+          <div style={{ 
+            fontSize: '0.95rem',
+            fontWeight: isToday ? 700 : 600
+          }}>
+            {dayNum}
+          </div>
+          {isToday && (
+            <div style={{
+              position: 'absolute',
+              top: 2,
+              right: 2,
+              fontSize: '8px'
+            }}>
+              ⭐
+            </div>
+          )}
           {dayEvents.length > 0 && (
             <div style={{ 
               width: 6, 
               height: 6, 
               borderRadius: '50%', 
-              background: '#1277c6', 
-              margin: '2px auto 0' 
+              background: isToday ? 'white' : '#1277c6', 
+              margin: '4px auto 0',
+              boxShadow: isToday ? '0 0 4px rgba(255,255,255,0.8)' : 'none'
             }}></div>
           )}
         </td>
@@ -1973,27 +2351,66 @@ function Calendar({ events, onDayClick, currentMonth, currentYear, onMonthChange
     for (let i = 0; i < 7; i++) {
       if (dayNum <= daysInMonth) {
         const dayEvents = getEventsForDay(dayNum);
+        const isToday = isCurrentMonth && dayNum === currentDay;
+        
         cells.push(
           <td
             key={dayNum}
-            className={`has-text-centered ${dayEvents.length ? 'has-background-info-light' : ''}`}
+            className={`has-text-centered`}
             style={{
               cursor: dayEvents.length ? 'pointer' : 'default',
-              padding: '4px',
+              padding: '8px',
               border: '1px solid #e0e7ef',
-              borderRadius: 4,
-              fontSize: '0.85rem'
+              borderRadius: 8,
+              fontSize: '0.85rem',
+              background: isToday 
+                ? '#eaf6ff' 
+                : dayEvents.length 
+                  ? '#eaf6ff' 
+                  : 'transparent',
+              color: isToday ? '#1277c6' : 'inherit',
+              fontWeight: isToday ? 700 : 'normal',
+              boxShadow: isToday ? '0 2px 8px rgba(18, 119, 198, 0.2)' : 'none',
+              transform: isToday ? 'scale(1.05)' : 'scale(1)',
+              transition: 'all 0.3s ease',
+              position: 'relative'
             }}
             onClick={() => dayEvents.length && onDayClick(dayEvents)}
+            onMouseEnter={(e) => {
+              if (!isToday) {
+                e.currentTarget.style.background = dayEvents.length ? '#d4ebff' : '#f8fafc';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isToday) {
+                e.currentTarget.style.background = dayEvents.length ? '#eaf6ff' : 'transparent';
+              }
+            }}
           >
-            <div className="has-text-weight-bold" style={{ fontSize: '0.9rem' }}>{dayNum}</div>
+            <div style={{ 
+              fontSize: '0.95rem',
+              fontWeight: isToday ? 700 : 600
+            }}>
+              {dayNum}
+            </div>
+            {isToday && (
+              <div style={{
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                fontSize: '8px'
+              }}>
+                ⭐
+              </div>
+            )}
             {dayEvents.length > 0 && (
               <div style={{ 
                 width: 6, 
                 height: 6, 
                 borderRadius: '50%', 
-                background: '#1277c6', 
-                margin: '2px auto 0' 
+                background: isToday ? 'white' : '#1277c6', 
+                margin: '4px auto 0',
+                boxShadow: isToday ? '0 0 4px rgba(255,255,255,0.8)' : 'none'
               }}></div>
             )}
           </td>

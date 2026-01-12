@@ -267,41 +267,65 @@ export default function Navbar() {
         }}>
           {navLinks.map((link) => {
             const isActive = router.pathname === link.href;
+            const isHighlight = link.highlight;
+            
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setActive(false)}
                 style={{
-                  color: isActive ? '#fff' : '#1277c6',
-                  background: isActive ? 'linear-gradient(135deg, #1277c6 0%, #0a5ea8 100%)' : 'rgba(18,119,198,0.05)',
+                  color: isActive ? '#fff' : (isHighlight ? '#764ba2' : '#1277c6'),
+                  background: isActive 
+                    ? 'linear-gradient(135deg, #1277c6 0%, #0a5ea8 100%)' 
+                    : (isHighlight 
+                      ? 'linear-gradient(135deg, #667eea22 0%, #764ba222 100%)'
+                      : 'rgba(18,119,198,0.05)'),
                   textDecoration: 'none',
-                  fontWeight: isActive ? 700 : 500,
+                  fontWeight: isActive ? 700 : (isHighlight ? 600 : 500),
                   padding: '10px 18px',
                   borderRadius: 10,
                   fontSize: 14.5,
                   letterSpacing: 0.4,
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: isActive ? '0 4px 12px rgba(18,119,198,0.25)' : '0 2px 6px rgba(18,119,198,0.08)',
+                  boxShadow: isActive 
+                    ? '0 4px 12px rgba(18,119,198,0.25)' 
+                    : (isHighlight 
+                      ? '0 2px 8px rgba(102, 126, 234, 0.2)'
+                      : '0 2px 6px rgba(18,119,198,0.08)'),
                   whiteSpace: 'nowrap',
-                  border: isActive ? 'none' : '1px solid rgba(18,119,198,0.15)',
+                  border: isActive ? 'none' : (isHighlight ? '1px solid #764ba244' : '1px solid rgba(18,119,198,0.15)'),
                   position: 'relative',
                   overflow: 'hidden',
                 }}
                 onMouseEnter={e => {
                   if (!isActive) {
-                    e.currentTarget.style.background = 'rgba(18,119,198,0.12)';
-                    e.currentTarget.style.color = '#0a5ea8';
+                    if (isHighlight) {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                      e.currentTarget.style.color = '#fff';
+                    } else {
+                      e.currentTarget.style.background = 'rgba(18,119,198,0.12)';
+                      e.currentTarget.style.color = '#0a5ea8';
+                    }
                     e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(18,119,198,0.15)';
+                    e.currentTarget.style.boxShadow = isHighlight 
+                      ? '0 4px 16px rgba(102, 126, 234, 0.4)'
+                      : '0 4px 12px rgba(18,119,198,0.15)';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!isActive) {
-                    e.currentTarget.style.background = 'rgba(18,119,198,0.05)';
-                    e.currentTarget.style.color = '#1277c6';
+                    if (isHighlight) {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #667eea22 0%, #764ba222 100%)';
+                      e.currentTarget.style.color = '#764ba2';
+                    } else {
+                      e.currentTarget.style.background = 'rgba(18,119,198,0.05)';
+                      e.currentTarget.style.color = '#1277c6';
+                    }
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(18,119,198,0.08)';
+                    e.currentTarget.style.boxShadow = isHighlight 
+                      ? '0 2px 8px rgba(102, 126, 234, 0.2)'
+                      : '0 2px 6px rgba(18,119,198,0.08)';
                   }
                 }}
               >

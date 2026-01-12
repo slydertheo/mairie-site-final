@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { IncomingForm } from 'formidable';  // Changez cette ligne
+import formidable from 'formidable';
 
 // Désactiver le parsing automatique du corps de la requête
 export const config = {
@@ -25,14 +25,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Créer et configurer un nouveau formulaire
-    const form = new IncomingForm({
+    const form = formidable({
       uploadDir,
       keepExtensions: true,
-      maxFileSize: 100 * 1024 * 1024 // 100 MB
+      maxFileSize: 500 * 1024 * 1024, // 500 MB
+      multiples: false
     });
     
-    const [fields, files] = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
+    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
+      form.parse(req, (err: any, fields: any, files: any) => {
         if (err) return reject(err);
         resolve([fields, files]);
       });

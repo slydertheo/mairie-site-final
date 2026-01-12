@@ -4,12 +4,20 @@ import 'react-toastify/dist/ReactToastify.css';
 
 export default function ActualiteAdmin() {
   const [actualites, setActualites] = useState([]);
-  const [form, setForm] = useState({ imgSrc: '', date: '', title: '', description: '' });
+  const [form, setForm] = useState({ 
+    imgSrc: '', 
+    date: '', 
+    title: '', 
+    description: '', 
+    pdfUrl: '',
+    afficherDans: ['carrousel'] // Par défaut: carrousel uniquement
+  });
   const [selectedDates, setSelectedDates] = useState([]); // Pour gérer les dates multiples
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [pdfFileName, setPdfFileName] = useState('');
 
   useEffect(() => {
     fetch('/api/actualites')
@@ -17,7 +25,26 @@ export default function ActualiteAdmin() {
       .then(setActualites);
   }, []);
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  // Gérer les checkboxes pour afficherDans
+  const handleAfficherDansChange = (e) => {
+    const { value, checked } = e.target;
+    let newAfficherDans = [...form.afficherDans];
+    
+    if (checked) {
+      if (!newAfficherDans.includes(value)) {
+        newAfficherDans.push(value);
+      }
+    } else {
+      newAfficherDans = newAfficherDans.filter(item => item !== value);
+    }
+    
+    setForm({ ...form, afficherDans: newAfficherDans });
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -28,8 +55,8 @@ export default function ActualiteAdmin() {
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('La taille de l\'image ne doit pas dépasser 5MB.');
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('La taille de l\'image ne doit pas dépasser 50MB.');
       return;
     }
 
@@ -38,9 +65,9 @@ export default function ActualiteAdmin() {
 
     // Compression et redimensionnement de l'image
     compressImage(file, {
-      maxWidth: 1200,
-      maxHeight: 1200,
-      quality: 0.7
+      maxWidth: 1600,
+      maxHeight: 1600,
+      quality: 0.8
     }).then(compressedImage => {
       setPreviewImage(compressedImage);
       setForm({ ...form, imgSrc: compressedImage });
@@ -60,6 +87,59 @@ export default function ActualiteAdmin() {
         autoClose: 3000
       });
     });
+  };
+
+  // Fonction pour gérer l'upload de PDF
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast.error('Veuillez sélectionner un fichier PDF.');
+      return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('La taille du PDF ne doit pas dépasser 100MB.');
+      return;
+    }
+
+    const loadingId = toast.loading("Téléversement du PDF...");
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/upload_doc', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléversement');
+      }
+
+      const data = await response.json();
+      const pdfUrl = data.fileUrl;
+
+      setForm({ ...form, pdfUrl });
+      setPdfFileName(file.name);
+
+      toast.update(loadingId, {
+        render: 'PDF téléversé avec succès',
+        type: 'success',
+        isLoading: false,
+        autoClose: 2500
+      });
+    } catch (error) {
+      console.error("Erreur lors du téléversement du PDF:", error);
+      toast.update(loadingId, {
+        render: "Erreur lors du téléversement du PDF",
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000
+      });
+    }
   };
 
   // Fonction pour compresser et redimensionner l'image
@@ -130,13 +210,6 @@ export default function ActualiteAdmin() {
     
     setLoading(true);
     
-    // Vérification plus stricte de la taille des données
-    if (form.imgSrc && form.imgSrc.length > 800000) { // ~800KB limite pour l'encodage base64
-      toast.error("L'image est trop volumineuse même après compression. Veuillez utiliser une image plus petite.");
-      setLoading(false);
-      return;
-    }
-    
     // Afficher toast de chargement
     const loadingToastId = toast.loading(editMode ? "Modification en cours..." : "Ajout en cours...");
 
@@ -146,20 +219,24 @@ export default function ActualiteAdmin() {
         if (loading) {
           setLoading(false);
           toast.update(loadingToastId, {
-            render: "La requête a pris trop de temps. Veuillez réessayer avec une image plus petite.",
+            render: "La requête a pris trop de temps. Veuillez réessayer.",
             type: "error",
             isLoading: false,
             autoClose: 5000
           });
         }
-      }, 30000); // 30 secondes
+      }, 60000); // 60 secondes au lieu de 30
       
       if (editMode) {
         // Mode édition : mise à jour d'une seule actualité
         const response = await fetch('/api/actualites', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...form, id: editId })
+          body: JSON.stringify({ 
+            ...form, 
+            id: editId,
+            afficherDans: form.afficherDans.join(',') // Convertir en string
+          })
         });
         
         clearTimeout(timeoutId);
@@ -180,7 +257,11 @@ export default function ActualiteAdmin() {
           fetch('/api/actualites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...form, date })
+            body: JSON.stringify({ 
+              ...form, 
+              date,
+              afficherDans: form.afficherDans.join(',') // Convertir en string
+            })
           })
         );
         
@@ -190,7 +271,15 @@ export default function ActualiteAdmin() {
         
         const failedResponses = responses.filter(r => !r.ok);
         if (failedResponses.length > 0) {
-          throw new Error(`Erreur HTTP lors de l'ajout de ${failedResponses.length} actualité(s)`);
+          // Récupérer les détails des erreurs
+          const errorDetails = await Promise.all(
+            failedResponses.map(async r => {
+              const text = await r.text();
+              return `Status ${r.status}: ${text}`;
+            })
+          );
+          console.error("Détails des erreurs:", errorDetails);
+          throw new Error(`Erreur HTTP lors de l'ajout de ${failedResponses.length} actualité(s): ${errorDetails.join(', ')}`);
         }
         
         const message = datesToUse.length > 1 
@@ -301,19 +390,36 @@ export default function ActualiteAdmin() {
     setEditMode(true);
     setEditId(actu.id);
     setSelectedDates([]); // Réinitialiser les dates multiples en mode édition
+    
+    // Convertir afficherDans de string à array
+    const afficherDansArray = actu.afficherDans 
+      ? actu.afficherDans.split(',').filter(Boolean)
+      : ['carrousel'];
+    
     setForm({
       title: actu.title || '',
       date: actu.date || '',
       imgSrc: actu.imgSrc || '',
-      description: actu.description || ''
+      description: actu.description || '',
+      pdfUrl: actu.pdfUrl || '',
+      afficherDans: afficherDansArray
     });
     setPreviewImage(actu.imgSrc || null);
+    setPdfFileName(actu.pdfUrl ? 'PDF attaché' : '');
   };
 
   const resetForm = () => {
-    setForm({ imgSrc: '', date: '', title: '', description: '' });
+    setForm({ 
+      imgSrc: '', 
+      date: '', 
+      title: '', 
+      description: '', 
+      pdfUrl: '',
+      afficherDans: ['carrousel']
+    });
     setSelectedDates([]);
     setPreviewImage(null);
+    setPdfFileName('');
     setEditMode(false);
     setEditId(null);
     
@@ -340,6 +446,26 @@ export default function ActualiteAdmin() {
     <>
       <div className="box" style={{ borderRadius: 14, background: '#fafdff' }}>
         <h2 className="title is-4 mb-4 has-text-link">📰 Gestion du carrousel</h2>
+        
+        {/* Notification d'information sur le partage */}
+        <div className="notification is-info is-light mb-4">
+          <div className="content">
+            <p className="has-text-weight-bold mb-2">
+              💡 Nouvelles fonctionnalités de partage
+            </p>
+            <p className="is-size-7 mb-2">
+              Vous pouvez maintenant partager vos actualités entre plusieurs sections :
+            </p>
+            <ul className="is-size-7" style={{ marginLeft: '1.5em' }}>
+              <li><strong>🎠 Carrousel</strong> : Affiche l'actualité sur la page d'accueil (slider principal)</li>
+              <li><strong>📅 Calendrier</strong> : Ajoute automatiquement l'événement au calendrier</li>
+              <li><strong>📋 Panneau d'affichage</strong> : Affiche l'actualité dans le panneau d'affichage</li>
+            </ul>
+            <p className="is-size-7 has-text-weight-semibold mt-2">
+              ✨ Sélectionnez une ou plusieurs destinations lors de la création/modification d'une actualité !
+            </p>
+          </div>
+        </div>
         
         <div className="box mb-4" style={{ borderRadius: 12, border: '1.5px solid #e0e7ef', background: '#fff' }}>
           <h3 className="subtitle is-5 mb-3">
@@ -438,6 +564,59 @@ export default function ActualiteAdmin() {
               <p className="help">Cette description sera affichée dans la modal de détail</p>
             </div>
             
+            {/* NOUVELLE SECTION : Afficher dans */}
+            <div className="field">
+              <label className="label is-small">
+                📍 Afficher cette actualité dans :
+              </label>
+              <div className="control">
+                <label className="checkbox mb-2" style={{ display: 'block' }}>
+                  <input
+                    type="checkbox"
+                    value="carrousel"
+                    checked={form.afficherDans.includes('carrousel')}
+                    onChange={handleAfficherDansChange}
+                    disabled={loading}
+                  />
+                  <span className="ml-2">
+                    <span className="icon is-small">🎠</span>
+                    <strong>Carrousel</strong> (page d'accueil)
+                  </span>
+                </label>
+                
+                <label className="checkbox mb-2" style={{ display: 'block' }}>
+                  <input
+                    type="checkbox"
+                    value="calendrier"
+                    checked={form.afficherDans.includes('calendrier')}
+                    onChange={handleAfficherDansChange}
+                    disabled={loading}
+                  />
+                  <span className="ml-2">
+                    <span className="icon is-small">📅</span>
+                    <strong>Calendrier</strong> (page événements)
+                  </span>
+                </label>
+                
+                <label className="checkbox mb-2" style={{ display: 'block' }}>
+                  <input
+                    type="checkbox"
+                    value="panneau"
+                    checked={form.afficherDans.includes('panneau')}
+                    onChange={handleAfficherDansChange}
+                    disabled={loading}
+                  />
+                  <span className="ml-2">
+                    <span className="icon is-small">📋</span>
+                    <strong>Panneau d'affichage</strong> (page d'accueil)
+                  </span>
+                </label>
+              </div>
+              <p className="help is-info">
+                💡 Sélectionnez une ou plusieurs destinations pour partager cette actualité
+              </p>
+            </div>
+            
             <div className="field">
               <label className="label is-small">Image</label>
               <div className="file has-name is-fullwidth mb-2">
@@ -491,6 +670,62 @@ export default function ActualiteAdmin() {
               )}
             </div>
             
+            <div className="field">
+              <label className="label is-small">
+                PDF (optionnel)
+                <span className="icon is-small ml-1">
+                  <i className="fas fa-file-pdf"></i>
+                </span>
+              </label>
+              <div className="file has-name is-fullwidth mb-2">
+                <label className="file-label">
+                  <input 
+                    className="file-input" 
+                    type="file" 
+                    accept="application/pdf"
+                    onChange={handlePdfUpload}
+                    disabled={loading}
+                  />
+                  <span className="file-cta">
+                    <span className="file-icon">
+                      <i className="fas fa-upload"></i>
+                    </span>
+                    <span className="file-label">
+                      Téléverser un PDF...
+                    </span>
+                  </span>
+                  <span className="file-name">
+                    {pdfFileName || 'Aucun fichier PDF'}
+                  </span>
+                </label>
+              </div>
+              
+              {form.pdfUrl && (
+                <div className="notification is-success is-light mt-2">
+                  <div className="is-flex is-align-items-center is-justify-content-space-between">
+                    <span>
+                      <span className="icon mr-1">
+                        <i className="fas fa-check-circle"></i>
+                      </span>
+                      PDF attaché : <a href={form.pdfUrl} target="_blank" rel="noopener noreferrer" className="has-text-weight-bold">Voir le PDF</a>
+                    </span>
+                    <button
+                      type="button"
+                      className="delete"
+                      onClick={() => {
+                        setForm({ ...form, pdfUrl: '' });
+                        setPdfFileName('');
+                        toast.info('PDF retiré');
+                      }}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <p className="help">Les visiteurs pourront télécharger ce PDF depuis la modal de détail</p>
+            </div>
+            
             <div className="field is-grouped mt-4">
               <div className="control">
                 <button 
@@ -525,7 +760,9 @@ export default function ActualiteAdmin() {
                 <th>Date</th>
                 <th>Titre</th>
                 <th>Description</th>
+                <th>Partagée dans</th>
                 <th>Image</th>
+                <th>PDF</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -551,6 +788,22 @@ export default function ActualiteAdmin() {
                     )}
                   </td>
                   <td>
+                    <div className="tags are-small">
+                      {actu.afficherDans && actu.afficherDans.includes('carrousel') && (
+                        <span className="tag is-link" title="Carrousel">🎠</span>
+                      )}
+                      {actu.afficherDans && actu.afficherDans.includes('calendrier') && (
+                        <span className="tag is-success" title="Calendrier">📅</span>
+                      )}
+                      {actu.afficherDans && actu.afficherDans.includes('panneau') && (
+                        <span className="tag is-warning" title="Panneau d'affichage">📋</span>
+                      )}
+                      {(!actu.afficherDans || actu.afficherDans === '') && (
+                        <span className="tag is-light">🎠 Carrousel</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
                     {actu.imgSrc && (
                       <img 
                         src={actu.imgSrc} 
@@ -562,6 +815,23 @@ export default function ActualiteAdmin() {
                           borderRadius: '4px' 
                         }} 
                       />
+                    )}
+                  </td>
+                  <td>
+                    {actu.pdfUrl ? (
+                      <a 
+                        href={actu.pdfUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="button is-small is-danger is-light"
+                        title="Voir le PDF"
+                      >
+                        <span className="icon">
+                          <i className="fas fa-file-pdf"></i>
+                        </span>
+                      </a>
+                    ) : (
+                      <span className="has-text-grey-light is-italic">-</span>
                     )}
                   </td>
                   <td>
@@ -592,7 +862,7 @@ export default function ActualiteAdmin() {
               ))}
               {actualites.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="has-text-centered">
+                  <td colSpan="7" className="has-text-centered">
                     Aucune actualité n'a été ajoutée
                   </td>
                 </tr>
