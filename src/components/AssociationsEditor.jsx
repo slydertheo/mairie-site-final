@@ -44,6 +44,58 @@ export default function AssociationsEditor() {
 
   const handleChange = e => setContent({ ...content, [e.target.name]: e.target.value });
 
+  // Upload d'image
+  const handleImageUpload = async (e, index) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.includes('image/')) {
+      toast.error('Veuillez sélectionner une image.');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop volumineuse (max 5MB).');
+      return;
+    }
+    
+    const loadingId = toast.loading("Envoi de l'image...");
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/upload_doc', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const { fileUrl } = await uploadRes.json();
+      
+      // Mettre à jour l'image de l'association
+      const updated = [...(content.associations || [])];
+      updated[index].image = fileUrl;
+      setContent({ ...content, associations: updated });
+      
+      toast.update(loadingId, { 
+        render: '✅ Image envoyée !', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 2000 
+      });
+    } catch (err) {
+      toast.update(loadingId, { 
+        render: "❌ Erreur lors de l'upload", 
+        type: 'error', 
+        isLoading: false, 
+        autoClose: 3000 
+      });
+    }
+  };
+
   // Sauvegarde par section
   const saveSection = async (section) => {
     setSavingSection(section);
@@ -305,13 +357,54 @@ export default function AssociationsEditor() {
                   />
                 </div>
                 <div className="column is-half">
-                  <label className="label is-small">Image (URL)</label>
+                  <label className="label is-small">Image</label>
+                  
+                  <div className="file has-name is-fullwidth mb-2">
+                    <label className="file-label">
+                      <input 
+                        className="file-input" 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => handleImageUpload(e, i)}
+                        disabled={savingSection !== null}
+                      />
+                      <span className="file-cta">
+                        <span className="file-icon">
+                          <i className="fas fa-upload"></i>
+                        </span>
+                        <span className="file-label">Choisir une image...</span>
+                      </span>
+                      <span className="file-name">
+                        {assoc.image ? 'Image sélectionnée' : 'Aucune image'}
+                      </span>
+                    </label>
+                  </div>
+                  
                   <input 
-                    className="input" 
-                    placeholder="https://..." 
+                    className="input is-small" 
+                    placeholder="Ou entrez l'URL d'une image" 
                     value={assoc.image} 
                     onChange={e => handleAssocChange(i, 'image', e.target.value)} 
                   />
+                  
+                  {assoc.image && (
+                    <div className="mt-2">
+                      <img
+                        src={assoc.image}
+                        alt="Aperçu"
+                        style={{ 
+                          maxHeight: '80px', 
+                          maxWidth: '100%', 
+                          objectFit: 'cover', 
+                          border: '1px solid #ddd', 
+                          borderRadius: 4 
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="column is-half">
                   <label className="label is-small">Catégorie</label>

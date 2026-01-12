@@ -41,6 +41,7 @@ export default function EditeurInfosPratiques() {
   });
   const [loading, setLoading] = useState(false);
   const [savingSection, setSavingSection] = useState(null);
+  const [archiveModal, setArchiveModal] = useState({ show: false, bulletinIndex: null, annee: '' });
 
   useEffect(() => {
     fetch('/api/pageContent?page=infos_pratiques')
@@ -224,9 +225,6 @@ export default function EditeurInfosPratiques() {
             <li className={activeTab === 'bulletins' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('bulletins')}>Bulletins communal</a>
             </li>
-            <li className={activeTab === 'salles' ? 'is-active' : ''}>
-              <a onClick={() => setActiveTab('salles')}>Salles & Réservations</a>
-            </li>
             <li className={activeTab === 'eau' ? 'is-active' : ''}>
               <a onClick={() => setActiveTab('eau')}>Service des eaux</a>
             </li>
@@ -294,15 +292,36 @@ export default function EditeurInfosPratiques() {
                   <div key={i} className="box mb-3" style={{ background: "#f9fbfd", borderRadius: 12, border: '1.5px solid #e0e7ef' }}>
                     <div className="is-flex is-justify-content-space-between mb-2">
                       <span className="tag is-info is-light">Bulletin #{i + 1}</span>
-                      <button 
-                        type="button" 
-                        className="button is-small is-danger"
-                        onClick={() => removeListItem('bulletins', i, bulletin.titre || 'ce bulletin')}
-                        disabled={savingSection !== null}
-                        title="Supprimer"
-                      >
-                        <span role="img" aria-label="Supprimer">🗑️</span>
-                      </button>
+                      <div className="buttons are-small">
+                        <button 
+                          type="button" 
+                          className="button is-small is-warning"
+                          onClick={() => {
+                            const currentYear = new Date().getFullYear();
+                            setArchiveModal({ 
+                              show: true, 
+                              bulletinIndex: i, 
+                              annee: String(currentYear - 1) 
+                            });
+                          }}
+                          disabled={savingSection !== null}
+                          title="Archiver dans une année"
+                        >
+                          <span className="icon is-small">
+                            <i className="fas fa-archive"></i>
+                          </span>
+                          <span>Archiver</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          className="button is-small is-danger"
+                          onClick={() => removeListItem('bulletins', i, bulletin.titre || 'ce bulletin')}
+                          disabled={savingSection !== null}
+                          title="Supprimer"
+                        >
+                          <span role="img" aria-label="Supprimer">🗑️</span>
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="columns">
@@ -1548,76 +1567,6 @@ export default function EditeurInfosPratiques() {
             </>
           )}
 
-          {activeTab === 'salles' && (
-            <>
-              <div className="box mb-6">
-                <h2 className="title is-4 has-text-warning mb-4">🏢 Salles communales</h2>
-                {content.salles.map((salle, i) => (
-                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
-                    <div className="is-flex is-justify-content-space-between mb-2">
-                      <span className="tag is-warning is-light">Salle #{i + 1}</span>
-                      <button 
-                        type="button" 
-                        className="button is-small is-danger"
-                        onClick={() => removeListItem('salles', i, salle.nom || 'cette salle')}
-                        disabled={savingSection !== null}
-                        title="Supprimer"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    <label className="label">Nom de la salle</label>
-                    <input className="input mb-2" value={salle.nom} onChange={e => handleListChange('salles', i, 'nom', e.target.value)} />
-                    <label className="label">Capacité</label>
-                    <input className="input mb-2" value={salle.capacite} onChange={e => handleListChange('salles', i, 'capacite', e.target.value)} />
-                    <label className="label">Équipements</label>
-                    <input className="input mb-2" value={salle.equipements} onChange={e => handleListChange('salles', i, 'equipements', e.target.value)} />
-                    <label className="label">Tarifs</label>
-                    <input className="input mb-2" value={salle.tarifs} onChange={e => handleListChange('salles', i, 'tarifs', e.target.value)} />
-                    <label className="label">URL de l'image</label>
-                    <input className="input mb-2" value={salle.image} onChange={e => handleListChange('salles', i, 'image', e.target.value)} />
-                  </div>
-                ))}
-                <div className="has-text-centered">
-                  <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('salles', {
-                    nom: "", capacite: "", equipements: "", tarifs: "", image: ""
-                  })}>Ajouter une salle</button>
-                </div>
-              </div>
-
-              <div className="box mb-6">
-                <h2 className="title is-4 has-text-link mb-4">📅 Réservations existantes</h2>
-                {content.reservations.map((resa, i) => (
-                  <div key={i} className="box mb-2" style={{ background: "#f9fbfd", borderRadius: 12 }}>
-                    <div className="is-flex is-justify-content-space-between mb-2">
-                      <span className="tag is-link is-light">Réservation #{i + 1}</span>
-                      <button 
-                        type="button" 
-                        className="button is-small is-danger"
-                        onClick={() => removeListItem('reservations', i, resa.evenement || 'cette réservation')}
-                        disabled={savingSection !== null}
-                        title="Supprimer"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    <label className="label">Date</label>
-                    <input className="input mb-2" type="date" value={resa.date} onChange={e => handleListChange('reservations', i, 'date', e.target.value)} />
-                    <label className="label">Salle</label>
-                    <input className="input mb-2" value={resa.salle} onChange={e => handleListChange('reservations', i, 'salle', e.target.value)} />
-                    <label className="label">Événement</label>
-                    <input className="input mb-2" value={resa.evenement} onChange={e => handleListChange('reservations', i, 'evenement', e.target.value)} />
-                  </div>
-                ))}
-                <div className="has-text-centered">
-                  <button type="button" className="button is-link is-light is-small" onClick={() => addListItem('reservations', {
-                    date: "", salle: "", evenement: ""
-                  })}>Ajouter une réservation</button>
-                </div>
-              </div>
-            </>
-          )}
-
           {activeTab === 'chasse' && (
             <>
               <div className="box mb-6">
@@ -1809,6 +1758,103 @@ export default function EditeurInfosPratiques() {
             </div>
           </div> */}
         </form>
+      </div>
+
+      {/* Modal d'archivage */}
+      <div className={`modal ${archiveModal.show ? 'is-active' : ''}`}>
+        <div className="modal-background" onClick={() => setArchiveModal({ show: false, bulletinIndex: null, annee: '' })}></div>
+        <div className="modal-card">
+          <header className="modal-card-head">
+            <p className="modal-card-title">
+              <span className="icon">
+                <i className="fas fa-archive"></i>
+              </span>
+              <span>Archiver le bulletin</span>
+            </p>
+            <button 
+              className="delete" 
+              aria-label="close"
+              onClick={() => setArchiveModal({ show: false, bulletinIndex: null, annee: '' })}
+            ></button>
+          </header>
+          <section className="modal-card-body">
+            <div className="field">
+              <label className="label">Dans quelle année archiver ce bulletin ?</label>
+              <div className="control">
+                <input 
+                  className="input" 
+                  type="number" 
+                  placeholder="Ex: 2024"
+                  value={archiveModal.annee}
+                  onChange={(e) => setArchiveModal({ ...archiveModal, annee: e.target.value })}
+                  min="2000"
+                  max="2100"
+                />
+              </div>
+              <p className="help">Format: année sur 4 chiffres (ex: 2024)</p>
+            </div>
+          </section>
+          <footer className="modal-card-foot">
+            <button 
+              className="button is-warning"
+              onClick={() => {
+                const annee = archiveModal.annee;
+                const i = archiveModal.bulletinIndex;
+                
+                if (!annee) {
+                  toast.error('Veuillez entrer une année');
+                  return;
+                }
+                
+                // Valider le format année
+                if (!/^\d{4}$/.test(annee)) {
+                  toast.error('Format invalide. Entrez une année sur 4 chiffres (ex: 2024)');
+                  return;
+                }
+                
+                const bulletin = content.bulletins[i];
+                
+                // Copier le bulletin dans les archives
+                const newArchives = { ...(content.archivesBulletins || {}) };
+                if (!newArchives[annee]) {
+                  newArchives[annee] = [];
+                }
+                newArchives[annee].push({ ...bulletin });
+                
+                // Créer l'année dans la liste si elle n'existe pas
+                const newAnnees = [...(content.archivesBulletinsAnnees || [])];
+                if (!newAnnees.includes(annee)) {
+                  newAnnees.push(annee);
+                  newAnnees.sort((a, b) => parseInt(b) - parseInt(a));
+                }
+                
+                // Retirer le bulletin des bulletins actuels
+                const newBulletins = (content.bulletins || []).filter((_, idx) => idx !== i);
+                
+                setContent({
+                  ...content,
+                  bulletins: newBulletins,
+                  archivesBulletins: newArchives,
+                  archivesBulletinsAnnees: newAnnees
+                });
+                
+                toast.success(`Bulletin archivé dans l'année ${annee}`);
+                setArchiveModal({ show: false, bulletinIndex: null, annee: '' });
+              }}
+            >
+              <span className="icon">
+                <i className="fas fa-check"></i>
+              </span>
+              <span>Archiver</span>
+            </button>
+            <button 
+              className="button"
+              onClick={() => setArchiveModal({ show: false, bulletinIndex: null, annee: '' })}
+            >
+              Annuler
+            </button>
+          </footer>
+        </div>
       </div>
 
       <ToastContainer position="top-right" autoClose={2500} newestOnTop />

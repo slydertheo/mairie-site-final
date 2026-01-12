@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 export default function ActualiteAdmin() {
   const [actualites, setActualites] = useState([]);
   const [form, setForm] = useState({ imgSrc: '', date: '', title: '', description: '' });
+  const [selectedDates, setSelectedDates] = useState([]); // Pour gérer les dates multiples
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -118,6 +119,15 @@ export default function ActualiteAdmin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation : si des dates multiples sont sélectionnées, on les utilise, sinon on utilise la date unique
+    const datesToUse = selectedDates.length > 0 ? selectedDates : (form.date.trim() ? [form.date] : []);
+    
+    if (!form.title.trim() || datesToUse.length === 0) {
+      toast.error('Titre et au moins une date sont obligatoires.');
+      return;
+    }
+    
     setLoading(true);
     
     // Vérification plus stricte de la taille des données
@@ -145,6 +155,7 @@ export default function ActualiteAdmin() {
       }, 30000); // 30 secondes
       
       if (editMode) {
+        // Mode édition : mise à jour d'une seule actualité
         const response = await fetch('/api/actualites', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -157,7 +168,6 @@ export default function ActualiteAdmin() {
           throw new Error(`Erreur HTTP: ${response.status}`);
         }
         
-        // Remplacer toast de chargement par toast de succès
         toast.update(loadingToastId, { 
           render: "Actualité modifiée avec succès", 
           type: "success",
@@ -165,21 +175,30 @@ export default function ActualiteAdmin() {
           autoClose: 3000
         });
       } else {
-        const response = await fetch('/api/actualites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form)
-        });
+        // Mode ajout : créer une actualité pour chaque date sélectionnée
+        const promises = datesToUse.map(date => 
+          fetch('/api/actualites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...form, date })
+          })
+        );
+        
+        const responses = await Promise.all(promises);
         
         clearTimeout(timeoutId);
         
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`);
+        const failedResponses = responses.filter(r => !r.ok);
+        if (failedResponses.length > 0) {
+          throw new Error(`Erreur HTTP lors de l'ajout de ${failedResponses.length} actualité(s)`);
         }
         
-        // Remplacer toast de chargement par toast de succès
+        const message = datesToUse.length > 1 
+          ? `${datesToUse.length} actualités ajoutées avec succès` 
+          : "Actualité ajoutée avec succès";
+        
         toast.update(loadingToastId, { 
-          render: "Actualité ajoutée avec succès", 
+          render: message, 
           type: "success",
           isLoading: false,
           autoClose: 3000
@@ -281,6 +300,7 @@ export default function ActualiteAdmin() {
   
     setEditMode(true);
     setEditId(actu.id);
+    setSelectedDates([]); // Réinitialiser les dates multiples en mode édition
     setForm({
       title: actu.title || '',
       date: actu.date || '',
@@ -292,6 +312,7 @@ export default function ActualiteAdmin() {
 
   const resetForm = () => {
     setForm({ imgSrc: '', date: '', title: '', description: '' });
+    setSelectedDates([]);
     setPreviewImage(null);
     setEditMode(false);
     setEditId(null);
@@ -339,19 +360,68 @@ export default function ActualiteAdmin() {
               </div>
             </div>
             
-            <div className="field">
-              <label className="label is-small">Date</label>
-              <div className="control">
+            <div className="field is-grouped mb-3">
+              <div className="control is-expanded">
+                <label className="label is-small">
+                  {editMode ? 'Date' : 'Date (ou ajoutez plusieurs dates ci-dessous)'}
+                </label>
                 <input 
                   className="input" 
                   type="date" 
                   name="date" 
                   value={formatDateForInput(form.date)} 
                   onChange={handleChange} 
-                  required 
+                  required={editMode || selectedDates.length === 0}
                 />
               </div>
+              {!editMode && (
+                <div className="control">
+                  <label className="label is-small">&nbsp;</label>
+                  <button 
+                    type="button"
+                    className="button is-success"
+                    onClick={() => {
+                      if (form.date && !selectedDates.includes(form.date)) {
+                        setSelectedDates([...selectedDates, form.date].sort());
+                        toast.success(`Date ajoutée : ${new Date(form.date).toLocaleDateString('fr-FR')}`);
+                      } else if (selectedDates.includes(form.date)) {
+                        toast.warning('Cette date est déjà ajoutée');
+                      }
+                    }}
+                    disabled={!form.date || loading}
+                    title="Ajouter cette date"
+                  >
+                    ➕ Ajouter
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Affichage des dates sélectionnées */}
+            {!editMode && selectedDates.length > 0 && (
+              <div className="field mb-3">
+                <label className="label is-small">Dates sélectionnées ({selectedDates.length})</label>
+                <div className="tags">
+                  {selectedDates.map((date, idx) => (
+                    <span key={idx} className="tag is-success is-medium">
+                      {new Date(date).toLocaleDateString('fr-FR')}
+                      <button
+                        type="button"
+                        className="delete is-small"
+                        onClick={() => {
+                          setSelectedDates(selectedDates.filter(d => d !== date));
+                          toast.info('Date retirée');
+                        }}
+                        disabled={loading}
+                      />
+                    </span>
+                  ))}
+                </div>
+                <p className="help is-success">
+                  Une actualité sera créée pour chaque date sélectionnée
+                </p>
+              </div>
+            )}
 
             <div className="field">
               <label className="label is-small">Description</label>

@@ -235,11 +235,11 @@ export default function Associations() {
                     }}
                     >
                       <div className="card-image">
-                        <figure className="image is-3by2">
+                        <figure className="image is-3by2" style={{ background: '#FFFFFF' }}>
                           <img 
                             src={association.image || 'https://via.placeholder.com/800x533?text=Association'} 
                             alt={association.nom} 
-                            style={{ objectFit: 'cover' }}
+                            style={{ objectFit: 'contain' }}
                             onError={e => {
                               e.currentTarget.src = 'https://via.placeholder.com/800x533?text=Association';
                             }}
